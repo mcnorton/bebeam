@@ -2,6 +2,7 @@
 //   방향키·Home/End로 이동, Esc·바깥 클릭·Tab으로 닫고 원래 버튼으로 포커스를 돌린다.
 
 import { h } from './dialogs.js';
+import { container, toFrameRect } from './frame.js';
 
 let open = null;
 
@@ -27,13 +28,18 @@ export function openMenu(anchor, items) {
         it.label,
       ]));
     }
-    document.body.append(menu);
+    // 프레임을 돌려 그리는 중이면 프레임 안에 붙이고 프레임 좌표로 배치한다 (ui/frame.js)
+    const box = container();
+    box.append(menu);
+    const rotated = box !== document.body;
+    const r = rotated ? toFrameRect(anchor.getBoundingClientRect(), innerWidth) : anchor.getBoundingClientRect();
+    const m = { width: menu.offsetWidth, height: menu.offsetHeight };
+    const W = rotated ? box.clientWidth : innerWidth;
+    const H = rotated ? box.clientHeight : innerHeight;
 
     // anchor 아래(공간이 없으면 위)에, 오른쪽 끝을 맞춰 배치한다
-    const r = anchor.getBoundingClientRect();
-    const m = menu.getBoundingClientRect();
-    const top = r.bottom + 4 + m.height > innerHeight - 8 ? Math.max(8, r.top - 4 - m.height) : r.bottom + 4;
-    const left = Math.min(Math.max(8, r.right - m.width), innerWidth - m.width - 8);
+    const top = r.bottom + 4 + m.height > H - 8 ? Math.max(8, r.top - 4 - m.height) : r.bottom + 4;
+    const left = Math.min(Math.max(8, r.right - m.width), W - m.width - 8);
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;
     anchor.setAttribute('aria-expanded', 'true');

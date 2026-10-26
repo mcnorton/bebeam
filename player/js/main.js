@@ -8,6 +8,7 @@ import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
 import { setupInstallPrompt, maybeShowIosGuide, requestPersistence } from './ui/install-prompt.js';
+import { updateRotation } from './ui/frame.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer } from './ui/transfer-view.js';
 import { ROLE } from './transfer/session.js';
@@ -82,6 +83,7 @@ function render(state, keys = ['apps', 'selectedId', 'screen']) {
     viewer.render(store.selectedApp);
   }
   $('shell').dataset.screen = state.screen;
+  updateRotation({ running: state.screen === 'running' });
   if (updatePending && state.screen === 'home') showUpdateNotice();
 }
 
@@ -146,6 +148,10 @@ function receiveByQr() {
 async function start() {
   store.subscribe(render);
   render(store.state);
+  // 플레이어는 항상 가로: 세로로 든 휴대 기기면 프레임을 돌려 그린다 (W-04)
+  for (const q of ['(orientation: portrait)', '(pointer: coarse)']) {
+    matchMedia(q).addEventListener('change', () => updateRotation({ running: store.state.screen === 'running' }));
+  }
   registerServiceWorker({ onWaiting: showUpdateNotice });
 
   try {

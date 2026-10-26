@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '4bc4f97d96e8';
+const VERSION = '3ae60473caff';
 const SHELL = [
   './',
   'css/player.css',
@@ -37,6 +37,7 @@ const SHELL = [
   'js/transfer/session.js',
   'js/ui/add-sheet.js',
   'js/ui/dialogs.js',
+  'js/ui/frame.js',
   'js/ui/install-prompt.js',
   'js/ui/list.js',
   'js/ui/menu.js',

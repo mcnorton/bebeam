@@ -69,24 +69,42 @@ button { font: inherit; color: inherit; }
 
 [hidden] { display: none !important; }
 
+/* 플레이어는 항상 가로 (W-04): 왼쪽 열 = 헤더·설치 배너·목록, 오른쪽 = 뷰어(위아래로 꽉 채움) */
+.frame { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
 .shell {
   display: grid;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   grid-template-columns: var(--list-width) 1fr;
   grid-template-rows: var(--header-h) auto 1fr;
   grid-template-areas:
-    "header header"
-    "banner banner"
+    "header viewer"
+    "banner viewer"
     "library viewer";
 }
+
+/* 세로로 든 휴대 기기: 프레임을 90° 돌려 그린다 (폰을 왼쪽으로 돌리면 바로 보인다).
+   프레임 점 (x, y)는 화면 (100vw − y, x)에 그려진다 — ui/frame.js toFrameRect */
+html.tb-rotated .frame {
+  position: fixed;
+  top: 0;
+  left: 100vw;
+  width: 100vh;
+  width: 100dvh;
+  height: 100vw;
+  transform-origin: top left;
+  transform: rotate(90deg);
+}
+/* 모달은 top layer라 프레임 회전을 받지 않으므로 따로 돌린다 (가운데 기준) */
+html.tb-rotated dialog[open] { rotate: 90deg; }
+html.tb-rotated .dialog { width: min(400px, calc(100dvh - 32px)); max-height: calc(100vw - 32px); }
 
 .app-header {
   grid-area: header;
   display: flex;
   align-items: center;
   padding: 0 16px;
+  border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -141,23 +159,6 @@ button { font: inherit; color: inherit; }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.only-portrait { display: none; }
-
-/* 세로: 뷰어 위, 목록 아래 */
-@media (max-aspect-ratio: 1/1) {
-  .shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: var(--header-h) auto minmax(160px, 40%) 1fr;
-    grid-template-areas:
-      "header"
-      "banner"
-      "viewer"
-      "library";
-  }
-  .library { border-right: 0; }
-  .only-portrait { display: inline; }
-  .only-landscape { display: none; }
-}
 
 /* ── 목록 항목 (F-03) ── */
 .app-list li {
@@ -314,6 +315,7 @@ button { font: inherit; color: inherit; }
 /* ── 설치 유도 배너 (W-02): 목록을 가리지 않도록 grid 한 행을 차지한다 ── */
 .install-banner {
   grid-area: banner;
+  border-right: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -431,9 +433,18 @@ button { font: inherit; color: inherit; }
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* 프레임을 돌려 그릴 때는 화면 아래가 사용자에게는 옆이므로, 하단 시트·아래 화살표 대신 가운데 대화창 */
+html.tb-rotated .dialog.sheet,
+html.tb-rotated .dialog.ios-guide-bottom {
+  width: min(400px, calc(100dvh - 32px));
+  margin: auto;
+  border-radius: 16px;
+  padding-bottom: 0;
+}
+html.tb-rotated .dialog.ios-guide-bottom::after { display: none; }
 
-/* ── 맞대기 전송 (W-14): 두 폰을 똑바로 세워 마주 본다. 두 역할이 같은 배치다 ──
-   맨 위 메시지(작게), 그 아래 같은 크기의 정사각형 카메라 미리보기와 QR.
+/* ── 맞대기 전송 (W-14): 두 폰을 세로로 똑바로 세워 마주 본다. 언제나 세로(위아래) 배치 ──
+   맨 위 메시지(작게), 그 아래 같은 크기의 정사각형. 보내는 쪽 = 카메라 미리보기 · QR, 받는 쪽 = QR · 카메라 미리보기.
    --tx-rot: OS가 화면을 돌렸을 때만 되돌리는 각도 (transfer-view.js #layout) */
 .transfer {
   position: fixed;
@@ -473,8 +484,8 @@ button { font: inherit; color: inherit; }
 .tx-actions .btn { color: var(--text); }
 .tx-actions .btn-primary { color: var(--accent-text); }
 .tx-actions .btn-danger { color: var(--danger-text); }
-/* 미리보기와 QR: 같은 크기의 정사각형. 세로 화면은 위아래, 넓은 화면은 나란히
-   (.tx-pair가 크기 컨테이너이고, 방향은 안쪽 .tx-pair-inner가 바꾼다) */
+/* 미리보기와 QR: 같은 크기의 정사각형을 위아래로 (PC도 같다. 카메라가 머리 쪽이라 좌우 배치는 맞추기 어렵다).
+   .tx-pair가 크기 컨테이너다 */
 .tx-pair {
   flex: 1 1 auto;
   min-height: 0;
@@ -484,6 +495,7 @@ button { font: inherit; color: inherit; }
 .tx-pair-inner {
   --gap: 12px;
   --side: min(100cqw, calc((100cqh - var(--gap)) / 2));
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -491,12 +503,28 @@ button { font: inherit; color: inherit; }
   align-items: center;
   gap: var(--gap);
 }
-@container (min-aspect-ratio: 1 / 1) {
-  .tx-pair-inner {
-    --side: min(100cqh, calc((100cqw - var(--gap)) / 2));
-    flex-direction: row;
-  }
+.transfer.tx-receiver .tx-qr-zone { order: -1; } /* 받는 쪽은 QR이 위 */
+/* 정체 중에는 두 정사각형 사이를 벌려 맞춤 안내가 QR을 가리지 않게 한다 (QR은 계속 읽혀야 이어서 진행된다) */
+.transfer.tx-stalled .tx-pair-inner { --gap: 96px; }
+/* 맞춤 안내: 두 정사각형 경계(= 가운데) 위에 겹친다 */
+.tx-align {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  width: min(320px, 90%);
+  max-height: 88px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(240, 160, 32, .95);
+  color: #1b1200;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
 }
+.tx-align p { margin: 0; }
+.tx-align-text { font-size: 1.15rem; font-weight: 800; }
+.tx-align-sub { margin-top: 4px !important; font-size: .9rem; }
 .tx-cam-zone, .tx-qr-zone {
   width: var(--side);
   height: var(--side);
