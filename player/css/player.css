@@ -432,8 +432,9 @@ button { font: inherit; color: inherit; }
   }
 }
 
-/* ── 맞대기 전송 (W-14): 기기에 고정된 세로 3단. 기기 위(카메라) = 미리보기, 가운데 = 상태, 아래 = QR ──
-   --tx-rot: 보내는 쪽 폰은 180°(거꾸로 들기), OS가 화면을 돌렸으면 그만큼 되돌린다 (transfer-view.js #layout) */
+/* ── 맞대기 전송 (W-14): 두 폰을 똑바로 세워 마주 본다. 두 역할이 같은 배치다 ──
+   맨 위 메시지(작게), 그 아래 같은 크기의 정사각형 카메라 미리보기와 QR.
+   --tx-rot: OS가 화면을 돌렸을 때만 되돌리는 각도 (transfer-view.js #layout) */
 .transfer {
   position: fixed;
   inset: 0;
@@ -454,55 +455,60 @@ button { font: inherit; color: inherit; }
   transform: translate(-50%, -50%) rotate(var(--tx-rot, 0deg));
 }
 .transfer.tx-sideways .tx-stage { width: 100dvh; height: 100vw; }
-/* 미리보기: 카메라 바로 아래 가운데. 상대 QR을 이 위치에 맞추면 된다 */
-.tx-cam-zone {
-  flex: 0 0 26%;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: max(12px, env(safe-area-inset-top)) 12px 6px;
-}
-.tx-preview {
-  height: 100%;
-  max-width: 70%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  transform: scaleX(-1);
-  opacity: .7;
-  border-radius: 10px;
-  background: #222;
-}
-/* 상태: 카메라와 QR 사이 */
+/* 메시지: 맨 위, 미리보기·QR을 가리지 않게 작게 */
 .tx-mid {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 4px;
+  padding: max(10px, env(safe-area-inset-top)) 16px 6px;
   text-align: center;
 }
-.tx-headline { margin: 0; font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
-.tx-sub { margin: 0; color: #b8b8c2; line-height: 1.45; overflow-wrap: anywhere; }
+.tx-headline { margin: 0; font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+.tx-sub { margin: 0; color: #b8b8c2; font-size: .85rem; line-height: 1.4; overflow-wrap: anywhere; }
 .tx-sub:empty { display: none; }
-.tx-progress { width: min(320px, 100%); height: 10px; }
+.tx-progress { width: min(320px, 100%); height: 8px; }
 .tx-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .tx-actions .btn { color: var(--text); }
 .tx-actions .btn-primary { color: var(--accent-text); }
 .tx-actions .btn-danger { color: var(--danger-text); }
-/* QR: 남은 공간 가운데. 흰 바탕이 조용한 영역 역할도 한다 */
-.tx-qr-zone {
+/* 미리보기와 QR: 같은 크기의 정사각형. 세로 화면은 위아래, 넓은 화면은 나란히
+   (.tx-pair가 크기 컨테이너이고, 방향은 안쪽 .tx-pair-inner가 바꾼다) */
+.tx-pair {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   padding: 12px 12px max(12px, env(safe-area-inset-bottom));
-  background: #fff;
   container-type: size;
 }
-.tx-qr { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); image-rendering: pixelated; }
+.tx-pair-inner {
+  --gap: 12px;
+  --side: min(100cqw, calc((100cqh - var(--gap)) / 2));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--gap);
+}
+@container (min-aspect-ratio: 1 / 1) {
+  .tx-pair-inner {
+    --side: min(100cqh, calc((100cqw - var(--gap)) / 2));
+    flex-direction: row;
+  }
+}
+.tx-cam-zone, .tx-qr-zone {
+  width: var(--side);
+  height: var(--side);
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.tx-cam-zone { background: #222; }
+.tx-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: .8; }
+/* QR: 흰 바탕이 조용한 영역 역할도 한다 */
+.tx-qr-zone { display: flex; justify-content: center; align-items: center; padding: 4%; background: #fff; }
+.tx-qr { width: 100%; height: 100%; image-rendering: pixelated; }
 .tx-intro {
   position: absolute;
   inset: 0;

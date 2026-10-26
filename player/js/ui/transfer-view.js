@@ -1,8 +1,7 @@
 // 맞대기 전송 화면 (F-05, W-14, W-15)
-//   배치는 기기에 고정한다: 물리 카메라 쪽(기기 위) = 카메라 미리보기, 가운데 = 상태, 반대쪽 = QR.
-//   휴대 기기의 보내는 쪽은 폰을 거꾸로 들므로 화면 전체를 180° 돌려 그린다
-//   (거꾸로 든 사람에게는 위 QR · 아래 카메라로 보이고, 실제 카메라는 상대의 QR과 마주한다).
-//   PC는 화면을 뒤집을 수 없으므로 돌리지 않는다(상대 폰이 거꾸로 든다).
+//   기본 자세: 두 폰을 테이블에 똑바로 세워 화면끼리 마주 보게 둔다. 각 카메라가 상대 화면 전체를 본다.
+//   보내는 쪽과 받는 쪽이 같은 배치다: 맨 위 메시지, 그 아래 같은 크기의 카메라 미리보기와 QR.
+//   회전 센서로 배치를 고르지 않는다. OS가 화면을 돌렸을 때만 그만큼 되돌려 기기에 고정한다.
 //   맞댄 뒤에는 버튼을 누를 수 없으므로 짝짓기·키 교환·전송 시작은 자동이다.
 //   앱이 제공한 이름은 textContent로만 넣는다.
 
@@ -31,17 +30,12 @@ function peerAppName(info) {
   return info ? clean(info.name, NAME_MAX) : '';
 }
 
-/** 손에 들고 뒤집을 수 있는 기기 (폰·태블릿). PC는 화면을 뒤집을 수 없다 */
-function isHandheld() {
-  return matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
-}
-
-/** 처음 3초 안내 (W-14). 보내는 쪽 폰은 화면이 180° 돌아가 있으므로 뒤집어 들라고 알린다 */
-function introText(role) {
-  if (!isHandheld()) return '친구가 폰을 거꾸로 들고, 웹캠과 화면 아래의 QR이 폰과 마주 보게 해 주세요.';
-  return role === ROLE.SENDER
-    ? '보내는 쪽: 폰을 위아래로 뒤집어 들어 주세요.'
-    : '받는 쪽: 폰을 똑바로 들고, 뒤집어 든 친구 폰과 화면을 마주 대 주세요.';
+/** 처음 3초 안내 (W-14). PC(터치 없음)는 폰을 웹캠 앞에 세운다 */
+function introText() {
+  const handheld = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+  return handheld
+    ? '두 폰을 테이블에 똑바로 세워, 화면끼리 마주 보게 15–25cm 거리에 두세요.'
+    : '친구 폰을 똑바로 세워, 화면이 웹캠을 향하게 15–25cm 거리에 두세요.';
 }
 
 function deviceName() {
@@ -109,17 +103,20 @@ class TransferView {
     this.#sub = h('p', { class: 'tx-sub' });
     this.#progress = h('progress', { class: 'tx-progress', max: '1', value: '0', hidden: true });
     this.#actions = h('div', { class: 'tx-actions' });
-    // 안내는 돌리지 않고 그린다 (뒤집기 전에 읽으므로)
     this.#intro = h('div', { class: 'tx-intro', role: 'note' }, [
-      h('p', { class: 'tx-intro-art', 'aria-hidden': 'true', text: '📱 ⇅ 📱' }),
-      h('p', { text: introText(o.role) }),
-      h('p', { class: 'tx-intro-sub', text: '화면끼리 마주 보게 15–25cm 거리에서, 카메라와 QR이 서로 겹치게 들어 주세요. 화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
+      h('p', { class: 'tx-intro-art', 'aria-hidden': 'true', text: '📱 ⇄ 📱' }),
+      h('p', { text: introText() }),
+      h('p', { class: 'tx-intro-sub', text: '화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
     ]);
-    // 기기 위(카메라) → 아래 순서: 미리보기 · 상태 · QR
+    // 맨 위 메시지(작게), 그 아래 같은 크기의 미리보기와 QR (세로는 위아래, 넓은 화면은 나란히)
     this.#stage = h('div', { class: 'tx-stage' }, [
-      h('div', { class: 'tx-cam-zone' }, [this.#video]),
       h('div', { class: 'tx-mid' }, [this.#headline, this.#sub, this.#progress, this.#actions]),
-      h('div', { class: 'tx-qr-zone' }, [this.#canvas]),
+      h('div', { class: 'tx-pair' }, [
+        h('div', { class: 'tx-pair-inner' }, [
+          h('div', { class: 'tx-cam-zone' }, [this.#video]),
+          h('div', { class: 'tx-qr-zone' }, [this.#canvas]),
+        ]),
+      ]),
     ]);
     this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
       this.#stage,
@@ -199,10 +196,9 @@ class TransferView {
     this.#render();
   }
 
-  /** 배치를 기기에 고정한다: (보내는 쪽 폰이면 180°) − (OS가 돌린 화면 각도) */
+  /** 배치를 기기에 고정한다: OS가 화면을 돌렸으면 그만큼 되돌린다 */
   #layout() {
-    const flip = this.#o.role === ROLE.SENDER && isHandheld() ? 180 : 0;
-    const rot = (((flip - screenAngle()) % 360) + 360) % 360;
+    const rot = (360 - screenAngle()) % 360;
     this.#root.style.setProperty('--tx-rot', `${rot}deg`);
     this.#root.classList.toggle('tx-sideways', rot % 180 !== 0);
     this.#link?.invalidate();
@@ -244,7 +240,7 @@ class TransferView {
         if (s.roleConflict) {
           this.#setStatus('⚠️ 상대도 같은 역할이에요', '한 명은 [전송하기], 다른 한 명은 [QR로 받기]를 선택하세요.');
         } else {
-          this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르면 카메라와 QR이 겹치게 맞대 주세요.');
+          this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르면 두 폰을 세워 화면끼리 마주 보게 해 주세요.');
         }
         this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
