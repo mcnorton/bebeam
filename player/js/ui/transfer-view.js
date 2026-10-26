@@ -1,12 +1,15 @@
 // 맞대기 전송 화면 (F-05, W-14, W-15)
-//   카메라에 가까운 절반은 미리보기·상태, 먼 절반은 QR. 송신과 수신이 같은 화면을 쓴다.
+//   배치는 기기에 고정한다: 물리 카메라 쪽(기기 위) = 카메라 미리보기, 가운데 = 상태, 반대쪽 = QR.
+//   휴대 기기의 보내는 쪽은 폰을 거꾸로 들므로 화면 전체를 180° 돌려 그린다
+//   (거꾸로 든 사람에게는 위 QR · 아래 카메라로 보이고, 실제 카메라는 상대의 QR과 마주한다).
+//   PC는 화면을 뒤집을 수 없으므로 돌리지 않는다(상대 폰이 거꾸로 든다).
+//   맞댄 뒤에는 버튼을 누를 수 없으므로 짝짓기·키 교환·전송 시작은 자동이다.
 //   앱이 제공한 이름은 textContent로만 넣는다.
 
 import { TransferSession, ROLE, STATE, CANCEL_REASON } from '../transfer/session.js';
-import { OpticalLink, cameraErrorMessage, cameraSide } from '../transfer/link.js';
+import { OpticalLink, cameraErrorMessage, screenAngle } from '../transfer/link.js';
 import { packApp, installReceived, estimateSeconds, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
-import { formatBytes } from '../installer/install.js';
-import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
+import { clean, NAME_MAX } from '../installer/meta.js';
 import { h, objectParticle } from './dialogs.js';
 
 const INTRO_MS = 3000;
@@ -26,6 +29,19 @@ const FAIL_TEXT = {
 /** 상대가 보낸 이름은 C-5와 같이 다듬어 보여준다 (길이, 양방향 제어·폭 없는 문자) */
 function peerAppName(info) {
   return info ? clean(info.name, NAME_MAX) : '';
+}
+
+/** 손에 들고 뒤집을 수 있는 기기 (폰·태블릿). PC는 화면을 뒤집을 수 없다 */
+function isHandheld() {
+  return matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+}
+
+/** 처음 3초 안내 (W-14). 보내는 쪽 폰은 화면이 180° 돌아가 있으므로 뒤집어 들라고 알린다 */
+function introText(role) {
+  if (!isHandheld()) return '친구가 폰을 거꾸로 들고, 웹캠과 화면 아래의 QR이 폰과 마주 보게 해 주세요.';
+  return role === ROLE.SENDER
+    ? '보내는 쪽: 폰을 위아래로 뒤집어 들어 주세요.'
+    : '받는 쪽: 폰을 똑바로 들고, 뒤집어 든 친구 폰과 화면을 마주 대 주세요.';
 }
 
 function deviceName() {
@@ -61,7 +77,7 @@ class TransferView {
   #headline;
   #sub;
   #progress;
-  #review;
+  #stage;
   #actions;
   #intro;
   #session = null;
@@ -72,6 +88,7 @@ class TransferView {
   #installed = null;
   #installError = null;
   #installing = false;
+  #accepted = false;
   #lingerTimer = 0;
   #actionsKey = '';
   #prevFocus = null;
@@ -91,19 +108,21 @@ class TransferView {
     this.#headline = h('p', { class: 'tx-headline', 'aria-live': 'polite' });
     this.#sub = h('p', { class: 'tx-sub' });
     this.#progress = h('progress', { class: 'tx-progress', max: '1', value: '0', hidden: true });
-    this.#review = h('div', { class: 'tx-review', hidden: true });
     this.#actions = h('div', { class: 'tx-actions' });
+    // 안내는 돌리지 않고 그린다 (뒤집기 전에 읽으므로)
     this.#intro = h('div', { class: 'tx-intro', role: 'note' }, [
       h('p', { class: 'tx-intro-art', 'aria-hidden': 'true', text: '📱 ⇅ 📱' }),
-      h('p', { text: '한 명은 폰을 거꾸로 들고, 화면끼리 마주 보게 15–25cm 거리에서 들어 주세요.' }),
-      h('p', { class: 'tx-intro-sub', text: '화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
+      h('p', { text: introText(o.role) }),
+      h('p', { class: 'tx-intro-sub', text: '화면끼리 마주 보게 15–25cm 거리에서, 카메라와 QR이 서로 겹치게 들어 주세요. 화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
+    ]);
+    // 기기 위(카메라) → 아래 순서: 미리보기 · 상태 · QR
+    this.#stage = h('div', { class: 'tx-stage' }, [
+      h('div', { class: 'tx-cam-zone' }, [this.#video]),
+      h('div', { class: 'tx-mid' }, [this.#headline, this.#sub, this.#progress, this.#actions]),
+      h('div', { class: 'tx-qr-zone' }, [this.#canvas]),
     ]);
     this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
-      h('div', { class: 'tx-status-half' }, [
-        this.#video,
-        h('div', { class: 'tx-status' }, [this.#headline, this.#sub, this.#progress, this.#review, this.#actions]),
-      ]),
-      h('div', { class: 'tx-qr-half' }, [this.#canvas]),
+      this.#stage,
       this.#intro,
     ]);
   }
@@ -129,6 +148,7 @@ class TransferView {
 
   /** 세션과 링크를 (다시) 만든다 */
   async #begin() {
+    this.#accepted = false;
     this.#installed = null;
     this.#installError = null;
     this.#installing = false;
@@ -179,9 +199,12 @@ class TransferView {
     this.#render();
   }
 
+  /** 배치를 기기에 고정한다: (보내는 쪽 폰이면 180°) − (OS가 돌린 화면 각도) */
   #layout() {
-    const side = cameraSide();
-    this.#root.className = `transfer cam-${side}`;
+    const flip = this.#o.role === ROLE.SENDER && isHandheld() ? 180 : 0;
+    const rot = (((flip - screenAngle()) % 360) + 360) % 360;
+    this.#root.style.setProperty('--tx-rot', `${rot}deg`);
+    this.#root.classList.toggle('tx-sideways', rot % 180 !== 0);
     this.#link?.invalidate();
   }
 
@@ -214,7 +237,6 @@ class TransferView {
 
     this.#progress.hidden = !transferring && s.state !== STATE.VERIFYING;
     this.#progress.value = sum.progress;
-    this.#review.hidden = !(s.state === STATE.REVIEW);
 
     switch (s.state) {
       case STATE.ADVERTISING:
@@ -222,7 +244,7 @@ class TransferView {
         if (s.roleConflict) {
           this.#setStatus('⚠️ 상대도 같은 역할이에요', '한 명은 [전송하기], 다른 한 명은 [QR로 받기]를 선택하세요.');
         } else {
-          this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르고 화면을 마주 보게 해 주세요.');
+          this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르면 카메라와 QR이 겹치게 맞대 주세요.');
         }
         this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
@@ -231,13 +253,17 @@ class TransferView {
         this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
       case STATE.OFFERING:
-        this.#setStatus(sum.stalled ? STALL : '⏳ 친구의 수락을 기다리는 중', code);
+        this.#setStatus(sum.stalled ? STALL : '🔐 연결하는 중…', code);
         this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
       case STATE.REVIEW:
-        this.#setStatus(`🔗 ${code}`, '받을 앱을 확인하세요.');
-        this.#renderReview(s);
-        this.#setActions([]);
+        // 맞댄 상태에서는 버튼을 누를 수 없으므로 앱 정보를 받으면 바로 시작한다
+        if (!this.#accepted) {
+          this.#accepted = true;
+          s.accept();
+        }
+        this.#setStatus(`🔗 ${code}`, name);
+        this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
       case STATE.SENDING:
       case STATE.RECEIVING: {
@@ -246,7 +272,9 @@ class TransferView {
         const speed = sum.bytesPerSec ? `${(sum.bytesPerSec / 1024).toFixed(1)} KB/s` : '';
         const eta = sum.etaSec != null ? `남은 시간 ${formatEstimate(sum.etaSec).replace('약 ', '')}` : '';
         const awake = this.#link?.wakeLockSupported ? '' : '화면이 꺼지지 않게 해 주세요.';
-        this.#setStatus(head, [speed, eta, awake].filter(Boolean).join(' · '));
+        // 큰 앱은 받는 쪽에 예상 시간을 알린다 (SPEC F-05 규칙 10)
+        const big = !sender && s.info?.cipherSize > TRANSFER_WARN && !sum.etaSec ? `큰 앱이라 ${formatEstimate(estimateSeconds(s.info.cipherSize))} 걸려요` : '';
+        this.#setStatus(head, [speed, eta, big, awake].filter(Boolean).join(' · '));
         this.#setActions([['취소', () => this.#cancelOrClose()]]);
         return;
       }
@@ -273,28 +301,6 @@ class TransferView {
       }
       default:
     }
-  }
-
-  #renderReview(s) {
-    if (this.#review.dataset.ready) return;
-    this.#review.dataset.ready = '1';
-    const info = s.info;
-    const secs = estimateSeconds(info.cipherSize);
-    const big = info.cipherSize > TRANSFER_WARN;
-    const start = h('button', { type: 'button', class: 'btn btn-primary', text: '전송 시작' });
-    const reject = h('button', { type: 'button', class: 'btn', text: '거절' });
-    start.addEventListener('click', () => {
-      start.disabled = true;
-      s.accept();
-    });
-    reject.addEventListener('click', () => this.#cancelOrClose());
-    this.#review.replaceChildren(
-      h('p', { class: 'tx-review-name', text: peerAppName(info) || DEFAULT_NAME }),
-      h('p', { class: 'tx-review-meta', text: `파일 ${info.fileCount}개 · ${formatBytes(info.plainSize)}` }),
-      h('p', { class: `tx-review-eta${big ? ' warn' : ''}`, text: `${formatEstimate(secs)} 소요 예상${big ? ' (큰 앱이라 오래 걸려요)' : ''}` }),
-      h('div', { class: 'tx-actions' }, [reject, start]),
-    );
-    start.focus();
   }
 
   async #onReceived(s) {
@@ -358,8 +364,6 @@ class TransferView {
 
   async #retry() {
     this.#teardown();
-    this.#review.dataset.ready = '';
-    this.#review.replaceChildren();
     this.#actionsKey = '';
     await this.#begin();
   }
