@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <!-- CSP meta를 두지 않는다: srcdoc 앱 iframe이 셸의 CSP를 상속하기 때문 (ARCHITECTURE §4.4) -->
+  <title>Toybox</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c21" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="css/player.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <div class="shell" id="shell">
+    <header class="app-header">
+      <h1 class="brand"><span aria-hidden="true">🧸</span> Toybox</h1>
+    </header>
+
+    <div class="install-banner" id="install-banner" role="region" aria-label="설치 안내" hidden></div>
+
+    <section class="viewer" id="viewer" aria-label="뷰어">
+      <p class="viewer-hint" id="viewer-hint">
+        <span class="only-landscape">왼쪽</span><span class="only-portrait">아래</span> 목록에서 앱을 선택하세요
+      </p>
+    </section>
+
+    <section class="library" aria-label="앱 목록">
+      <ul class="app-list" id="app-list"></ul>
+      <p class="empty" id="empty" hidden>아직 앱이 없어요. [＋ 앱 추가]로 시작하세요.</p>
+      <div class="library-footer">
+        <button type="button" class="add-button" id="add-button">＋ 앱 추가</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="notice" id="notice" role="alert" hidden></div>
+</body>
+</html>
