@@ -15,8 +15,6 @@
   <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <!-- 플레이어는 항상 가로. 세로로 든 휴대 기기는 이 프레임을 90° 돌려 그린다 (ui/frame.js) -->
-  <div class="frame" id="frame">
   <div class="shell" id="shell">
     <header class="app-header">
       <h1 class="brand"><span aria-hidden="true">🧸</span> Toybox</h1>
@@ -26,7 +24,7 @@
 
     <section class="viewer" id="viewer" aria-label="뷰어">
       <p class="viewer-hint" id="viewer-hint">
-        왼쪽 목록에서 앱을 선택하세요
+        <span class="only-landscape">왼쪽</span><span class="only-portrait">아래</span> 목록에서 앱을 선택하세요
       </p>
     </section>
 
@@ -40,6 +38,5 @@
   </div>
 
   <div class="notice" id="notice" role="alert" hidden></div>
-  </div>
 </body>
 </html>

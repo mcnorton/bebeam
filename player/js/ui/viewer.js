@@ -3,7 +3,6 @@
 //   실행: requestFullscreen(미지원이면 CSS 전체화면) → 목록·헤더 숨김 → sandbox iframe 부팅 → [X]
 //   종료 확인: [X], Esc/전체화면 해제, Android 뒤로가기(history 가드)
 
-import { lockOrientation } from './frame.js';
 import { loadForRun, applyStorageBatch, touchLastRun, savePlan } from '../db.js';
 import { AppRun, preflight } from '../runtime/host.js';
 import { replan } from '../installer/install.js';
@@ -211,7 +210,6 @@ export class Viewer {
       } catch {}
     }
     this.#setCssFullscreen(false);
-    lockOrientation('landscape');
     if (history.state?.[HISTORY_KEY]) history.back();
     this.#store.setScreen('home');
     this.render(this.#store.state.apps.find((a) => a.id === id) ?? this.#store.selectedApp);
@@ -230,8 +228,10 @@ export class Viewer {
       try {
         await request.call(el, { navigationUI: 'hide' });
         this.#setCssFullscreen(false);
-        // 앱은 자유롭게 회전 (SPEC F-04 규칙 3, 지원 기기만)
-        lockOrientation('any');
+        // 회전 고정 풀기 (지원 기기만)
+        try {
+          screen.orientation?.unlock?.();
+        } catch {}
         return;
       } catch {
         // 제스처가 없거나 거부됨 → CSS로

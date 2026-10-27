@@ -22,14 +22,11 @@ export function cameraErrorMessage(err) {
   }
 }
 
-/**
- * OS가 화면(viewport)을 기기 기본 방향에서 돌린 각도 0/90/180/270.
- * 전송 화면은 배치를 기기(카메라 위치)에 고정하므로, OS가 화면을 돌렸으면 그만큼 되돌려 그린다.
- */
-export function screenAngle() {
+/** 화면 회전을 고려한 물리적 카메라 위치 (§5.1). PC는 위쪽 웹캠으로 본다 */
+export function cameraSide() {
   let angle = screen.orientation?.angle;
   if (typeof angle !== 'number' && typeof window.orientation === 'number') angle = (window.orientation + 360) % 360;
-  return [0, 90, 180, 270].includes(angle) ? angle : 0;
+  return { 0: 'top', 90: 'left', 180: 'bottom', 270: 'right' }[angle ?? 0] ?? 'top';
 }
 
 export class OpticalLink {
