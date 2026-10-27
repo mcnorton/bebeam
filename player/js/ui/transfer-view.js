@@ -120,7 +120,9 @@ class TransferView {
       h('p', { class: 'tx-intro-sub', text: '같은 Wi-Fi면 네트워크로 빠르게 보내요.' }),
     ]);
     this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
-      h('div', { class: 'tx-cam-half' }, [h('div', { class: 'tx-square tx-cam-sq' }, [this.#video, this.#panel])]),
+      // 미리보기는 카메라 쪽 절반 전체를 채우고, 가운데 가이드(QR 칸과 같은 크기·위치)가 친구 QR을 둘 자리를 보여준다.
+      // 디코더는 미리보기와 관계없이 카메라 영상 전체를 읽는다
+      h('div', { class: 'tx-cam-half' }, [this.#video, h('div', { class: 'tx-square tx-cam-sq' }, [this.#panel])]),
       h('div', { class: 'tx-band' }, [this.#headline, this.#bar, this.#sub]),
       h('div', { class: 'tx-qr-half' }, [h('div', { class: 'tx-square tx-qr-sq' }, [this.#canvas])]),
       close,
