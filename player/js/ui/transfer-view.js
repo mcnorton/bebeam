@@ -4,8 +4,9 @@
 //   구분선이 진행 막대이고, 그 위에 안내(headline), 아래에 진행률·오류(sub)를 둔다.
 //   앱이 제공한 이름은 textContent로만 넣는다.
 
-import { TransferSession, ROLE, STATE, CANCEL_REASON } from '../transfer/session.js';
+import { TransferSession, ROLE, STATE, CANCEL_REASON, RTC } from '../transfer/session.js';
 import { OpticalLink, cameraErrorMessage, cameraSide } from '../transfer/link.js';
+import { RtcLink } from '../transfer/rtc-link.js';
 import { packApp, installReceived, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
 import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
 import { formatBytes } from '../installer/install.js';
@@ -77,6 +78,7 @@ class TransferView {
   #intro;
   #session = null;
   #link = null;
+  #rtc = null;
   #offer = null;
   #uiTimer = 0;
   #closing = false;
@@ -115,6 +117,7 @@ class TransferView {
       h('p', { text: '한 명은 폰을 거꾸로 들고, 화면끼리 마주 보게 15–25cm 거리에서 들어 주세요.' }),
       h('p', { text: '내 QR이 친구 화면의 카메라 칸에 겹치게 맞추면 돼요.' }),
       h('p', { class: 'tx-intro-sub', text: '화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
+      h('p', { class: 'tx-intro-sub', text: '같은 Wi-Fi면 네트워크로 빠르게 보내요.' }),
     ]);
     this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
       h('div', { class: 'tx-cam-half' }, [h('div', { class: 'tx-square tx-cam-sq' }, [this.#video, this.#panel])]),
@@ -179,6 +182,8 @@ class TransferView {
       offer: this.#offer ?? undefined,
       deviceName: deviceName(),
       onChange: () => this.#render(),
+      // 같은 내부망이면 QR과 함께 DataChannel로 보낸다. 묻지 않는다: 맞대어 짝지은 것이 동의다 (M5 D5.2)
+      rtc: this.#rtc = new RtcLink(),
     });
     try {
       await session.init();
@@ -308,11 +313,14 @@ class TransferView {
         if (sum.stalled) {
           this.#setStatus(`${PAUSED} · ${name}`, `${pct}% · ${STALL}`, true);
         } else {
-          const speed = sum.bytesPerSec ? `${(sum.bytesPerSec / 1024).toFixed(1)} KB/s` : '';
+          const kbs = sum.bytesPerSec / 1024;
+          const speed = !sum.bytesPerSec ? '' : kbs >= 1024 ? `${(kbs / 1024).toFixed(1)} MB/s` : `${kbs.toFixed(1)} KB/s`;
+          // 지금 경로 (M5): 내부망으로 보내는 중이면 ⚡, 내부망이 끊겨 QR로 이어 가면 📷. 처음부터 QR이면 표시하지 않는다
+          const path = sum.rtc === RTC.OPEN && !sum.rtcStalled ? '⚡ Wi-Fi' : s.rtcOpened ? '📷 QR로 계속' : '';
           const eta = sum.etaSec != null ? `남은 시간 ${formatEstimate(sum.etaSec).replace('약 ', '')}` : '';
-          const big = !sender && s.info?.cipherSize > TRANSFER_WARN ? '큰 앱이라 오래 걸려요' : '';
+          const big = !sender && s.info?.cipherSize > TRANSFER_WARN && !(sum.rtc === RTC.OPEN && !sum.rtcStalled) ? '큰 앱이라 오래 걸려요' : '';
           const awake = this.#link?.wakeLockSupported ? '' : '화면이 꺼지지 않게 해 주세요';
-          this.#setStatus(`${sender ? '📤' : '📥'} ‘${name}’ ${sender ? '보내는' : '받는'} 중`, [`${pct}%`, speed, eta, big, awake].filter(Boolean).join(' · '));
+          this.#setStatus(`${sender ? '📤' : '📥'} ‘${name}’ ${sender ? '보내는' : '받는'} 중`, [`${pct}%`, speed, eta, big, awake, path].filter(Boolean).join(' · '));
         }
         this.#setActions([]);
         return;
@@ -399,6 +407,7 @@ class TransferView {
     this.#link?.stopCamera();
     this.#lingerTimer = setTimeout(() => {
       this.#link?.stop();
+      this.#rtc?.close();
       clearInterval(this.#uiTimer);
     }, SENDER_LINGER_MS);
   }
@@ -435,6 +444,8 @@ class TransferView {
     this.#lingerTimer = 0;
     this.#link?.stop();
     this.#link = null;
+    this.#rtc?.close();
+    this.#rtc = null;
     this.#session = null;
   }
 

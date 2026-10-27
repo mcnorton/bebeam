@@ -20,6 +20,9 @@ export const TYPE = Object.freeze({
   DONE: 6,
   RESULT: 7,
   CANCEL: 8,
+  // 내부망 고속 전송(M5): 축소 SDP를 세션 키로 암호화해 QR로 교환한다. 이 타입을 모르는 이전 버전은 버린다
+  RTC_OFFER: 9,
+  RTC_ANSWER: 10,
 });
 
 const KNOWN_TYPES = new Set(Object.values(TYPE));

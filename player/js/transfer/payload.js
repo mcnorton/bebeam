@@ -1,6 +1,6 @@
 // 프레임 타입별 payload 직렬화/파싱 (ARCHITECTURE §5.3)
 //   평문: HELLO, DATA, ACK, CANCEL
-//   암호문: INFO, ACCEPT, DONE, RESULT → iv(12) ‖ AES-GCM 암호문(태그 16 포함). 내용은 crypto.js가 다룬다
+//   암호문: INFO, ACCEPT, DONE, RESULT, RTC_OFFER, RTC_ANSWER → iv(12) ‖ AES-GCM 암호문(태그 16 포함). 내용은 crypto.js가 다룬다
 // 파서는 예외를 던지지 않고 null을 돌려준다. 모든 길이를 상한과 비교한다.
 
 import { LIMITS } from '../installer/validate.js';
