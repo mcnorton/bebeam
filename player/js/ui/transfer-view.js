@@ -1,11 +1,12 @@
 // 맞대기 전송 화면 (F-05, W-14, W-15)
-//   카메라에 가까운 절반은 미리보기·상태, 먼 절반은 QR. 송신과 수신이 같은 화면을 쓴다.
+//   카메라에 가까운 절반은 스캔 카메라 칸, 먼 절반은 QR. 두 칸은 같은 크기로 구분선에 대칭이라
+//   한 폰을 거꾸로 들고 마주 보면 내 QR이 상대의 카메라 칸에 겹친다. 송신과 수신이 같은 화면을 쓴다.
+//   구분선이 진행 막대이고, 그 위에 안내(headline), 아래에 진행률·오류(sub)를 둔다.
 //   앱이 제공한 이름은 textContent로만 넣는다.
 
 import { TransferSession, ROLE, STATE, CANCEL_REASON } from '../transfer/session.js';
 import { OpticalLink, cameraErrorMessage, cameraSide } from '../transfer/link.js';
-import { packApp, installReceived, estimateSeconds, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
-import { formatBytes } from '../installer/install.js';
+import { packApp, installReceived, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
 import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
 import { h, objectParticle } from './dialogs.js';
 
@@ -60,8 +61,10 @@ class TransferView {
   #canvas;
   #headline;
   #sub;
-  #progress;
-  #review;
+  #bar;
+  #fill;
+  #panel;
+  #detail;
   #actions;
   #intro;
   #session = null;
@@ -74,6 +77,7 @@ class TransferView {
   #installing = false;
   #lingerTimer = 0;
   #actionsKey = '';
+  #accepted = false;
   #prevFocus = null;
   #shell = null;
   #onResize = () => this.#layout();
@@ -90,20 +94,24 @@ class TransferView {
     this.#canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드' });
     this.#headline = h('p', { class: 'tx-headline', 'aria-live': 'polite' });
     this.#sub = h('p', { class: 'tx-sub' });
-    this.#progress = h('progress', { class: 'tx-progress', max: '1', value: '0', hidden: true });
-    this.#review = h('div', { class: 'tx-review', hidden: true });
+    this.#fill = h('div', { class: 'tx-bar-fill' });
+    this.#bar = h('div', { class: 'tx-bar', role: 'progressbar', 'aria-label': '전송 진행률', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, [this.#fill]);
     this.#actions = h('div', { class: 'tx-actions' });
+    this.#detail = h('p', { class: 'tx-detail' });
+    this.#panel = h('div', { class: 'tx-panel', hidden: true }, [this.#detail, this.#actions]);
+    const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '취소', text: '✕' });
+    close.addEventListener('click', () => this.#cancelOrClose());
     this.#intro = h('div', { class: 'tx-intro', role: 'note' }, [
       h('p', { class: 'tx-intro-art', 'aria-hidden': 'true', text: '📱 ⇅ 📱' }),
       h('p', { text: '한 명은 폰을 거꾸로 들고, 화면끼리 마주 보게 15–25cm 거리에서 들어 주세요.' }),
+      h('p', { text: '내 QR이 친구 화면의 카메라 칸에 겹치게 맞추면 돼요.' }),
       h('p', { class: 'tx-intro-sub', text: '화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
     ]);
     this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
-      h('div', { class: 'tx-status-half' }, [
-        this.#video,
-        h('div', { class: 'tx-status' }, [this.#headline, this.#sub, this.#progress, this.#review, this.#actions]),
-      ]),
-      h('div', { class: 'tx-qr-half' }, [this.#canvas]),
+      h('div', { class: 'tx-cam-half' }, [h('div', { class: 'tx-square tx-cam-sq' }, [this.#video, this.#panel])]),
+      h('div', { class: 'tx-band' }, [this.#headline, this.#bar, this.#sub]),
+      h('div', { class: 'tx-qr-half' }, [h('div', { class: 'tx-square tx-qr-sq' }, [this.#canvas])]),
+      close,
       this.#intro,
     ]);
   }
@@ -134,15 +142,16 @@ class TransferView {
     this.#installing = false;
     clearTimeout(this.#lingerTimer);
     this.#setStatus('준비하는 중…');
-    this.#setActions([['취소', () => this.#close()]]);
+    this.#setProgress(null);
+    this.#setActions([]);
 
     const { role, db, appId } = this.#o;
     try {
       if (role === ROLE.SENDER) this.#offer ??= await packApp(db, appId);
     } catch (err) {
       console.error(err);
-      this.#setStatus('❌ 앱을 보낼 준비를 하지 못했어요', err.message);
-      this.#setActions([['닫기', () => this.#close(), 'primary']]);
+      this.#setStatus('❌ 앱을 보낼 준비를 하지 못했어요');
+      this.#setActions([['닫기', () => this.#close(), 'primary']], err.message);
       return;
     }
     if (this.#closing) return;
@@ -166,8 +175,8 @@ class TransferView {
       link.stop();
       if (this.#link !== link) return;
       this.#link = null;
-      this.#setStatus('📷 카메라를 쓸 수 없어요', cameraErrorMessage(err));
-      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']]);
+      this.#setStatus('📷 카메라를 쓸 수 없어요');
+      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']], cameraErrorMessage(err));
       return;
     }
     if (this.#closing || this.#link !== link) {
@@ -185,13 +194,30 @@ class TransferView {
     this.#link?.invalidate();
   }
 
-  #setStatus(headline, sub = '') {
+  /** 구분선 위 안내, 아래 진행률·오류. warn이면 아래 줄을 경고색으로 */
+  #setStatus(headline, sub = '', warn = false) {
     this.#headline.textContent = headline;
     this.#sub.textContent = sub;
+    this.#sub.classList.toggle('warn', warn);
   }
 
-  /** @param {[string, () => void, string?][]} list */
-  #setActions(list) {
+  /** @param {number | null} p 0–1, null이면 막대를 비운다 */
+  #setProgress(p) {
+    const pct = p == null ? 0 : Math.round(p * 100);
+    this.#fill.style.width = `${pct}%`;
+    this.#bar.setAttribute('aria-valuenow', String(pct));
+    this.#bar.classList.toggle('active', p != null);
+  }
+
+  /**
+   * 카메라가 꺼진 뒤의 버튼(다시 시도·닫기·바로 실행)은 카메라 칸 위에 띄운다. 취소는 모서리 ✕가 맡는다.
+   * 구분선 아래 두 줄에 다 들어가지 않는 설명(detail)도 버튼 위에 함께 둔다.
+   * @param {[string, () => void, string?][]} list
+   * @param {string} [detail]
+   */
+  #setActions(list, detail = '') {
+    this.#panel.hidden = list.length === 0;
+    this.#detail.textContent = detail;
     const key = list.map(([label, , kind]) => `${label}:${kind ?? ''}`).join('|');
     if (key === this.#actionsKey) return;
     this.#actionsKey = key;
@@ -200,6 +226,7 @@ class TransferView {
       b.addEventListener('click', fn);
       return b;
     }));
+    this.#actions.querySelector('.btn-primary')?.focus();
   }
 
   #render() {
@@ -207,54 +234,61 @@ class TransferView {
     if (!s || this.#closing) return;
     const sum = s.summary();
     const sender = s.role === ROLE.SENDER;
-    const name = sender ? this.#offer.name : peerAppName(s.info);
-    const code = s.sas ? `연결됨 · 확인 코드 ${s.sas}` : '';
-    const transferring = s.state === STATE.SENDING || s.state === STATE.RECEIVING;
-    const STALL = '📐 화면을 다시 맞대 주세요';
-
-    this.#progress.hidden = !transferring && s.state !== STATE.VERIFYING;
-    this.#progress.value = sum.progress;
-    this.#review.hidden = !(s.state === STATE.REVIEW);
+    const name = sender ? this.#offer.name : peerAppName(s.info) || DEFAULT_NAME;
+    const code = s.sas ? `확인 코드 ${s.sas}` : '';
+    const STALL = '📐 화면을 정확히 마주 보게 해 주세요';
+    const PAUSED = '⏸ 일시 중지';
 
     switch (s.state) {
       case STATE.ADVERTISING:
       case STATE.SCANNING:
+        this.#setProgress(null);
         if (s.roleConflict) {
-          this.#setStatus('⚠️ 상대도 같은 역할이에요', '한 명은 [전송하기], 다른 한 명은 [QR로 받기]를 선택하세요.');
+          this.#setStatus('⚠️ 상대도 같은 역할이에요', '한 명은 [전송하기], 다른 한 명은 [QR로 받기]를 선택하세요.', true);
         } else {
           this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르고 화면을 마주 보게 해 주세요.');
         }
-        this.#setActions([['취소', () => this.#cancelOrClose()]]);
+        this.#setActions([]);
         return;
       case STATE.PAIRED:
-        this.#setStatus(sum.stalled ? STALL : `🔗 ${code}`, sum.stalled ? code : '');
-        this.#setActions([['취소', () => this.#cancelOrClose()]]);
-        return;
       case STATE.OFFERING:
-        this.#setStatus(sum.stalled ? STALL : '⏳ 친구의 수락을 기다리는 중', code);
-        this.#setActions([['취소', () => this.#cancelOrClose()]]);
+        this.#setProgress(0);
+        this.#setStatus(sum.stalled ? PAUSED : `🔗 연결됨 · ${code}`, sum.stalled ? STALL : '곧 전송을 시작해요.', sum.stalled);
+        this.#setActions([]);
         return;
       case STATE.REVIEW:
-        this.#setStatus(`🔗 ${code}`, '받을 앱을 확인하세요.');
-        this.#renderReview(s);
+        // 암호를 주고받았으면 바로 받는다 ([전송 시작] 없음, SPEC F-05 규칙 3)
+        if (!this.#accepted) {
+          this.#accepted = true;
+          s.accept();
+        }
+        this.#setProgress(0);
+        this.#setStatus(`🔗 연결됨 · ${code}`, '곧 전송을 시작해요.');
         this.#setActions([]);
         return;
       case STATE.SENDING:
       case STATE.RECEIVING: {
         const pct = Math.floor(sum.progress * 100);
-        const head = sum.stalled ? STALL : `${sender ? '📤' : '📥'} ${name} ${sender ? '보내는' : '받는'} 중 ${pct}%`;
-        const speed = sum.bytesPerSec ? `${(sum.bytesPerSec / 1024).toFixed(1)} KB/s` : '';
-        const eta = sum.etaSec != null ? `남은 시간 ${formatEstimate(sum.etaSec).replace('약 ', '')}` : '';
-        const awake = this.#link?.wakeLockSupported ? '' : '화면이 꺼지지 않게 해 주세요.';
-        this.#setStatus(head, [speed, eta, awake].filter(Boolean).join(' · '));
-        this.#setActions([['취소', () => this.#cancelOrClose()]]);
+        this.#setProgress(sum.progress);
+        if (sum.stalled) {
+          this.#setStatus(`${PAUSED} · ${name}`, `${pct}% · ${STALL}`, true);
+        } else {
+          const speed = sum.bytesPerSec ? `${(sum.bytesPerSec / 1024).toFixed(1)} KB/s` : '';
+          const eta = sum.etaSec != null ? `남은 시간 ${formatEstimate(sum.etaSec).replace('약 ', '')}` : '';
+          const big = !sender && s.info?.cipherSize > TRANSFER_WARN ? '큰 앱이라 오래 걸려요' : '';
+          const awake = this.#link?.wakeLockSupported ? '' : '화면이 꺼지지 않게 해 주세요';
+          this.#setStatus(`${sender ? '📤' : '📥'} ‘${name}’ ${sender ? '보내는' : '받는'} 중`, [`${pct}%`, speed, eta, big, awake].filter(Boolean).join(' · '));
+        }
+        this.#setActions([]);
         return;
       }
       case STATE.VERIFYING:
-        this.#setStatus(sum.stalled ? STALL : '🔎 확인 중…', code);
-        this.#setActions([['취소', () => this.#cancelOrClose()]]);
+        this.#setProgress(1);
+        this.#setStatus(sum.stalled ? PAUSED : '🔎 확인 중…', sum.stalled ? STALL : '100%', sum.stalled);
+        this.#setActions([]);
         return;
       case STATE.DONE:
+        this.#setProgress(1);
         if (sender) {
           this.#setStatus('✅ 전송 성공!', '친구가 파일을 받았어요.');
           this.#setActions([['닫기', () => this.#close(), 'primary']]);
@@ -266,7 +300,8 @@ class TransferView {
       case STATE.FAILED: {
         if (s.failReason === 'local-cancel') return; // #cancelOrClose가 닫는다
         this.#link?.stopCamera();
-        this.#setStatus(FAIL_TEXT[s.failReason] ?? '❌ 전송하지 못했어요', s.failReason === 'timeout' ? '두 화면이 서로를 볼 수 있는지 확인해 주세요.' : '');
+        this.#setProgress(null);
+        this.#setStatus(FAIL_TEXT[s.failReason] ?? '❌ 전송하지 못했어요', s.failReason === 'timeout' ? '두 화면이 서로를 볼 수 있는지 확인해 주세요.' : '', true);
         this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']]);
         clearInterval(this.#uiTimer);
         return;
@@ -275,41 +310,19 @@ class TransferView {
     }
   }
 
-  #renderReview(s) {
-    if (this.#review.dataset.ready) return;
-    this.#review.dataset.ready = '1';
-    const info = s.info;
-    const secs = estimateSeconds(info.cipherSize);
-    const big = info.cipherSize > TRANSFER_WARN;
-    const start = h('button', { type: 'button', class: 'btn btn-primary', text: '전송 시작' });
-    const reject = h('button', { type: 'button', class: 'btn', text: '거절' });
-    start.addEventListener('click', () => {
-      start.disabled = true;
-      s.accept();
-    });
-    reject.addEventListener('click', () => this.#cancelOrClose());
-    this.#review.replaceChildren(
-      h('p', { class: 'tx-review-name', text: peerAppName(info) || DEFAULT_NAME }),
-      h('p', { class: 'tx-review-meta', text: `파일 ${info.fileCount}개 · ${formatBytes(info.plainSize)}` }),
-      h('p', { class: `tx-review-eta${big ? ' warn' : ''}`, text: `${formatEstimate(secs)} 소요 예상${big ? ' (큰 앱이라 오래 걸려요)' : ''}` }),
-      h('div', { class: 'tx-actions' }, [reject, start]),
-    );
-    start.focus();
-  }
-
   async #onReceived(s) {
     this.#link?.stopCamera();
     if (this.#installed) {
       // 확인창(W-06) 없이 설치하므로 실제 이름과 외부 리소스 경고(C-6)를 여기서 보여준다
       const ext = this.#installed.externalRefs ?? [];
-      const warn = ext.length ? ` ⚠️ 이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
-      this.#setStatus('✅ 설치 완료', `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.${warn}`);
-      this.#setActions([['닫기', () => this.#close()], ['바로 실행', () => this.#launch(), 'primary']]);
+      const warn = ext.length ? `⚠️ 이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
+      this.#setStatus('✅ 설치 완료', `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.`);
+      this.#setActions([['닫기', () => this.#close()], ['바로 실행', () => this.#launch(), 'primary']], warn);
       return;
     }
     if (this.#installError) {
-      this.#setStatus('❌ 설치할 수 없어요', this.#installError);
-      this.#setActions([['닫기', () => this.#close(), 'primary']]);
+      this.#setStatus('❌ 설치할 수 없어요');
+      this.#setActions([['닫기', () => this.#close(), 'primary']], this.#installError);
       return;
     }
     if (this.#installing) return;
@@ -358,8 +371,7 @@ class TransferView {
 
   async #retry() {
     this.#teardown();
-    this.#review.dataset.ready = '';
-    this.#review.replaceChildren();
+    this.#accepted = false;
     this.#actionsKey = '';
     await this.#begin();
   }

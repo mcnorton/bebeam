@@ -432,60 +432,117 @@ button { font: inherit; color: inherit; }
   }
 }
 
-/* ── 맞대기 전송 (W-14): 카메라 쪽 절반 = 미리보기·상태(어두움), 먼 쪽 절반 = QR(흰 바탕) ── */
+/* ── 맞대기 전송 (W-14): 카메라 쪽 절반 = 스캔 카메라 칸(어두움), 먼 쪽 절반 = QR(흰 바탕) ──
+   두 칸은 같은 크기로 가운데 띠(안내 · 진행 막대 · 진행률)를 사이에 두고 대칭이다.
+   한 폰을 거꾸로 들고 마주 보면 내 QR 칸이 상대의 카메라 칸에 겹친다. */
 .transfer {
+  --pad: 16px;
+  --band: 128px;   /* 위아래 배치의 가운데 띠 높이 */
+  --band-w: 168px; /* 좌우 배치의 가운데 띠 폭 */
+  --safe-y: max(env(safe-area-inset-top), env(safe-area-inset-bottom)); /* 대칭이 깨지지 않게 위아래를 같게 */
+  --safe-x: max(env(safe-area-inset-left), env(safe-area-inset-right));
+  --side: min(100vw - 2 * var(--safe-x) - 2 * var(--pad), (100dvh - 2 * var(--safe-y) - var(--band)) / 2 - 2 * var(--pad));
   position: fixed;
   inset: 0;
   z-index: 60;
   display: flex;
+  padding: var(--safe-y) var(--safe-x);
   background: #000;
   color: #ececf1;
 }
 .transfer.cam-top { flex-direction: column; }
 .transfer.cam-bottom { flex-direction: column-reverse; }
+.transfer.cam-left, .transfer.cam-right {
+  --side: min(100dvh - 2 * var(--safe-y) - 2 * var(--pad), (100vw - 2 * var(--safe-x) - var(--band-w)) / 2 - 2 * var(--pad));
+}
 .transfer.cam-left { flex-direction: row; }
 .transfer.cam-right { flex-direction: row-reverse; }
-.tx-status-half, .tx-qr-half { flex: 1 1 50%; min-width: 0; min-height: 0; display: flex; }
-.tx-status-half {
-  gap: 16px;
-  align-items: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-}
-.transfer.cam-left .tx-status-half, .transfer.cam-right .tx-status-half { flex-direction: column; justify-content: center; }
-.tx-preview {
-  width: 28%;
-  max-width: 160px;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  transform: scaleX(-1);
-  opacity: .6;
-  border-radius: 8px;
-  background: #222;
-}
 .transfer:focus { outline: none; } /* 열릴 때 컨테이너에 주는 포커스 (스크린 리더용) */
-.tx-status { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.tx-headline { margin: 0; font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; }
-.tx-sub { margin: 0; color: #b8b8c2; line-height: 1.45; overflow-wrap: anywhere; }
-.tx-sub:empty { display: none; }
-.tx-progress { width: 100%; height: 10px; }
-.tx-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tx-cam-half, .tx-qr-half { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.tx-qr-half { background: #fff; }
+.tx-square { position: relative; width: var(--side); height: var(--side); flex: none; }
+.tx-cam-sq { border-radius: 12px; outline: 2px solid rgba(255, 255, 255, .35); outline-offset: 4px; background: #16161b; }
+.tx-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: .7; border-radius: 12px; display: block; }
+.tx-qr-sq { border-radius: 12px; outline: 2px solid rgba(0, 0, 0, .14); outline-offset: 4px; }
+.tx-qr { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+/* 가운데 띠: 위 = 안내, 가운데 = 진행 막대(두 절반의 구분선), 아래 = 진행률·오류. 기기 방향과 관계없이 화면 위아래 순서 */
+.tx-band {
+  flex: 0 0 var(--band);
+  display: grid;
+  grid-template-rows: 1fr 6px 1fr;
+  text-align: center;
+}
+.tx-headline, .tx-sub {
+  margin: 0;
+  padding: 0 16px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.tx-headline { align-items: flex-end; padding-bottom: 10px; font-size: 1.05rem; font-weight: 700; }
+.tx-sub { align-items: flex-start; padding-top: 10px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+/* 띠의 위 절반은 위쪽 절반의 바탕, 아래 절반은 아래쪽 절반의 바탕을 잇는다 */
+.transfer.cam-top .tx-headline, .transfer.cam-bottom .tx-sub { background: #000; color: #ececf1; }
+.transfer.cam-top .tx-sub, .transfer.cam-bottom .tx-headline { background: #fff; color: #23232b; }
+.transfer.cam-top .tx-sub { box-shadow: 0 1px 0 #fff; }        /* 흰 절반과의 경계 이음새를 덮는다 */
+.transfer.cam-bottom .tx-headline { box-shadow: 0 -1px 0 #fff; }
+.transfer.cam-top .tx-sub.warn { color: #a34a00; font-weight: 600; }
+.transfer.cam-bottom .tx-sub.warn { color: #f0b040; font-weight: 600; }
+.transfer.cam-left .tx-band, .transfer.cam-right .tx-band { flex: 0 0 var(--band-w); grid-template-rows: auto 6px auto; align-content: center; background: #000; }
+.transfer.cam-left .tx-sub, .transfer.cam-right .tx-sub { color: #b8b8c2; }
+.transfer.cam-left .tx-sub.warn, .transfer.cam-right .tx-sub.warn { color: #f0b040; font-weight: 600; }
+
+.tx-bar { position: relative; background: #2c2c35; overflow: visible; }
+.tx-bar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #3b7bff, #5fd4ff);
+  box-shadow: 0 0 10px rgba(80, 170, 255, .7);
+  transition: width .3s ease-out;
+}
+.tx-bar:not(.active) .tx-bar-fill { box-shadow: none; }
+
+/* 카메라가 꺼진 뒤의 버튼은 카메라 칸 위에 띄운다 */
+.tx-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 12px;
+  background: rgba(10, 10, 14, .78);
+  text-align: center;
+}
+.tx-detail { margin: 0; color: #d6d6de; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
+.tx-detail:empty { display: none; }
+.tx-panel[hidden] { display: none; }
+.tx-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .tx-actions .btn { color: var(--text); }
 .tx-actions .btn-primary { color: var(--accent-text); }
 .tx-actions .btn-danger { color: var(--danger-text); }
-.tx-review { padding: 12px; border-radius: 12px; background: #1c1c21; display: flex; flex-direction: column; gap: 6px; }
-.tx-review p { margin: 0; overflow-wrap: anywhere; }
-.tx-review-name { font-weight: 700; }
-.tx-review-meta, .tx-review-eta { color: #b8b8c2; font-size: .9rem; }
-.tx-review-eta.warn { color: #f0b040; font-weight: 600; }
-.tx-review .tx-actions { margin-top: 6px; }
-.tx-qr-half {
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  padding: 12px;
-  container-type: size;
+.tx-close {
+  position: absolute;
+  top: calc(var(--safe-y) + 10px);
+  left: calc(var(--safe-x) + 10px);
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .35);
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
 }
-.tx-qr { width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); image-rendering: pixelated; }
+.tx-close:focus-visible { outline: 2px solid #5fd4ff; outline-offset: 2px; }
 .tx-intro {
   position: absolute;
   inset: 0;

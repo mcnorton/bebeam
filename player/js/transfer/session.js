@@ -1,6 +1,6 @@
 // QR 맞대기 전송 세션 (ARCHITECTURE §5.3–§5.5, SPEC F-05). DOM 비의존 순수 로직.
 //   송신: ADVERTISING → PAIRED → OFFERING(INFO ⟳) → SENDING(DATA 순환) → VERIFYING → DONE | FAILED
-//   수신: SCANNING → PAIRED → REVIEW(INFO 확인, [전송 시작] 대기) → RECEIVING(ACCEPT ⟳ → ACK) → VERIFYING → DONE | FAILED
+//   수신: SCANNING → PAIRED → REVIEW(INFO 확인 → 화면이 자동 수락) → RECEIVING(ACCEPT ⟳ → ACK) → VERIFYING → DONE | FAILED
 //
 // 화면은 상태를 보여준다: nextFrame()은 지금 상태에 맞는 프레임을 돌려주고(⟳), 상대가 다음 단계로
 // 넘어간 증거를 볼 때까지 같은 종류를 반복한다. 카메라가 읽은 프레임은 onFrame()으로 넣는다.
@@ -33,7 +33,7 @@ export const STATE = Object.freeze({
   SCANNING: 'scanning', // 수신: HELLO 표시
   PAIRED: 'paired', // 짝 확정, 키 유도 중
   OFFERING: 'offering', // 송신: INFO 표시, ACCEPT 대기
-  REVIEW: 'review', // 수신: 앱 정보 확인, [전송 시작] 대기
+  REVIEW: 'review', // 수신: 앱 정보 확인, 수락 대기 (화면이 바로 accept()를 부른다)
   SENDING: 'sending',
   RECEIVING: 'receiving',
   VERIFYING: 'verifying',
@@ -168,7 +168,7 @@ export class TransferSession {
     return this.state === STATE.DONE || this.state === STATE.FAILED;
   }
 
-  /** 수신자: [전송 시작] (REVIEW에서만, SPEC F-05 규칙 3) */
+  /** 수신자: 수락 (REVIEW에서만, SPEC F-05 규칙 3) */
   accept() {
     if (this.role !== ROLE.RECEIVER || this.state !== STATE.REVIEW) return Promise.resolve(false);
     this.#enqueue(async () => {
