@@ -130,6 +130,18 @@ button { font: inherit; color: inherit; }
 
 .library-footer { padding: 8px 8px 12px; }
 .version { margin: 6px 0 0; text-align: center; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.install-help {
+  display: block;
+  margin: 0 auto;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: .8rem;
+  cursor: pointer;
+}
+.install-help:hover { color: var(--accent); text-decoration: underline; }
 
 .add-button {
   width: 100%;
@@ -333,20 +345,10 @@ button { font: inherit; color: inherit; }
 .install-banner-text { margin: 0; line-height: 1.4; }
 .install-banner-actions { display: flex; gap: 8px; margin-left: auto; }
 
-/* ── iOS 홈 화면 추가 안내 (W-03) ── */
-.ios-guide-steps { margin: 0; padding-left: 1.4em; line-height: 1.8; }
-/* iPhone: 공유 버튼이 있는 아래쪽에 붙이고 화살표로 가리킨다 */
-.dialog.ios-guide-bottom { margin: auto auto calc(24px + env(safe-area-inset-bottom)); overflow: visible; }
-.dialog.ios-guide-bottom::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -12px;
-  transform: translateX(-50%);
-  border: 12px solid transparent;
-  border-bottom: 0;
-  border-top-color: var(--surface);
-}
+/* ── 설치 안내 (W-03): iOS는 Safari·Chrome 공용 3단계, 그 밖에는 브라우저 설치 메뉴 ── */
+.ios-guide-steps { margin: 0; padding-left: 1.4em; line-height: 2; }
+/* 단계 아이콘: 브라우저 메뉴 모양을 흉내 낸 선 그림 */
+.guide-icon { width: 1.25em; height: 1.25em; vertical-align: -0.25em; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ── 대화창 (W-06, W-10~W-13) ── */
 .dialog {
@@ -533,12 +535,13 @@ button { font: inherit; color: inherit; }
   background: rgba(10, 10, 14, .78);
   text-align: center;
 }
-.tx-detail { color: #d6d6de; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
+.tx-detail { white-space: pre-line; color: #d6d6de; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
 .tx-detail p { margin: 0; }
 .tx-detail.lines p:first-child { color: #fff; font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
 .tx-detail:empty { display: none; }
 .tx-panel[hidden] { display: none; }
 .tx-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tx-actions.stack { flex-direction: column; align-items: stretch; min-width: 60%; }
 .tx-actions .btn { color: var(--text); }
 .tx-actions .btn-primary { color: var(--accent-text); }
 .tx-actions .btn-danger { color: var(--danger-text); }

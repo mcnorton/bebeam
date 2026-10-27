@@ -222,10 +222,12 @@ class TransferView {
    * 카메라가 꺼진 뒤의 버튼(다시 시도·닫기·바로 실행)은 카메라 칸 위에 띄운다. 취소는 모서리 ✕가 맡는다.
    * 구분선 아래 두 줄에 다 들어가지 않는 설명(detail)도 버튼 위에 함께 둔다.
    * @param {[string, () => void, string?][]} list
-   * @param {string | string[]} [detail] 배열이면 한 줄씩, 첫 줄을 굵게
+   * @param {string | string[]} [detail] 배열이면 한 줄씩, 첫 줄을 굵게. 문자열 안의 줄바꿈은 그대로 보인다
+   * @param {{stack?: boolean}} [o] 버튼을 세로로 쌓는다
    */
-  #setActions(list, detail = '') {
+  #setActions(list, detail = '', { stack = false } = {}) {
     this.#panel.hidden = list.length === 0;
+    this.#actions.classList.toggle('stack', stack);
     const lines = [detail].flat().filter(Boolean);
     this.#detail.classList.toggle('lines', Array.isArray(detail));
     if (lines.join('\n') !== this.#detail.dataset.text) {
@@ -305,7 +307,9 @@ class TransferView {
         this.#setProgress(1);
         if (sender) {
           this.#setStatus('✅ 전송 성공!', '친구가 파일을 받았어요.');
-          this.#setActions([['닫기', () => this.#close(), 'primary']]);
+          // 같은 앱을 다음 친구에게: [전송준비]는 새 키·세션으로 다시 HELLO를 띄운다 (묶은 앱은 재사용)
+          this.#setActions([['전송준비', () => this.#retry(), 'primary'], ['완료', () => this.#close()]],
+            '이 앱을 다른 친구에게도\n전송할까요?', { stack: true });
           this.#linger();
         } else {
           this.#onReceived(s);
