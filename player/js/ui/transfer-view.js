@@ -27,6 +27,7 @@ const FAIL_TEXT = {
   decrypt: '❌ 파일이 손상되었어요',
   'peer-cancel': '상대방이 취소했습니다',
   'peer-verify-failed': '❌ 친구 쪽에서 파일이 손상되었어요',
+  'peer-too-large': '❌ 친구가 받을 수 없는 앱이에요 (크기·파일 수 상한)',
   'bad-info': '❌ 받을 수 없는 앱 정보예요',
   idle: '⌛ 친구의 폰을 찾지 못했어요',
 };
@@ -154,6 +155,14 @@ class TransferView {
     this.#setProgress(null);
     this.#setActions([]);
 
+    // 키 교환(crypto.subtle)과 카메라(getUserMedia)는 보안 컨텍스트에서만 있다. http://내부IP로 열면 둘 다 없다
+    if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
+      this.#setStatus('🔒 이 주소에서는 전송할 수 없어요');
+      this.#setActions([['닫기', () => this.#close(), 'primary']],
+        ['카메라와 암호화는 https:// 주소에서만 동작해요.', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.']);
+      return;
+    }
+
     const { role, db, appId } = this.#o;
     try {
       if (role === ROLE.SENDER) this.#offer ??= await packApp(db, appId);
@@ -171,7 +180,17 @@ class TransferView {
       deviceName: deviceName(),
       onChange: () => this.#render(),
     });
-    await session.init();
+    try {
+      await session.init();
+    } catch (err) {
+      // 잡지 않으면 "준비하는 중…"에서 멈추고 카메라도 요청하지 않는다
+      console.error(err);
+      if (this.#closing) return;
+      this.#setStatus('❌ 전송을 준비하지 못했어요');
+      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']],
+        '브라우저가 암호화 키를 만들지 못했어요. 다시 시도하거나 브라우저를 최신으로 바꿔 주세요.');
+      return;
+    }
     if (this.#closing) return;
     this.#session = session;
     // 권한 대기 중에 닫히거나 다시 시작될 수 있으므로 지역 변수로 잡아 둔다

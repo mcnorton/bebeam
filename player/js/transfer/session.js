@@ -490,7 +490,8 @@ export class TransferSession {
     const reason = decodeCancel(f.payload);
     if (reason === null || this.state === STATE.DONE) return;
     if (this.state === STATE.FAILED) return;
-    this.#fail(reason === CANCEL_REASON.VERIFY_FAILED ? 'peer-verify-failed' : 'peer-cancel');
+    this.#fail(reason === CANCEL_REASON.VERIFY_FAILED ? 'peer-verify-failed'
+      : reason === CANCEL_REASON.TOO_LARGE ? 'peer-too-large' : 'peer-cancel');
   }
 
   #setState(s) {

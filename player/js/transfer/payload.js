@@ -181,7 +181,10 @@ export function decodeCancel(p) {
 
 export const INFO_VERSION = 1;
 export const INFO_NAME_MAX = 180; // 60자 × 최대 3바이트
-export const TRANSFER_MAX = 64 * 1024 * 1024; // 암호문 상한 (앱 50MB를 압축한 zip이면 충분)
+// 암호문 상한 (앱 50MB(C-3) + zip 여유 2MB). 최악의 경우 zip이 늘어나는 양은 약 1.65MB다:
+//   파일 헤더 1000개 × (76 + 경로 2번 × 255자 × UTF-8 3B) ≈ 1.6MB, deflate stored 블록 약 38KB, GCM 태그 16B.
+//   validate.js LIMITS(파일 수·경로 길이·전체 크기)를 올리거나 zip에 extra 필드를 넣으면 다시 계산한다
+export const TRANSFER_MAX = 52 * 1024 * 1024;
 export const BLOCK_MIN = 16;
 export const BLOCK_MAX = 1024;
 const INFO_FIXED = 1 + 2 + 4 + 4 + 2 + 4 + 32 + IV_SIZE + 1;
