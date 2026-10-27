@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Toybox",
-  "short_name": "Toybox",
+  "name": "BeBeam",
+  "short_name": "BeBeam",
   "description": "내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어",
   "lang": "ko",
   "dir": "ltr",

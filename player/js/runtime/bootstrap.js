@@ -3,7 +3,7 @@
 //   VBASE, cssRefs, resolveVirtual, applyEdits, rewriteCssText, rewriteSrcset, createStorageBatcher
 //   이 함수는 자기 완결적이어야 하며(모듈 스코프 참조 금지), 닫는 script 태그 문자열을 넣지 않는다.
 //
-// 메시지 (모두 type 접두어 'toybox:')
+// 메시지 (모두 type 접두어 'bebeam:')
 //   iframe → host: ready, rendering{page}, started{page}, pong{challenge}, storage{batch}, flushed, navigating, log{level, message}, error{message}
 //   host → iframe: boot{files, plan, entry, storage, parentOrigin, nonce}, ping{challenge}, flush
 //   rendering·started·pong·error에는 boot에서 받은 nonce를 담는다. 앱 코드는 이 클로저에 닿지 못하므로 위조할 수 없다.
@@ -52,14 +52,14 @@ export function bootstrapMain() {
   window.addEventListener('message', function onBoot(e) {
     if (e.source !== parentWin || booted) return;
     const m = e.data;
-    if (!m || m.type !== 'toybox:boot') return;
+    if (!m || m.type !== 'bebeam:boot') return;
     booted = true;
     window.removeEventListener('message', onBoot);
     if (typeof m.parentOrigin === 'string') parentOrigin = m.parentOrigin;
     if (typeof m.nonce === 'string') nonce = m.nonce;
-    boot(m).catch((err) => post({ type: 'toybox:error', message: String((err && err.message) || err).slice(0, 500), nonce }));
+    boot(m).catch((err) => post({ type: 'bebeam:error', message: String((err && err.message) || err).slice(0, 500), nonce }));
   });
-  parentWin.postMessage({ type: 'toybox:ready' }, '*');
+  parentWin.postMessage({ type: 'bebeam:ready' }, '*');
 
   async function boot(m) {
     files = m.files || {};
@@ -152,8 +152,8 @@ export function bootstrapMain() {
         Object.defineProperty(window, k, { value: undefined, writable: false, configurable: false });
       } catch {}
     }
-    block(window, 'indexedDB', 'Toybox 앱에서는 indexedDB를 쓸 수 없습니다 (localStorage를 쓰세요)');
-    block(window, 'caches', 'Toybox 앱에서는 Cache Storage를 쓸 수 없습니다');
+    block(window, 'indexedDB', 'BeBeam 앱에서는 indexedDB를 쓸 수 없습니다 (localStorage를 쓰세요)');
+    block(window, 'caches', 'BeBeam 앱에서는 Cache Storage를 쓸 수 없습니다');
     try {
       Object.defineProperty(Navigator.prototype, 'serviceWorker', { get: () => undefined, configurable: false });
     } catch {}
@@ -219,7 +219,7 @@ export function bootstrapMain() {
       cancelLater(timer);
       timer = 0;
       const batch = batcher.take();
-      if (batch) post({ type: 'toybox:storage', batch });
+      if (batch) post({ type: 'bebeam:storage', batch });
     };
     const schedule = () => {
       if (!timer) timer = later(flushStorage, FLUSH_DELAY);
@@ -346,14 +346,14 @@ export function bootstrapMain() {
     const out = '<!doctype html>\n' + doc.documentElement.outerHTML;
 
     // document.open/write는 iframe load를 다시 일으키므로 host에 미리 알린다 (§4.6)
-    post({ type: 'toybox:rendering', page: path, nonce });
+    post({ type: 'bebeam:rendering', page: path, nonce });
     apply(docOpen, document, []);
     // document.open()은 window의 이벤트 리스너를 모두 지운다 → write 전에 다시 등록한다
     installRuntimeListeners();
     apply(docWrite, document, [out]);
     apply(docClose, document, []);
     observeMutations();
-    post({ type: 'toybox:started', page: path, nonce });
+    post({ type: 'bebeam:started', page: path, nonce });
   }
 
   function installRuntimeListeners() {
@@ -362,30 +362,30 @@ export function bootstrapMain() {
       const t = e.target;
       const res = t && t !== window && (t.currentSrc || t.src || t.href);
       const message = res ? `리소스 로드 실패: ${t.tagName} ${String(res).slice(0, 80)}` : `${e.message} (${e.lineno}:${e.colno})`;
-      post({ type: 'toybox:log', level: 'error', message: message.slice(0, 500) });
+      post({ type: 'bebeam:log', level: 'error', message: message.slice(0, 500) });
     }, true);
     window.addEventListener('unhandledrejection', (e) => {
       const r = e.reason;
-      post({ type: 'toybox:log', level: 'error', message: `처리되지 않은 Promise 거부: ${String((r && r.message) || r).slice(0, 400)}` });
+      post({ type: 'bebeam:log', level: 'error', message: `처리되지 않은 Promise 거부: ${String((r && r.message) || r).slice(0, 400)}` });
     });
     // capture로, 앱 코드보다 먼저 등록한다 (앱이 나중에 단 리스너로 가로채지 못하게)
     listen(window, 'message', (e) => {
       if (e.source !== parentWin) return;
       const m = e.data;
       if (!m || typeof m !== 'object') return;
-      if (m.type === 'toybox:ping' && typeof m.challenge === 'string') {
-        post({ type: 'toybox:pong', challenge: m.challenge, nonce });
-      } else if (m.type === 'toybox:flush') {
+      if (m.type === 'bebeam:ping' && typeof m.challenge === 'string') {
+        post({ type: 'bebeam:pong', challenge: m.challenge, nonce });
+      } else if (m.type === 'bebeam:flush') {
         try {
           flushStorage();
         } finally {
-          post({ type: 'toybox:flushed' });
+          post({ type: 'bebeam:flushed' });
         }
       }
     }, true);
     listen(window, 'pagehide', () => {
       // 이동 신호를 먼저 보낸다 (flush가 실패해도 신호는 나가도록)
-      post({ type: 'toybox:navigating' });
+      post({ type: 'bebeam:navigating' });
       try {
         flushStorage();
       } catch {}

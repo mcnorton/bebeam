@@ -12,7 +12,7 @@ export { cssRefs };
  * 앱 기준 경로 해석. 가상 base 밖(외부 URL)이나 data:/blob:/# 은 null.
  * @param {string} ref
  * @param {string} from 참조하는 파일 경로
- * @param {string} vbase 가상 base URL (https://app.toybox.invalid/)
+ * @param {string} vbase 가상 base URL (https://app.bebeam.invalid/)
  * @returns {string | null}
  */
 export function resolveVirtual(ref, from, vbase) {

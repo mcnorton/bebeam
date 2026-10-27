@@ -208,7 +208,7 @@ export class AppRun {
     if (win && this.#started) {
       await new Promise((resolve) => {
         this.#onFlushed = resolve;
-        win.postMessage({ type: 'toybox:flush' }, '*');
+        win.postMessage({ type: 'bebeam:flush' }, '*');
         setTimeout(resolve, FLUSH_TIMEOUT);
       });
     }
@@ -246,7 +246,7 @@ export class AppRun {
     this.#pendingKill = this.#later(() => {
       if (this.#challenge === challenge) this.#fail('navigation', '앱이 허용되지 않은 동작을 시도해 종료되었습니다');
     }, PONG_TIMEOUT);
-    this.#iframe.contentWindow?.postMessage({ type: 'toybox:ping', challenge }, '*');
+    this.#iframe.contentWindow?.postMessage({ type: 'bebeam:ping', challenge }, '*');
   }
 
   #onPong(m) {
@@ -275,26 +275,26 @@ export class AppRun {
     if (!m || typeof m !== 'object' || typeof m.type !== 'string') return;
 
     switch (m.type) {
-      case 'toybox:ready': {
+      case 'bebeam:ready': {
         if (this.#bootSent) return;
         this.#bootSent = true;
         const files = {};
         for (const [path, f] of this.#files) files[path] = new Blob([f.blob], { type: f.mime });
         // opaque origin이라 targetOrigin은 '*'만 가능하다. 보내는 것은 이 앱 자신의 파일과 데이터뿐이다
         this.#iframe.contentWindow.postMessage({
-          type: 'toybox:boot', files, plan: this.#plan, entry: this.#entry,
+          type: 'bebeam:boot', files, plan: this.#plan, entry: this.#entry,
           storage: this.#storage, parentOrigin: location.origin, nonce: this.#nonce,
         }, '*');
         return;
       }
-      case 'toybox:rendering':
+      case 'bebeam:rendering':
         // 재렌더링 예고. 감지는 load 뒤 생존 확인(pong)으로 하므로 여기서는 기록만 한다
         if (m.nonce !== this.#nonce) this.#log('위조된 rendering 신호를 무시했습니다');
         return;
-      case 'toybox:pong':
+      case 'bebeam:pong':
         this.#onPong(m);
         return;
-      case 'toybox:started':
+      case 'bebeam:started':
         if (m.nonce !== this.#nonce) {
           this.#log('위조된 started 신호를 무시했습니다');
           return;
@@ -305,7 +305,7 @@ export class AppRun {
           this.#startResolve();
         }
         return;
-      case 'toybox:storage': {
+      case 'bebeam:storage': {
         const batch = validateStorageBatch(m.batch);
         if (!batch) {
           this.#log('잘못된 저장소 메시지를 무시했습니다');
@@ -327,16 +327,16 @@ export class AppRun {
         });
         return;
       }
-      case 'toybox:flushed':
+      case 'bebeam:flushed':
         this.#onFlushed?.();
         return;
-      case 'toybox:navigating':
+      case 'bebeam:navigating':
         if (this.#started) this.#fail('navigation', '앱이 허용되지 않은 동작을 시도해 종료되었습니다');
         return;
-      case 'toybox:log':
+      case 'bebeam:log':
         if (typeof m.message === 'string') this.#log(m.message.slice(0, 500));
         return;
-      case 'toybox:error':
+      case 'bebeam:error':
         // bootstrap의 부팅 오류만 받는다. 앱이 보낸 문구가 플레이어 오류 화면에 그대로 뜨지 않게
         if (m.nonce !== this.#nonce) {
           this.#log('위조된 error 신호를 무시했습니다');

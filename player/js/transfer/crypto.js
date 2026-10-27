@@ -1,7 +1,7 @@
 // 전송 암호화 (ARCHITECTURE §5.5). WebCrypto만 쓴다 (브라우저, Node 22 모두 globalThis.crypto.subtle)
 //   키 교환: ECDH P-256, 세션마다 새 키 쌍
 //   키 유도: HKDF-SHA256(secret, salt = nonce(작은 sid) ‖ nonce(큰 sid),
-//            info = "toybox/v1" ‖ pubkey(작은 sid) ‖ pubkey(큰 sid)) → AES-GCM-256 키 32B + SAS 4B
+//            info = "bebeam/v1" ‖ pubkey(작은 sid) ‖ pubkey(큰 sid)) → AES-GCM-256 키 32B + SAS 4B
 //   제어 메시지(INFO/ACCEPT/DONE/RESULT): 메시지마다 새 IV, AAD = type ‖ senderSid
 //   파일 본문: zip 전체를 한 번에 암호화 (IV는 INFO에 담는다), AAD = "data" ‖ senderSid
 
@@ -9,7 +9,7 @@ import { IV_SIZE, PUBKEY_SIZE, NONCE_SIZE } from './payload.js';
 
 const subtle = globalThis.crypto.subtle;
 const te = new TextEncoder();
-const INFO_LABEL = te.encode('toybox/v1');
+const INFO_LABEL = te.encode('bebeam/v1');
 const DATA_LABEL = te.encode('data');
 
 function concat(...parts) {

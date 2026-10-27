@@ -7,10 +7,10 @@
 import { getMeta, setMeta } from '../db.js';
 import { h, openDialog } from './dialogs.js';
 
-export const DISMISSED_KEY = 'toybox.ui.installPromptDismissedAt';
-export const IOS_SHOWN_KEY = 'toybox.ui.iosGuideShown';
+export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
+export const IOS_SHOWN_KEY = 'bebeam.ui.iosGuideShown';
 /** v1.3 전의 [다시 보지 않기]. 눌렀던 사용자는 안내를 본 것으로 친다 */
-export const IOS_HIDDEN_KEY = 'toybox.ui.iosGuideHidden';
+export const IOS_HIDDEN_KEY = 'bebeam.ui.iosGuideHidden';
 export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** iPhone/iPad (iPadOS는 데스크톱 Safari처럼 Mac으로 보이므로 터치 지점 수로 구별) */
@@ -91,7 +91,7 @@ export function setupInstallPrompt({ banner }) {
       }
     });
     banner.replaceChildren(
-      h('p', { class: 'install-banner-text', text: '📲 Toybox를 설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
+      h('p', { class: 'install-banner-text', text: '📲 BeBeam을 설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
       h('div', { class: 'install-banner-actions' }, [later, install]),
     );
     banner.hidden = false;

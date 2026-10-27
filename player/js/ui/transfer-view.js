@@ -43,7 +43,7 @@ function deviceName() {
   if (/Android/.test(ua)) return 'Android';
   if (/Mac/.test(ua)) return 'Mac';
   if (/Windows/.test(ua)) return 'Windows PC';
-  return 'Toybox';
+  return 'BeBeam';
 }
 
 /**

@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '0a1724fa38df';
+const VERSION = 'e292a7b8ea05';
 const SHELL = [
   './',
   'css/player.css',
@@ -54,7 +54,7 @@ const SHELL = [
 ];
 // @stamp-end
 
-const PREFIX = 'toybox-shell-v';
+const PREFIX = 'bebeam-shell-v';
 const CACHE = PREFIX + VERSION;
 const SHELL_URLS = new Set(SHELL.map((p) => new URL(p, self.registration.scope).href));
 

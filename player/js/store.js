@@ -1,10 +1,10 @@
 // 플레이어 상태 저장소 (EventTarget 기반)
 //   apps: 최근 추가 순 앱 목록 (db.listApps 결과)
-//   selectedId: 선택한 앱. localStorage toybox.ui.selectedAppId에 기억한다 (DATABASE §3)
+//   selectedId: 선택한 앱. localStorage bebeam.ui.selectedAppId에 기억한다 (DATABASE §3)
 //   screen: 'home' | 'running' | 'transfer'
 // 상태가 바뀌면 'change' 이벤트(detail.keys: 바뀐 키 목록)를 보낸다.
 
-export const SELECTED_KEY = 'toybox.ui.selectedAppId';
+export const SELECTED_KEY = 'bebeam.ui.selectedAppId';
 export const SCREENS = Object.freeze(['home', 'running', 'transfer']);
 
 /** localStorage는 막혀 있을 수 있다 (사파리 비공개 모드 등). 실패는 무시한다 */

@@ -84,7 +84,7 @@ function summaryBody(a, space, iconUrl) {
   if (a.externalRefs.length) {
     rows.push(h('div', { class: 'warning', role: 'note' }, [
       h('p', { text: `⚠️ 이 앱은 인터넷의 파일을 사용합니다 (${a.externalRefs.slice(0, 3).join(', ')}${a.externalRefs.length > 3 ? ' 외' : ''}).` }),
-      h('p', { text: 'Toybox에서는 외부 통신이 차단되어 일부 기능이 동작하지 않을 수 있습니다.' }),
+      h('p', { text: 'BeBeam에서는 외부 통신이 차단되어 일부 기능이 동작하지 않을 수 있습니다.' }),
     ]));
   }
   if (a.rewritePlan.warnings.some((w) => w.startsWith('cyclic-import:'))) {

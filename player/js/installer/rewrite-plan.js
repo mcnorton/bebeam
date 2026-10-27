@@ -7,7 +7,7 @@
 import { init, parse } from '../../vendor/es-module-lexer/lexer.js';
 
 export const PLAN_VERSION = 1;
-export const VBASE = 'https://app.toybox.invalid/';
+export const VBASE = 'https://app.bebeam.invalid/';
 const VORIGIN = new URL(VBASE).origin;
 
 export const WARNINGS_MAX = 100;

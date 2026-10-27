@@ -9,7 +9,7 @@ import { replan, findInstalledOgImage } from '../installer/install.js';
 import { h, confirmDialog } from './dialogs.js';
 import { iconUrl } from './list.js';
 
-const HISTORY_KEY = 'toybox:running';
+const HISTORY_KEY = 'bebeam:running';
 const NAV_MESSAGE = '앱이 허용되지 않은 동작을 시도해 종료되었습니다.';
 
 export class Viewer {

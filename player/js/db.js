@@ -1,10 +1,10 @@
-// IndexedDB "toybox" 래퍼 (DATABASE §2, §4, §7)
+// IndexedDB "bebeam" 래퍼 (DATABASE §2, §4, §7)
 //   트랜잭션 안에서는 같은 트랜잭션의 IDB 요청만 await한다.
 //   다른 비동기 작업(해시 계산, Blob 읽기 등)이 끼면 트랜잭션이 자동 커밋되므로 밖에서 미리 끝낸다.
 
 import { isAppId } from './ids.js';
 
-export const DB_NAME = 'toybox';
+export const DB_NAME = 'bebeam';
 export const DB_VERSION = 1;
 export const NAME_MAX = 60;
 
@@ -26,7 +26,7 @@ function upgrade(db, oldVersion, tx) {
 
 /**
  * @param {{onBlocked?: () => void, onVersionChange?: () => void}} [hooks]
- *   onBlocked: 다른 창이 이전 버전 연결을 잡고 있음 → "다른 창의 Toybox를 닫아 주세요"
+ *   onBlocked: 다른 창이 이전 버전 연결을 잡고 있음 → "다른 창의 BeBeam을 닫아 주세요"
  *   onVersionChange: 다른 창이 업그레이드를 요청함 → 연결은 여기서 닫고, 새로고침을 안내
  * @returns {Promise<IDBDatabase>}
  */

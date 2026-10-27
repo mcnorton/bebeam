@@ -158,11 +158,11 @@ async function start() {
 
   try {
     db = await openDb({
-      onBlocked: () => notice('다른 창의 Toybox를 닫아 주세요.', { sticky: true }),
-      onVersionChange: () => notice('Toybox가 업데이트되었습니다. 새로고침해 주세요.', { sticky: true }),
+      onBlocked: () => notice('다른 창의 BeBeam을 닫아 주세요.', { sticky: true }),
+      onVersionChange: () => notice('BeBeam이 업데이트되었습니다. 새로고침해 주세요.', { sticky: true }),
     });
   } catch (err) {
-    notice('저장소를 열 수 없습니다. 비공개 모드에서는 Toybox를 사용할 수 없을 수 있어요.', { sticky: true });
+    notice('저장소를 열 수 없습니다. 비공개 모드에서는 BeBeam을 사용할 수 없을 수 있어요.', { sticky: true });
     console.error(err);
     return;
   }
