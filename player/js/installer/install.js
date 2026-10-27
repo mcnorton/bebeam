@@ -2,9 +2,9 @@
 //   analyze: 검증 → 메타 → rewrite plan → SHA-256. 모두 트랜잭션 밖에서 끝낸다.
 //   install: 새 ID를 발급하고 apps·files를 단일 트랜잭션으로 기록한다.
 
-import { done, request } from '../db.js';
+import { appRange, done, request } from '../db.js';
 import { allocateAppId } from '../ids.js';
-import { readHtml, deriveMeta, externalHostsOf } from './meta.js';
+import { readHtml, deriveMeta, externalHostsOf, findOgImage } from './meta.js';
 import { buildRewritePlan } from './rewrite-plan.js';
 import { validateEntries, InstallError, ENTRY } from './validate.js';
 
@@ -86,6 +86,21 @@ export async function analyze(source, { onStep, Parser } = {}) {
 }
 
 /**
+ * ogImagePath 필드가 생기기 전에 설치된 앱의 og:image를 설치된 파일에서 찾는다 (DATABASE §2)
+ * @returns {Promise<string | null>}
+ */
+export async function findInstalledOgImage(db, app, { Parser } = {}) {
+  const store = db.transaction('files').objectStore('files');
+  const [keys, entry] = await Promise.all([
+    request(store.getAllKeys(appRange(app.id))),
+    request(store.get([app.id, app.entry])),
+  ]);
+  if (!entry?.blob) return null;
+  const html = readHtml(await entry.blob.text(), Parser);
+  return findOgImage(html.ogImage, { paths: keys.map((k) => k[1]), entry: app.entry });
+}
+
+/**
  * 설치된 파일로 rewrite plan을 다시 계산한다 (plan 버전이 바뀐 경우, DATABASE §7).
  * @param {Map<string, {mime: string, blob: Blob}>} files
  * @param {{Parser?: typeof DOMParser}} [options]
@@ -143,6 +158,7 @@ function writeOnce(db, analysis, source) {
       originalName: meta.name,
       description: meta.description,
       iconPath: meta.iconPath,
+      ogImagePath: meta.ogImagePath,
       entry: meta.entry,
       source,
       size: meta.size,

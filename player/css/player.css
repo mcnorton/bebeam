@@ -1,5 +1,5 @@
 /* Toybox 플레이어 셸 (W-04)
-   가로: [목록 320px | 뷰어]   세로: [뷰어 상단 40%] / [목록 스크롤] */
+   가로: [헤더·목록 320px | 뷰어]   세로: [뷰어 상단 40%] / [헤더] / [목록 스크롤] */
 
 :root {
   --bg: #f6f6f8;
@@ -74,11 +74,13 @@ button { font: inherit; color: inherit; }
   height: 100vh;
   height: 100dvh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  grid-template-columns: var(--list-width) 1fr;
+  /* minmax(0, …): 긴 앱 이름(nowrap)이 열을 넓혀 화면 밖으로 밀어내지 않게 */
+  grid-template-columns: var(--list-width) minmax(0, 1fr);
   grid-template-rows: var(--header-h) auto 1fr;
+  /* 타이틀바·설치 배너는 목록 쪽에만 둔다. 뷰어는 위아래로 꽉 채운다 */
   grid-template-areas:
-    "header header"
-    "banner banner"
+    "header viewer"
+    "banner viewer"
     "library viewer";
 }
 
@@ -88,6 +90,7 @@ button { font: inherit; color: inherit; }
   align-items: center;
   padding: 0 16px;
   border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   background: var(--surface);
 }
 
@@ -126,6 +129,7 @@ button { font: inherit; color: inherit; }
 .empty { margin: 0; padding: 24px 16px 8px; color: var(--muted); text-align: center; line-height: 1.5; }
 
 .library-footer { padding: 8px 8px 12px; }
+.version { margin: 6px 0 0; text-align: center; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .add-button {
   width: 100%;
@@ -146,15 +150,15 @@ button { font: inherit; color: inherit; }
 /* 세로: 뷰어 위, 목록 아래 */
 @media (max-aspect-ratio: 1/1) {
   .shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: var(--header-h) auto minmax(160px, 40%) 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(160px, 40%) var(--header-h) auto 1fr;
     grid-template-areas:
+      "viewer"
       "header"
       "banner"
-      "viewer"
       "library";
   }
-  .library { border-right: 0; }
+  .library, .app-header, .install-banner { border-right: 0; }
   .only-portrait { display: inline; }
   .only-landscape { display: none; }
 }
@@ -215,7 +219,9 @@ button { font: inherit; color: inherit; }
 .app-menu-button:hover, .app-menu-button[aria-expanded="true"] { background: var(--line); color: var(--text); }
 
 /* ── 뷰어 (W-08 b) ── */
-.viewer-card { display: grid; justify-items: center; gap: 12px; padding: 16px; }
+.viewer-card { position: relative; display: grid; justify-items: center; gap: 12px; padding: 16px; }
+/* og:image 배경 (W-08 b): 검정 위에 어둡게 깔아 ▶와 이름이 잘 보이게 한다 */
+.viewer-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; pointer-events: none; user-select: none; }
 .play-button {
   width: 88px;
   height: 88px;
@@ -227,7 +233,7 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .play-button:disabled { opacity: .5; cursor: default; }
-.viewer-name { margin: 0; max-width: 90%; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.viewer-name { margin: 0; max-width: 90%; font-weight: 600; text-align: center; overflow-wrap: anywhere; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 
 /* ── 뷰어 오류 (W-08 c) ── */
 .viewer-error { max-width: 420px; text-align: center; }
@@ -321,6 +327,7 @@ button { font: inherit; color: inherit; }
   gap: 8px 12px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
   background: var(--selected);
 }
 .install-banner-text { margin: 0; line-height: 1.4; }
@@ -441,7 +448,8 @@ button { font: inherit; color: inherit; }
   --band-w: 168px; /* 좌우 배치의 가운데 띠 폭 */
   --safe-y: max(env(safe-area-inset-top), env(safe-area-inset-bottom)); /* 대칭이 깨지지 않게 위아래를 같게 */
   --safe-x: max(env(safe-area-inset-left), env(safe-area-inset-right));
-  --side: min(100vw - 2 * var(--safe-x) - 2 * var(--pad), (100dvh - 2 * var(--safe-y) - var(--band)) / 2 - 2 * var(--pad));
+  --close: 56px;   /* 모서리 ✕(10px + 40px)가 칸을 가리지 않게 비워 둘 폭 */
+  --side: min(100vw - 2 * var(--safe-x) - 2 * var(--close), (100dvh - 2 * var(--safe-y) - var(--band)) / 2 - 2 * var(--pad));
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -453,7 +461,11 @@ button { font: inherit; color: inherit; }
 .transfer.cam-top { flex-direction: column; }
 .transfer.cam-bottom { flex-direction: column-reverse; }
 .transfer.cam-left, .transfer.cam-right {
-  --side: min(100dvh - 2 * var(--safe-y) - 2 * var(--pad), (100vw - 2 * var(--safe-x) - var(--band-w)) / 2 - 2 * var(--pad));
+  --side: min(100dvh - 2 * var(--safe-y) - 2 * var(--close), (100vw - 2 * var(--safe-x) - var(--band-w)) / 2 - 2 * var(--pad));
+}
+/* 키가 낮은 창(노트북 브라우저 등): 가운데 띠와 여백을 줄여 칸을 키운다 */
+@media (max-height: 560px) {
+  .transfer { --band: 104px; --pad: 10px; }
 }
 .transfer.cam-left { flex-direction: row; }
 .transfer.cam-right { flex-direction: row-reverse; }
@@ -521,7 +533,9 @@ button { font: inherit; color: inherit; }
   background: rgba(10, 10, 14, .78);
   text-align: center;
 }
-.tx-detail { margin: 0; color: #d6d6de; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
+.tx-detail { color: #d6d6de; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
+.tx-detail p { margin: 0; }
+.tx-detail.lines p:first-child { color: #fff; font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
 .tx-detail:empty { display: none; }
 .tx-panel[hidden] { display: none; }
 .tx-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }

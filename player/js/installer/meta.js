@@ -9,6 +9,8 @@ export const NAME_MAX = 60;
 export const DESCRIPTION_MAX = 200;
 export const EXTERNAL_MAX = 10;
 export const DEFAULT_NAME = '이름 없는 앱';
+export const OG_IMAGE_MAX = 2048;
+const OG_SEGMENTS_MAX = 16;
 const ICON_FALLBACKS = ['favicon.ico', 'favicon.png', 'favicon.svg', 'icon.png'];
 
 // 양방향 제어(이름 위장)와 폭 없는 문자(보이지 않는 이름)
@@ -47,7 +49,7 @@ export function srcsetUrls(value) {
 /**
  * @param {string} text index.html 내용
  * @param {typeof DOMParser} [Parser]
- * @returns {{title: string, description: string, iconHrefs: string[], refs: string[], inlineModules: string[]}}
+ * @returns {{title: string, description: string, iconHrefs: string[], ogImage: string, refs: string[], inlineModules: string[]}}
  */
 export function readHtml(text, Parser = globalThis.DOMParser) {
   const doc = new Parser().parseFromString(text, 'text/html');
@@ -76,25 +78,66 @@ export function readHtml(text, Parser = globalThis.DOMParser) {
     title: doc.querySelector('title')?.textContent ?? '',
     description: content('meta[name="description" i]') || content('meta[property="og:description" i]'),
     iconHrefs,
+    ogImage: content('meta[property="og:image" i]'),
     refs,
     inlineModules: [...doc.querySelectorAll('script[type="module" i]:not([src])')].map((el) => el.textContent),
   };
 }
 
+/** 앱 파일 경로 찾기: 정확히 같은 경로, 없으면 대소문자 무시 */
+function finder(paths) {
+  const exact = new Set(paths);
+  const lower = new Map(paths.map((p) => [p.toLowerCase(), p]));
+  return (p) => (exact.has(p) ? p : lower.get(p.toLowerCase()) ?? null);
+}
+
+const isImage = (p) => mimeOf(p)?.startsWith('image/');
+
 /**
- * C-5 이름·설명·아이콘 결정.
- * @param {{title?: string, description?: string, iconHrefs?: string[]}} html
+ * og:image를 앱 안의 이미지 파일로 찾는다 (뷰어 배경, W-08). 외부에서 가져오지 않는다.
+ *   상대 경로는 진입 HTML 기준으로 푼다. 절대 URL(배포 주소를 적은 경우)은 경로의 뒤쪽부터 맞는 파일을 찾는다:
+ *   https://x.io/site/game/og.png → site/game/og.png → game/og.png → og.png
+ * @param {string} raw og:image content
+ * @param {{paths: string[], entry?: string}} ctx
+ * @returns {string | null}
+ */
+export function findOgImage(raw, { paths, entry = 'index.html' }) {
+  // 아주 긴 값으로 설치 분석을 멈추지 못하게 길이와 맞춰 볼 세그먼트 수를 묶는다
+  if (typeof raw !== 'string' || !raw.trim() || raw.length > OG_IMAGE_MAX) return null;
+  const href = raw.trim();
+  const find = finder(paths);
+  const pick = (p) => {
+    const f = p && find(p);
+    return f && isImage(f) ? f : null;
+  };
+  const kind = classifyRef(href);
+  if (kind === 'local') return pick(resolveRef(href, entry)?.path);
+  if (kind !== 'external') return null;
+  let segments;
+  try {
+    const u = new URL(href, 'https://base.invalid/'); // // 로 시작하는 주소도 푼다
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    segments = decodeURIComponent(u.pathname).split('/').filter(Boolean).slice(-OG_SEGMENTS_MAX);
+  } catch {
+    return null;
+  }
+  for (let i = 0; i < segments.length; i++) {
+    const p = pick(segments.slice(i).join('/'));
+    if (p) return p;
+  }
+  return null;
+}
+
+/**
+ * C-5 이름·설명·아이콘 결정, 뷰어 배경(og:image)
+ * @param {{title?: string, description?: string, iconHrefs?: string[], ogImage?: string}} html
  * @param {{fallbackName?: string, paths: string[], entry?: string}} ctx
- * @returns {{name: string, description: string, iconPath: string | null}}
+ * @returns {{name: string, description: string, iconPath: string | null, ogImagePath: string | null}}
  */
 export function deriveMeta(html, { fallbackName = '', paths, entry = 'index.html' }) {
   const name = clean(html.title, NAME_MAX) || clean(fallbackName, NAME_MAX) || DEFAULT_NAME;
   const description = clean(html.description, DESCRIPTION_MAX);
-
-  const exact = new Set(paths);
-  const lower = new Map(paths.map((p) => [p.toLowerCase(), p]));
-  const find = (p) => (exact.has(p) ? p : lower.get(p.toLowerCase()) ?? null);
-  const isImage = (p) => mimeOf(p)?.startsWith('image/');
+  const find = finder(paths);
 
   let iconPath = null;
   for (const href of html.iconHrefs ?? []) {
@@ -107,7 +150,7 @@ export function deriveMeta(html, { fallbackName = '', paths, entry = 'index.html
     }
   }
   iconPath ??= ICON_FALLBACKS.map(find).find(Boolean) ?? null;
-  return { name, description, iconPath };
+  return { name, description, iconPath, ogImagePath: findOgImage(html.ogImage, { paths, entry }) };
 }
 
 /** C-6 외부 호스트 목록 (중복 제거, 최대 10개) */

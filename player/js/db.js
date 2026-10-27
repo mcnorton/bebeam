@@ -125,6 +125,11 @@ export function savePlan(db, id, rewritePlan) {
   return updateApp(db, id, () => ({ rewritePlan }));
 }
 
+/** 뷰어 배경(og:image) 경로를 저장한다. 없으면 null (다시 찾지 않는다, DATABASE §2) */
+export function saveOgImage(db, id, ogImagePath) {
+  return updateApp(db, id, () => ({ ogImagePath }));
+}
+
 /** 초기화: 앱 저장 데이터만 삭제한다. 파일은 유지 */
 export function clearAppStorage(db, id) {
   assertAppId(id);

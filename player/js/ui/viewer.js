@@ -1,12 +1,13 @@
 // 뷰어와 실행 모드 (F-04, W-08~W-10)
-//   상태: (a) 선택 없음 (b) ▶ (c) 오류 + [앱 삭제]
+//   상태: (a) 선택 없음 (b) ▶ (og:image가 있으면 배경) (c) 오류 + [앱 삭제]
 //   실행: requestFullscreen(미지원이면 CSS 전체화면) → 목록·헤더 숨김 → sandbox iframe 부팅 → [X]
 //   종료 확인: [X], Esc/전체화면 해제, Android 뒤로가기(history 가드)
 
-import { loadForRun, applyStorageBatch, touchLastRun, savePlan } from '../db.js';
+import { loadForRun, applyStorageBatch, touchLastRun, savePlan, saveOgImage, request } from '../db.js';
 import { AppRun, preflight } from '../runtime/host.js';
-import { replan } from '../installer/install.js';
+import { replan, findInstalledOgImage } from '../installer/install.js';
 import { h, confirmDialog } from './dialogs.js';
+import { iconUrl } from './list.js';
 
 const HISTORY_KEY = 'toybox:running';
 const NAV_MESSAGE = '앱이 허용되지 않은 동작을 시도해 종료되었습니다.';
@@ -24,6 +25,8 @@ export class Viewer {
   #cssFullscreen = false;
   #confirming = false;
   #exiting = false;
+  /** 뷰어 배경 캐시 {key: 'appId\0path', url, revoke} */
+  #bg = null;
 
   /**
    * @param {HTMLElement} el 뷰어 영역
@@ -59,6 +62,7 @@ export class Viewer {
   render(app) {
     if (this.#run) return;
     if (!app) {
+      this.#dropBackground();
       this.#el.replaceChildren(this.#hint);
       this.#hint.hidden = false;
       return;
@@ -66,6 +70,7 @@ export class Viewer {
     this.#hint.hidden = true;
     const err = this.#errors.get(app.id) ?? (app.status === 'broken' ? { message: app.error || '앱을 실행할 수 없습니다.' } : null);
     if (err) {
+      this.#dropBackground();
       const details = err.logs?.length
         ? h('details', { class: 'viewer-logs' }, [h('summary', { text: '자세히 (앱이 보고한 메시지 포함)' }), h('pre', { text: err.logs.join('\n') })])
         : '';
@@ -87,10 +92,57 @@ export class Viewer {
     }
     const play = h('button', { type: 'button', class: 'play-button', 'aria-label': `${app.name} 실행`, text: '▶' });
     play.addEventListener('click', () => this.play(app.id));
-    this.#el.replaceChildren(this.#hint, h('div', { class: 'viewer-card' }, [
+    const bg = h('img', { class: 'viewer-bg', alt: '', draggable: 'false', hidden: true });
+    this.#el.replaceChildren(this.#hint, bg, h('div', { class: 'viewer-card' }, [
       play,
       h('p', { class: 'viewer-name', text: app.name }),
     ]));
+    this.#paintBackground(app, bg).catch((err) => console.warn('뷰어 배경', err));
+  }
+
+  /** og:image를 ▶ 뒤 배경으로 (W-08 b). 아이콘과 같이 iconUrl()을 거쳐 <img>에만 넣는다 (T8) */
+  async #paintBackground(app, img) {
+    const db = this.#db;
+    if (!db) return;
+    let path = app.ogImagePath;
+    if (path === undefined) {
+      // 이 필드가 생기기 전에 설치된 앱: 한 번 찾아 저장한다 (없으면 null)
+      path = await findInstalledOgImage(db, app).catch(() => null);
+      app.ogImagePath = path;
+      await saveOgImage(db, app.id, path).catch(() => {});
+    }
+    if (!path) {
+      this.#dropBackground();
+      return;
+    }
+    const key = `${app.id}\0${path}`;
+    if (this.#bg?.key !== key) {
+      this.#dropBackground();
+      const entry = { key, url: null, revoke: () => {}, pending: null };
+      this.#bg = entry;
+      entry.pending = request(db.transaction('files').objectStore('files').get([app.id, path]))
+        .then((file) => (file?.blob ? iconUrl(file.blob, file.mime) : null))
+        .then((u) => {
+          if (!u) return;
+          if (this.#bg !== entry) {
+            u.revoke();
+            return;
+          }
+          entry.url = u.url;
+          entry.revoke = u.revoke;
+        });
+    }
+    const entry = this.#bg;
+    await entry.pending;
+    // 그 사이 다른 앱을 골랐거나 실행했으면 img가 화면에서 빠져 있다
+    if (this.#bg !== entry || !entry.url || !img.isConnected) return;
+    img.src = entry.url;
+    img.hidden = false;
+  }
+
+  #dropBackground() {
+    this.#bg?.revoke();
+    this.#bg = null;
   }
 
   clearError(id) {

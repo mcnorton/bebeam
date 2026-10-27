@@ -43,6 +43,7 @@ export const STATE = Object.freeze({
 
 export const STALL_MS = 5_000; // 이 시간 동안 상대 프레임이 없으면 "다시 맞대 주세요"
 export const TIMEOUT_MS = 60_000; // 짝 확정 후 이 시간 동안 진전이 없으면 FAILED
+export const IDLE_MS = 180_000; // 짝을 못 찾은 채 이 시간이 지나면 대기를 끝낸다 (받는 화면이 열린 채 남지 않게)
 export const RESULT_WAIT_MS = 10_000; // 수신자: 로컬 검증 후 RESULT를 이 시간까지 기다린다
 export const DEFAULT_BLOCK = 64;
 const MAX_CANDIDATES = 8;
@@ -513,6 +514,10 @@ export class TransferSession {
   #checkTimeouts() {
     if (this.finished) return;
     const t = this.now();
+    if (!this.pairedAt && t - this.startedAt > IDLE_MS) {
+      this.#fail('idle');
+      return;
+    }
     if (this.pairedAt && t - Math.max(this.lastProgressAt, this.lastHeardAt) > TIMEOUT_MS) {
       this.cancelReason = CANCEL_REASON.TIMEOUT;
       this.#fail('timeout');

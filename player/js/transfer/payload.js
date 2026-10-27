@@ -3,6 +3,8 @@
 //   암호문: INFO, ACCEPT, DONE, RESULT → iv(12) ‖ AES-GCM 암호문(태그 16 포함). 내용은 crypto.js가 다룬다
 // 파서는 예외를 던지지 않고 null을 돌려준다. 모든 길이를 상한과 비교한다.
 
+import { LIMITS } from '../installer/validate.js';
+
 export const ROLE = Object.freeze({ SENDER: 1, RECEIVER: 2 });
 
 export const PUBKEY_SIZE = 65; // P-256 비압축 공개키 (0x04 ‖ X ‖ Y)
@@ -220,7 +222,8 @@ export function decodeInfo(p) {
     sha256: p.slice(17, 49),
     payloadIv: p.slice(49, 61),
   };
-  if (info.fileCount < 1 || info.plainSize < 1) return null;
+  // 설치 상한(C-4)을 넘는 앱은 버퍼를 잡거나 전송하기 전에 거부한다. 정상 송신자의 앱은 같은 상한으로 설치된 것이다
+  if (info.fileCount < 1 || info.fileCount > LIMITS.fileCount || info.plainSize < 1) return null;
   if (info.cipherSize !== info.plainSize + TAG_SIZE || info.cipherSize > TRANSFER_MAX) return null;
   if (info.blockSize < BLOCK_MIN || info.blockSize > BLOCK_MAX) return null;
   if (info.totalBlocks !== Math.ceil(info.cipherSize / info.blockSize)) return null;

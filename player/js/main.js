@@ -11,6 +11,7 @@ import { setupInstallPrompt, maybeShowIosGuide, requestPersistence } from './ui/
 import { Viewer } from './ui/viewer.js';
 import { openTransfer } from './ui/transfer-view.js';
 import { ROLE } from './transfer/session.js';
+import { VERSION } from '../version.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,6 +39,7 @@ function notice(message, { sticky = false, action = null } = {}) {
 
 const store = new Store();
 // beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
+$('version').textContent = `v${VERSION}`;
 const installPrompt = setupInstallPrompt({ banner: $('install-banner') });
 
 /** 새 버전 토스트 (SPEC F-01 6). 앱 실행·전송 중에는 홈으로 돌아올 때까지 미룬다 */

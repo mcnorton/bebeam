@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '603dbbbfe317';
+const VERSION = '314fa6a4ab63';
 const SHELL = [
   './',
   'css/player.css',
@@ -50,6 +50,7 @@ const SHELL = [
   'vendor/zxing-wasm/es/reader/index.js',
   'vendor/zxing-wasm/es/share.js',
   'vendor/zxing-wasm/reader/zxing_reader.wasm',
+  'version.js',
 ];
 // @stamp-end
 

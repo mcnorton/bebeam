@@ -8,12 +8,18 @@ import { TransferSession, ROLE, STATE, CANCEL_REASON } from '../transfer/session
 import { OpticalLink, cameraErrorMessage, cameraSide } from '../transfer/link.js';
 import { packApp, installReceived, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
 import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
+import { formatBytes } from '../installer/install.js';
 import { h, objectParticle } from './dialogs.js';
 
 const INTRO_MS = 3000;
 const CANCEL_SHOW_MS = 1000; // CANCEL 프레임을 보여주는 시간 (SPEC F-05 규칙 5)
 const SENDER_LINGER_MS = 10_000; // 성공 후 RESULT를 더 보여주는 시간 (상대가 못 읽었을 수 있으므로)
 const UI_INTERVAL = 250;
+
+const FAIL_SUB = {
+  timeout: '두 화면이 서로를 볼 수 있는지 확인해 주세요.',
+  idle: '3분 동안 연결되지 않아 멈췄어요. 준비되면 [다시 시도]를 눌러 주세요.',
+};
 
 const FAIL_TEXT = {
   timeout: '❌ 연결이 끊겼어요',
@@ -22,6 +28,7 @@ const FAIL_TEXT = {
   'peer-cancel': '상대방이 취소했습니다',
   'peer-verify-failed': '❌ 친구 쪽에서 파일이 손상되었어요',
   'bad-info': '❌ 받을 수 없는 앱 정보예요',
+  idle: '⌛ 친구의 폰을 찾지 못했어요',
 };
 
 /** 상대가 보낸 이름은 C-5와 같이 다듬어 보여준다 (길이, 양방향 제어·폭 없는 문자) */
@@ -75,6 +82,7 @@ class TransferView {
   #installed = null;
   #installError = null;
   #installing = false;
+  #installApproved = false;
   #lingerTimer = 0;
   #actionsKey = '';
   #accepted = false;
@@ -97,7 +105,7 @@ class TransferView {
     this.#fill = h('div', { class: 'tx-bar-fill' });
     this.#bar = h('div', { class: 'tx-bar', role: 'progressbar', 'aria-label': '전송 진행률', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, [this.#fill]);
     this.#actions = h('div', { class: 'tx-actions' });
-    this.#detail = h('p', { class: 'tx-detail' });
+    this.#detail = h('div', { class: 'tx-detail' });
     this.#panel = h('div', { class: 'tx-panel', hidden: true }, [this.#detail, this.#actions]);
     const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '취소', text: '✕' });
     close.addEventListener('click', () => this.#cancelOrClose());
@@ -140,6 +148,7 @@ class TransferView {
     this.#installed = null;
     this.#installError = null;
     this.#installing = false;
+    this.#installApproved = false;
     clearTimeout(this.#lingerTimer);
     this.#setStatus('준비하는 중…');
     this.#setProgress(null);
@@ -213,11 +222,16 @@ class TransferView {
    * 카메라가 꺼진 뒤의 버튼(다시 시도·닫기·바로 실행)은 카메라 칸 위에 띄운다. 취소는 모서리 ✕가 맡는다.
    * 구분선 아래 두 줄에 다 들어가지 않는 설명(detail)도 버튼 위에 함께 둔다.
    * @param {[string, () => void, string?][]} list
-   * @param {string} [detail]
+   * @param {string | string[]} [detail] 배열이면 한 줄씩, 첫 줄을 굵게
    */
   #setActions(list, detail = '') {
     this.#panel.hidden = list.length === 0;
-    this.#detail.textContent = detail;
+    const lines = [detail].flat().filter(Boolean);
+    this.#detail.classList.toggle('lines', Array.isArray(detail));
+    if (lines.join('\n') !== this.#detail.dataset.text) {
+      this.#detail.dataset.text = lines.join('\n');
+      this.#detail.replaceChildren(...lines.map((t) => h('p', { text: t })));
+    }
     const key = list.map(([label, , kind]) => `${label}:${kind ?? ''}`).join('|');
     if (key === this.#actionsKey) return;
     this.#actionsKey = key;
@@ -301,7 +315,7 @@ class TransferView {
         if (s.failReason === 'local-cancel') return; // #cancelOrClose가 닫는다
         this.#link?.stopCamera();
         this.#setProgress(null);
-        this.#setStatus(FAIL_TEXT[s.failReason] ?? '❌ 전송하지 못했어요', s.failReason === 'timeout' ? '두 화면이 서로를 볼 수 있는지 확인해 주세요.' : '', true);
+        this.#setStatus(FAIL_TEXT[s.failReason] ?? '❌ 전송하지 못했어요', FAIL_SUB[s.failReason] ?? '', true);
         this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']]);
         clearInterval(this.#uiTimer);
         return;
@@ -313,7 +327,7 @@ class TransferView {
   async #onReceived(s) {
     this.#link?.stopCamera();
     if (this.#installed) {
-      // 확인창(W-06) 없이 설치하므로 실제 이름과 외부 리소스 경고(C-6)를 여기서 보여준다
+      // W-06 대신 이 화면에서 설치 동의를 받았으므로 실제 이름과 외부 리소스 경고(C-6)는 설치 뒤 여기서 보여준다
       const ext = this.#installed.externalRefs ?? [];
       const warn = ext.length ? `⚠️ 이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
       this.#setStatus('✅ 설치 완료', `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.`);
@@ -326,6 +340,16 @@ class TransferView {
       return;
     }
     if (this.#installing) return;
+    if (!this.#installApproved) {
+      // 전송은 버튼 없이 진행하지만 설치는 받은 앱을 다시 보여주고 동의를 받는다 (T11)
+      const info = s.info;
+      this.#setStatus('📦 전송이 끝났어요. 설치를 시작할까요?', s.sas ? `확인 코드 ${s.sas} · 친구 화면과 같은지 확인하세요` : '');
+      this.#setActions([['취소', () => this.#close()], ['설치 시작', () => this.#approveInstall(s), 'primary']], [
+        peerAppName(info) || DEFAULT_NAME,
+        `파일 ${info.fileCount}개 · ${formatBytes(info.plainSize)}`,
+      ]);
+      return;
+    }
     this.#installing = true;
     this.#setStatus('📦 설치하는 중…');
     this.#setActions([]);
@@ -338,6 +362,12 @@ class TransferView {
     }
     this.#installing = false;
     clearInterval(this.#uiTimer);
+    this.#onReceived(s);
+  }
+
+  #approveInstall(s) {
+    if (this.#installApproved || this.#closing) return;
+    this.#installApproved = true;
     this.#onReceived(s);
   }
 
