@@ -1,8 +1,8 @@
-# 🧸 Toybox
+# 🧸 BeBeam
 
 **내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어**
 
-👉 **https://toybox.mcnorton.com/**
+👉 **https://bebeam.mcnorton.com/**
 
 > ⚠️ 베타입니다. 여러 기기에서 확인하는 중이라 일부 환경에서는 동작이 다를 수 있어요.
 
@@ -11,7 +11,7 @@
 ## 사용법
 
 ### 1. 플레이어 설치
-1. https://toybox.mcnorton.com/ 에 접속해 **[플레이어 실행]** 을 누릅니다.
+1. https://bebeam.mcnorton.com/ 에 접속해 **[플레이어 실행]** 을 누릅니다.
 2. 설치하기
    - **PC (Chrome / Edge), Android (Chrome)**: 설치 안내가 뜨면 **[설치]** 를 누릅니다.
    - **iPhone / iPad (Safari)**: 하단 **공유 ⬆︎** → **홈 화면에 추가** 를 누릅니다.
@@ -60,8 +60,8 @@
 - **iPhone은 반드시 홈 화면에 추가해서 쓰세요.** Safari 탭에서만 쓰면 7일 동안 사용하지 않을 때 데이터가 지워질 수 있습니다. iPhone에서는 실행할 때마다 카메라 권한을 다시 물을 수 있습니다.
 - **QR 전송은 작은 앱에 알맞습니다.** 압축 후 1MB 앱이 몇 분 정도 걸릴 것으로 예상합니다(기기에 따라 다름). 2MB가 넘으면 예상 시간을 먼저 알려 줍니다. 화면 밝기를 최대로 하고, 전송 중에는 화면이 꺼지지 않게 해 주세요.
 - **전송할 때 저장된 점수·설정은 함께 보내지 않습니다.** 앱 파일만 전송됩니다.
-- 플레이어 주소(`toybox.mcnorton.com`)가 바뀌면 이전 주소에 설치한 앱은 옮겨지지 않습니다.
+- 플레이어 주소(`bebeam.mcnorton.com`)가 바뀌면 이전 주소에 설치한 앱은 옮겨지지 않습니다.
 
 ## 문의
 
-문제나 제안은 이 리포지토리의 [Issues](https://github.com/mcnorton/toybox/issues) 에 남겨 주세요.
+문제나 제안은 이 리포지토리의 [Issues](https://github.com/mcnorton/bebeam/issues) 에 남겨 주세요.
