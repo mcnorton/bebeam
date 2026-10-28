@@ -10,6 +10,17 @@ import { packApp, analyzeReceived, installReceived, formatEstimate, estimateSeco
 import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
 import { formatBytes } from '../installer/install.js';
 import { h } from './dialogs.js';
+import { icon } from './icons.js';
+import { cleanUserName } from '../names.js';
+import { getUserName, getDuplicatePolicy } from '../settings.js';
+import { listApps } from '../db.js';
+import { planDuplicate } from '../installer/duplicates.js';
+import { duplicateNote } from './add-sheet.js';
+
+/** 상태 문구: 문자열 또는 [아이콘 이름, 문구] */
+function withIcon(headline) {
+  return Array.isArray(headline) ? [icon(headline[0]), headline[1]] : [headline];
+}
 
 export const ROLE = Object.freeze({ SENDER: 1, RECEIVER: 2 });
 
@@ -68,7 +79,7 @@ class Modal {
 
   constructor(o, className, label, children) {
     this.#o = o;
-    const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '닫기', text: '✕' });
+    const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '닫기' }, [icon('x')]);
     close.addEventListener('click', () => this.close());
     this.root = h('div', { class: `transfer ${className}`, role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': label }, [close, ...children]);
   }
@@ -137,16 +148,16 @@ class SendView extends Modal {
     this.open();
     addEventListener('resize', this.#onResize);
     if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
-      this.#fail('🔒 이 주소에서는 보낼 수 없어요', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.');
+      this.#fail(['lock', '이 주소에서는 보낼 수 없어요'], '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.');
       return;
     }
     let sender;
     try {
-      const offer = await packApp(this.o.db, this.o.appId);
-      sender = await new FountainSender({ ...offer, speed: this.#select.value }).init();
+      const [offer, me] = await Promise.all([packApp(this.o.db, this.o.appId), getUserName(this.o.db)]);
+      sender = await new FountainSender({ ...offer, sender: me, speed: this.#select.value }).init();
     } catch (err) {
       console.error(err);
-      this.#fail('❌ 앱을 보낼 준비를 하지 못했어요', err?.message ?? '');
+      this.#fail(['circle-x', '앱을 보낼 준비를 하지 못했어요'], err?.message ?? '');
       return;
     }
     if (this.closing) return;
@@ -183,7 +194,7 @@ class SendView extends Modal {
   }
 
   #fail(headline, detail) {
-    this.#head.textContent = headline;
+    this.#head.replaceChildren(...withIcon(headline));
     this.#hints.replaceChildren(h('p', { class: 'tx-hint warn', text: detail }));
   }
 
@@ -217,6 +228,9 @@ class ReceiveView extends Modal {
   #installing = false;
   #approved = false;
   #analysis = null;
+  #policy = 'separate';
+  /** 같은 이름의 앱 처리 미리 보기 (installer/duplicates.js) */
+  #plan = null;
   #analyzing = false;
   #lastHits = 0;
 
@@ -230,7 +244,7 @@ class ReceiveView extends Modal {
     const sub = h('p', { class: 'tx-sub' });
     const fill = h('div', { class: 'tx-bar-fill' });
     const bar = h('div', { class: 'tx-bar', role: 'progressbar', 'aria-label': '받는 진행률', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, [fill]);
-    const sw = h('button', { type: 'button', class: 'tx-switch', text: '🔄 카메라 전환', hidden: true });
+    const sw = h('button', { type: 'button', class: 'tx-switch', hidden: true }, [icon('switch-camera'), '카메라 전환']);
     const info = h('div', { class: 'tx-info' }, [headline, bar, sub]);
     const diag = new URLSearchParams(location.search).has('diag') ? h('p', { class: 'tx-diag' }) : null;
     if (diag) info.append(diag);
@@ -260,12 +274,13 @@ class ReceiveView extends Modal {
     this.#installing = false;
     this.#approved = false;
     this.#analysis = null;
+    this.#plan = null;
     this.#analyzing = false;
     this.#setProgress(null);
     this.#setActions([]);
     // 카메라(getUserMedia)와 SHA-256(crypto.subtle)은 보안 컨텍스트에서만 있다. http://내부IP로 열면 둘 다 없다
     if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
-      this.#setStatus('🔒 이 주소에서는 받을 수 없어요');
+      this.#setStatus(['lock', '이 주소에서는 받을 수 없어요']);
       this.#setActions([['닫기', () => this.close(), 'primary']],
         ['카메라는 https:// 주소에서만 동작해요.', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.']);
       return;
@@ -274,14 +289,14 @@ class ReceiveView extends Modal {
     this.#receiver = receiver;
     const scanner = new QrScanner({ receiver, video: this.#video });
     this.#scanner = scanner;
-    this.#setStatus('📷 카메라 사용을 허용해 주세요', '보내는 쪽 화면의 QR을 읽으려면 카메라가 필요해요.');
+    this.#setStatus(['camera', '카메라 사용을 허용해 주세요'], '보내는 쪽 화면의 QR을 읽으려면 카메라가 필요해요.');
     try {
       await scanner.start();
     } catch (err) {
       scanner.stop();
       if (this.#scanner !== scanner) return;
       this.#scanner = null;
-      this.#setStatus('📷 카메라를 쓸 수 없어요');
+      this.#setStatus(['camera', '카메라를 쓸 수 없어요']);
       this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.close(), 'primary']], scannerErrorMessage(err));
       return;
     }
@@ -299,12 +314,13 @@ class ReceiveView extends Modal {
     try {
       await this.#scanner?.switchCamera();
     } catch (err) {
-      this.#setStatus('📷 카메라를 바꾸지 못했어요', scannerErrorMessage(err), true);
+      this.#setStatus(['camera', '카메라를 바꾸지 못했어요'], scannerErrorMessage(err), true);
     }
   }
 
+  /** @param {string | [string, string]} headline [아이콘 이름, 문구]이면 앞에 선 아이콘을 붙인다 */
   #setStatus(headline, sub = '', warn = false) {
-    this.#headline.textContent = headline;
+    this.#headline.replaceChildren(...withIcon(headline));
     this.#sub.textContent = sub;
     this.#sub.classList.toggle('warn', warn);
   }
@@ -352,17 +368,17 @@ class ReceiveView extends Modal {
     switch (r.state) {
       case STATE.SCANNING:
         this.#setProgress(null);
-        if (legacy) this.#setStatus('⚠️ 이전 버전의 QR이에요', legacy, true);
-        else this.#setStatus('📷 보내는 쪽 QR을 틀 안에 맞춰 주세요', '15–30cm 거리에서, 반사광이 보이면 살짝 기울여 주세요.');
+        if (legacy) this.#setStatus(['triangle-alert', '이전 버전의 QR이에요'], legacy, true);
+        else this.#setStatus(['camera', '보내는 쪽 QR을 틀 안에 맞춰 주세요'], '15–30cm 거리에서, 반사광이 보이면 살짝 기울여 주세요.');
         return;
       case STATE.RECEIVING:
       case STATE.STALLED: {
         const m = r.meta;
         const pct = Math.floor(r.progress * 100);
         this.#setProgress(r.progress);
-        const head = `📥 ‘${appName(m)}’ · ${formatBytes(m.zipSize)}`;
+        const head = ['inbox', `‘${appName(m)}’ · ${formatBytes(m.zipSize)}`];
         if (r.state === STATE.STALLED) {
-          this.#setStatus(head, `${pct}% · ⏸ QR을 틀 안에 맞춰 주세요`, true);
+          this.#setStatus(head, `${pct}% · QR을 틀 안에 맞춰 주세요`, true);
         } else {
           const eta = r.etaSeconds != null ? `약 ${formatEstimate(r.etaSeconds).replace('약 ', '')} 남음` : '';
           this.#setStatus(head, [`${pct}%`, eta, formatRate(r.bytesPerSecond)].filter(Boolean).join(' · '));
@@ -371,7 +387,7 @@ class ReceiveView extends Modal {
       }
       case STATE.VERIFYING:
         this.#setProgress(1);
-        this.#setStatus(`🔎 ‘${appName(r.meta)}’ 확인 중…`, '100%');
+        this.#setStatus(['search', `‘${appName(r.meta)}’ 확인 중…`], '100%');
         return;
       case STATE.DONE:
         this.#setProgress(1);
@@ -384,13 +400,13 @@ class ReceiveView extends Modal {
         clearInterval(this.#uiTimer);
         this.#setProgress(null);
         if (r.failReason === 'too-many-symbols') {
-          this.#setStatus('❌ 이 화면으로는 받을 수 없어요', '조각을 충분히 모았는데도 풀리지 않았어요. 다른 화면이 섞였을 수 있어요.', true);
+          this.#setStatus(['circle-x', '이 화면으로는 받을 수 없어요'], '조각을 충분히 모았는데도 풀리지 않았어요. 다른 화면이 섞였을 수 있어요.', true);
           this.#setActions([['닫기', () => this.close()], ['다시 받기', () => this.#retry(), 'primary']]);
         } else if (r.failReason === 'hash-mismatch') {
-          this.#setStatus('❌ 받은 파일이 손상되었어요', '다시 받으면 처음부터 모아요.', true);
+          this.#setStatus(['circle-x', '받은 파일이 손상되었어요'], '다시 받으면 처음부터 모아요.', true);
           this.#setActions([['닫기', () => this.close()], ['다시 받기', () => this.#retry(), 'primary']]);
         } else {
-          this.#setStatus('⌛ QR을 찾지 못했어요', '3분 동안 읽지 못해 멈췄어요. 준비되면 [다시 시도]를 눌러 주세요.', true);
+          this.#setStatus(['triangle-alert', 'QR을 찾지 못했어요'], '3분 동안 읽지 못해 멈췄어요. 준비되면 [다시 시도]를 눌러 주세요.', true);
           this.#setActions([['닫기', () => this.close()], ['다시 시도', () => this.#retry(), 'primary']]);
         }
         return;
@@ -419,14 +435,16 @@ class ReceiveView extends Modal {
       clearInterval(this.#uiTimer);
       // W-06 대신 이 화면에서 설치 동의를 받았으므로 외부 리소스 경고(C-6)는 설치 뒤 여기서 보여준다
       const ext = this.#installed.externalRefs ?? [];
-      const warn = ext.length ? `⚠️ 이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
-      this.#setStatus('✅ 설치 완료', `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.`);
+      const warn = ext.length ? `이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
+      this.#setStatus(['circle-check', '설치 완료'], this.#plan?.kind === 'overwrite'
+        ? `‘${this.#installed.name}’ 앱을 새것으로 바꿨어요. 점수·설정은 그대로예요.`
+        : `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.`);
       this.#setActions([['닫기', () => this.close()], ['바로 실행', () => this.#launch(), 'primary']], warn);
       return;
     }
     if (this.#installError) {
       clearInterval(this.#uiTimer);
-      this.#setStatus('❌ 설치할 수 없어요');
+      this.#setStatus(['circle-x', '설치할 수 없어요']);
       this.#setActions([['닫기', () => this.close(), 'primary']], this.#installError);
       return;
     }
@@ -434,9 +452,11 @@ class ReceiveView extends Modal {
     if (!this.#analysis) {
       // 동의 전에 먼저 분석한다: 이름·파일 수·크기는 송신자가 주장한 META가 아니라 실제 zip에서 (보안 검토 T7.8)
       this.#analyzing = true;
-      this.#setStatus('🔎 받은 앱을 살펴보는 중…');
+      this.#setStatus(['search', '받은 앱을 살펴보는 중…']);
       try {
         this.#analysis = await analyzeReceived(r.zip, r.meta.name);
+        this.#policy = await getDuplicatePolicy(this.o.db);
+        this.#plan = planDuplicate(await listApps(this.o.db), this.#analysis.name, this.#policy);
       } catch (err) {
         console.error(err);
         this.#installError = err?.name === 'InstallError' ? err.message : '받은 앱을 설치할 수 없습니다.';
@@ -448,18 +468,21 @@ class ReceiveView extends Modal {
     if (!this.#approved) {
       // 받는 것은 버튼 없이 했지만 설치는 받은 앱을 다시 보여주고 동의를 받는다 (T11)
       const a = this.#analysis;
-      this.#setStatus('📦 다 받았어요. 설치를 시작할까요?', '받으려던 앱이 맞는지 확인하세요.');
-      this.#setActions([['취소', () => this.close()], ['설치 시작', () => this.#approve(r), 'primary']], [
+      this.#setStatus(['package', '다 받았어요. 설치를 시작할까요?'], '받으려던 앱이 맞는지 확인하세요.');
+      const from = cleanUserName(r.meta.sender);
+      this.#setActions([['취소', () => this.close()], [this.#plan?.kind === 'overwrite' ? '덮어쓰기' : '설치 시작', () => this.#approve(r), 'primary']], [
         clean(a.name, NAME_MAX) || DEFAULT_NAME,
         `파일 ${a.fileCount}개 · ${formatBytes(a.size)}`,
-      ]);
+        from ? `보낸 사람: ${from}` : '',
+        duplicateNote(this.#plan),
+      ].filter(Boolean));
       return;
     }
     this.#installing = true;
-    this.#setStatus('📦 설치하는 중…');
+    this.#setStatus(['package', '설치하는 중…']);
     this.#setActions([]);
     try {
-      this.#installed = await installReceived(this.o.db, this.#analysis);
+      this.#installed = await installReceived(this.o.db, this.#analysis, { senderName: cleanUserName(r.meta.sender) || null, policy: this.#policy, expect: this.#plan });
       this.o.onInstalled?.(this.#installed);
     } catch (err) {
       console.error(err);

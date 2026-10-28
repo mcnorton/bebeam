@@ -53,13 +53,14 @@ export class FountainSender {
   #speed;
 
   /**
-   * @param {{zip: Uint8Array, name: string, fileCount: number, speed?: keyof SPEED, sid?: number, symbolSize?: number}} o
+   * @param {{zip: Uint8Array, name: string, sender?: string, fileCount: number, speed?: keyof SPEED, sid?: number, symbolSize?: number}} o
    */
-  constructor({ zip, name, fileCount, speed = DEFAULT_SPEED, sid = randomSid(), symbolSize = DEFAULT_SYMBOL }) {
+  constructor({ zip, name, sender = '', fileCount, speed = DEFAULT_SPEED, sid = randomSid(), symbolSize = DEFAULT_SYMBOL }) {
     if (zip.length < 1 || zip.length > TRANSFER_MAX) throw new RangeError('zip size');
     this.sid = sid >>> 0;
     this.zip = zip;
     this.name = name;
+    this.sender = sender;
     this.fileCount = fileCount;
     this.symbolSize = symbolSize;
     this.#encoder = new LtEncoder(zip, { size: symbolSize, seed: this.sid });
@@ -71,7 +72,7 @@ export class FountainSender {
   async init() {
     const payload = encodeMeta({
       fileCount: this.fileCount, zipSize: this.zip.length, symbolSize: this.symbolSize, k: this.k,
-      sha256: await sha256(this.zip), name: this.name,
+      sha256: await sha256(this.zip), name: this.name, sender: this.sender,
     });
     this.#metaFrame = encodeFrame({ sid: this.sid, type: TYPE.META, payload });
     return this;

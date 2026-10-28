@@ -8,6 +8,7 @@ import { AppRun, preflight } from '../runtime/host.js';
 import { replan, findInstalledOgImage } from '../installer/install.js';
 import { h, confirmDialog } from './dialogs.js';
 import { iconUrl } from './list.js';
+import { icon } from './icons.js';
 
 const HISTORY_KEY = 'bebeam:running';
 const NAV_MESSAGE = '앱이 허용되지 않은 동작을 시도해 종료되었습니다.';
@@ -84,7 +85,7 @@ export class Viewer {
         this.play(app.id);
       });
       this.#el.replaceChildren(this.#hint, h('div', { class: 'viewer-card viewer-error', role: 'alert' }, [
-        h('p', { class: 'viewer-error-icon', 'aria-hidden': 'true', text: '⚠️' }),
+        h('p', { class: 'viewer-error-icon' }, [icon('triangle-alert')]),
         h('p', { class: 'viewer-error-title', text: '앱을 실행할 수 없습니다.' }),
         h('p', { class: 'viewer-error-message', text: err.message }),
         details,
@@ -92,9 +93,9 @@ export class Viewer {
       ]));
       return;
     }
-    const play = h('button', { type: 'button', class: 'btn btn-primary play-button', 'aria-label': `${app.name} 실행`, text: '▶ 재생' });
+    const play = h('button', { type: 'button', class: 'btn btn-primary play-button', 'aria-label': `${app.name} 실행` }, [icon('play'), '재생']);
     play.addEventListener('click', () => this.play(app.id));
-    const send = h('button', { type: 'button', class: 'btn btn-outline send-button', text: '📤 앱 보내기' });
+    const send = h('button', { type: 'button', class: 'btn btn-outline send-button' }, [icon('send'), '앱 보내기']);
     send.addEventListener('click', () => this.#onSend(app.id));
     const bg = h('img', { class: 'viewer-bg', alt: '', draggable: 'false', hidden: true });
     this.#el.replaceChildren(this.#hint, bg, h('div', { class: 'viewer-card' }, [
@@ -114,13 +115,13 @@ export class Viewer {
       // 이 필드가 생기기 전에 설치된 앱: 한 번 찾아 저장한다 (없으면 null)
       path = await findInstalledOgImage(db, app).catch(() => null);
       app.ogImagePath = path;
-      await saveOgImage(db, app.id, path).catch(() => {});
+      await saveOgImage(db, app.id, path, app.contentHash).catch(() => {});
     }
     if (!path) {
       this.#dropBackground();
       return;
     }
-    const key = `${app.id}\0${path}`;
+    const key = `${app.id}\0${path}\0${app.updatedAt}`;
     if (this.#bg?.key !== key) {
       this.#dropBackground();
       const entry = { key, url: null, revoke: () => {}, pending: null };
@@ -165,7 +166,7 @@ export class Viewer {
     this.#store.setScreen('running');
     history.pushState({ [HISTORY_KEY]: true }, '');
 
-    const closeBtn = h('button', { type: 'button', class: 'run-close', 'aria-label': '앱 종료', text: '✕' });
+    const closeBtn = h('button', { type: 'button', class: 'run-close', 'aria-label': '앱 종료' }, [icon('x')]);
     closeBtn.addEventListener('click', () => this.#askExit());
     const stage = h('div', { class: 'run-stage' });
     const loading = h('p', { class: 'run-loading', text: '여는 중…' });
@@ -187,7 +188,7 @@ export class Viewer {
       if (check.needsReplan) {
         plan = await replan(data.files);
         if (cancelled()) return;
-        await savePlan(this.#db, id, plan);
+        await savePlan(this.#db, id, plan, data.app.contentHash);
         const again = preflight({ ...data.app, rewritePlan: plan });
         if (again.error) throw new Error(again.error);
       } else if (check.error) {

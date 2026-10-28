@@ -13,8 +13,8 @@ export const OG_IMAGE_MAX = 2048;
 const OG_SEGMENTS_MAX = 16;
 const ICON_FALLBACKS = ['favicon.ico', 'favicon.png', 'favicon.svg', 'icon.png'];
 
-// 양방향 제어(이름 위장)와 폭 없는 문자(보이지 않는 이름)
-const INVISIBLE = /[\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
+// 양방향 제어(이름 위장), 폭 없는 문자·한글 채움 문자·태그 문자(보이지 않는 이름), 공백이 아닌 C0/C1 제어 문자
+const INVISIBLE = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2069\u2800\u3164\ufeff\uffa0\u{e0000}-\u{e007f}]/gu;
 
 /** 보이지 않는 문자를 지우고, 공백을 하나로 줄이고, 코드 포인트 기준으로 자른다 */
 export function clean(text, max) {

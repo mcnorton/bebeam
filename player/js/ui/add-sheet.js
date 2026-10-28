@@ -5,6 +5,10 @@ import { fromFolder, fromZip } from '../installer/source.js';
 import { analyze, install, checkSpace, formatBytes } from '../installer/install.js';
 import { h, openDialog, alertDialog } from './dialogs.js';
 import { iconUrl } from './list.js';
+import { icon as lineIcon } from './icons.js';
+import { listApps } from '../db.js';
+import { getDuplicatePolicy } from '../settings.js';
+import { planDuplicate } from '../installer/duplicates.js';
 
 const STEP_LABEL = {
   read: '파일을 읽는 중…',
@@ -66,8 +70,20 @@ function progressDialog() {
   };
 }
 
+/** 경고 상자: 왼쪽 선 아이콘 + 문단들 */
+function warning(paragraphs) {
+  return h('div', { class: 'warning', role: 'note' }, [lineIcon('triangle-alert', { class: 'warning-icon' }), h('div', {}, paragraphs)]);
+}
+
+/** 같은 이름의 앱이 있을 때 설치 결과 한 줄 (설정에 따라) */
+export function duplicateNote(plan) {
+  if (plan.kind === 'overwrite') return `같은 이름의 ‘${plan.name}’ 앱을 덮어씁니다. 점수·설정은 남습니다.`;
+  if (plan.kind === 'separate') return `같은 이름의 앱이 있어 ‘${plan.name}’(으)로 따로 추가합니다.`;
+  return '';
+}
+
 /** W-06 본문 */
-function summaryBody(a, space, iconUrl) {
+function summaryBody(a, space, iconUrl, plan) {
   const rows = [
     h('div', { class: 'install-head' }, [
       h('img', { class: 'app-icon large', alt: '', src: iconUrl ?? DEFAULT_ICON_URL, width: '56', height: '56' }),
@@ -78,23 +94,26 @@ function summaryBody(a, space, iconUrl) {
     ]),
     h('p', { class: 'install-stat', text: `파일 ${a.fileCount}개 · ${formatBytes(a.size)}` }),
   ];
+  if (plan && plan.kind !== 'new') {
+    rows.push(h('p', { class: 'install-stat duplicate-note', text: duplicateNote(plan) }));
+  }
   if (a.excludedCount) {
     rows.push(h('p', { class: 'install-stat muted', text: `제외된 파일 ${a.excludedCount}개 (지원하지 않는 형식)` }));
   }
   if (a.externalRefs.length) {
-    rows.push(h('div', { class: 'warning', role: 'note' }, [
-      h('p', { text: `⚠️ 이 앱은 인터넷의 파일을 사용합니다 (${a.externalRefs.slice(0, 3).join(', ')}${a.externalRefs.length > 3 ? ' 외' : ''}).` }),
+    rows.push(warning([
+      h('p', { text: `이 앱은 인터넷의 파일을 사용합니다 (${a.externalRefs.slice(0, 3).join(', ')}${a.externalRefs.length > 3 ? ' 외' : ''}).` }),
       h('p', { text: 'BeBeam에서는 외부 통신이 차단되어 일부 기능이 동작하지 않을 수 있습니다.' }),
     ]));
   }
   if (a.rewritePlan.warnings.some((w) => w.startsWith('cyclic-import:'))) {
-    rows.push(h('div', { class: 'warning', role: 'note' }, [
-      h('p', { text: '⚠️ 서로를 불러오는 모듈(순환 import)이 있어 실행되지 않을 수 있습니다.' }),
+    rows.push(warning([
+      h('p', { text: '서로를 불러오는 모듈(순환 import)이 있어 실행되지 않을 수 있습니다.' }),
     ]));
   }
   if (space && !space.enough) {
-    rows.push(h('div', { class: 'warning', role: 'note' }, [
-      h('p', { text: `⚠️ 저장 공간이 부족할 수 있습니다 (사용 중 ${formatBytes(space.usage)} / 가능 ${formatBytes(space.quota)}).` }),
+    rows.push(warning([
+      h('p', { text: `저장 공간이 부족할 수 있습니다 (사용 중 ${formatBytes(space.usage)} / 가능 ${formatBytes(space.quota)}).` }),
     ]));
   }
   return rows;
@@ -123,6 +142,8 @@ async function analyzeAndInstall(db, readSource, sourceKind) {
   progress.close();
 
   const space = await checkSpace(analysis.size);
+  const policy = await getDuplicatePolicy(db);
+  const plan = planDuplicate(await listApps(db), analysis.name, policy);
   const icon = analysis.iconPath && analysis.files.find((f) => f.path === analysis.iconPath);
   const iconRef = icon ? await iconUrl(icon.blob, icon.mime).catch(() => null) : null;
   let ok;
@@ -130,10 +151,10 @@ async function analyzeAndInstall(db, readSource, sourceKind) {
     ({ value: ok } = await openDialog({
       title: '앱 설치',
       className: 'install-dialog',
-      body: summaryBody(analysis, space, iconRef?.url),
+      body: summaryBody(analysis, space, iconRef?.url, plan),
       buttons: [
         { label: '취소', value: 'cancel' },
-        { label: '설치', value: 'ok', kind: 'primary', autofocus: true },
+        { label: plan.kind === 'overwrite' ? '덮어쓰기' : '설치', value: 'ok', kind: 'primary', autofocus: true },
       ],
     }));
   } finally {
@@ -144,7 +165,7 @@ async function analyzeAndInstall(db, readSource, sourceKind) {
   const p2 = progressDialog();
   p2.step('install');
   try {
-    return await install(db, analysis, sourceKind);
+    return await install(db, analysis, sourceKind, { policy, expect: plan });
   } catch (err) {
     p2.close();
     await showError(err);
@@ -163,9 +184,9 @@ async function showError(err) {
   });
 }
 
-function option({ value, icon, title, desc, disabled = false }) {
+function option({ value, icon: iconName, title, desc, disabled = false }) {
   return h('button', { type: 'button', class: 'sheet-option', 'data-value': value, disabled }, [
-    h('span', { class: 'sheet-icon', 'aria-hidden': 'true', text: icon }),
+    lineIcon(iconName, { class: 'sheet-icon' }),
     h('span', { class: 'sheet-text' }, [
       h('span', { class: 'sheet-title', text: title }),
       h('span', { class: 'sheet-desc', text: desc }),
@@ -182,9 +203,9 @@ function option({ value, icon, title, desc, disabled = false }) {
  */
 export async function openAddSheet(db, { onQr } = {}) {
   const options = [
-    option({ value: 'qr', icon: '📷', title: 'QR로 받기', desc: '친구 화면의 QR을 카메라로 받기', disabled: !onQr }),
-    supportsFolderPick() ? option({ value: 'folder', icon: '📁', title: '폴더 추가', desc: 'index.html이 있는 폴더' }) : '',
-    option({ value: 'zip', icon: '🗜️', title: 'zip 파일 추가', desc: '폴더를 압축한 파일' }),
+    option({ value: 'qr', icon: 'scan-qr-code', title: 'QR로 받기', desc: '친구 화면의 QR을 카메라로 받기', disabled: !onQr }),
+    supportsFolderPick() ? option({ value: 'folder', icon: 'folder', title: '폴더 추가', desc: 'index.html이 있는 폴더' }) : '',
+    option({ value: 'zip', icon: 'file-archive', title: 'zip 파일 추가', desc: '폴더를 압축한 파일' }),
   ];
   let picked = null;
   await openDialog({

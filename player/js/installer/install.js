@@ -1,12 +1,14 @@
 // 설치 파이프라인 (SPEC F-02, DATABASE §4, §6)
 //   analyze: 검증 → 메타 → rewrite plan → SHA-256. 모두 트랜잭션 밖에서 끝낸다.
 //   install: 새 ID를 발급하고 apps·files를 단일 트랜잭션으로 기록한다.
+//            같은 이름의 앱이 있으면 설정에 따라 번호를 붙여 따로 추가하거나, 가장 최근 앱의 파일을 바꾼다(저장 데이터 유지).
 
 import { appRange, done, request } from '../db.js';
 import { allocateAppId } from '../ids.js';
 import { readHtml, deriveMeta, externalHostsOf, findOgImage } from './meta.js';
 import { buildRewritePlan } from './rewrite-plan.js';
 import { validateEntries, InstallError, ENTRY } from './validate.js';
+import { planDuplicate } from './duplicates.js';
 
 const STEPS = ['validate', 'meta', 'plan', 'hash'];
 const ADD_RETRIES = 3;
@@ -143,24 +145,27 @@ export function formatBytes(n) {
   return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-function writeOnce(db, analysis, source) {
+function writeOnce(db, analysis, source, { senderName = null, policy = 'separate', expect = null } = {}) {
   const tx = db.transaction(['apps', 'files'], 'readwrite');
   const apps = tx.objectStore('apps');
   const filesStore = tx.objectStore('files');
   const finished = done(tx);
   const written = (async () => {
-    const id = await allocateAppId(async (x) => (await request(apps.getKey(x))) !== undefined);
     const now = Date.now();
     const { files, ...meta } = analysis;
-    const app = {
-      id,
-      name: meta.name,
-      originalName: meta.name,
+    // 같은 트랜잭션 안에서 목록을 읽어 판단한다 (다른 창이 동시에 추가해도 이름·대상이 어긋나지 않게)
+    const plan = planDuplicate(await request(apps.getAll()), meta.name, policy);
+    // 확인 화면에서 보여준 결과(expect)와 달라졌으면(다른 창이 그사이 추가·삭제) 쓰지 않고 다시 확인받게 한다
+    if (expect && (expect.kind !== plan.kind || (expect.target?.id ?? null) !== (plan.target?.id ?? null))) {
+      throw new InstallError('changed', '그사이 앱 목록이 바뀌었습니다. 다시 추가해 주세요.');
+    }
+    const content = {
       description: meta.description,
       iconPath: meta.iconPath,
       ogImagePath: meta.ogImagePath,
       entry: meta.entry,
       source,
+      senderName: source === 'qr' ? senderName : null,
       size: meta.size,
       fileCount: meta.fileCount,
       excludedCount: meta.excludedCount,
@@ -169,8 +174,24 @@ function writeOnce(db, analysis, source) {
       contentHash: meta.contentHash,
       status: 'ok',
       error: null,
-      createdAt: now,
       updatedAt: now,
+    };
+    if (plan.kind === 'overwrite') {
+      // 덮어쓰기: ID·이름·추가 시각·appStorage는 그대로, 파일과 앱 정보만 새것으로
+      const id = plan.target.id;
+      const app = { ...plan.target, ...content };
+      filesStore.delete(appRange(id));
+      for (const f of files) filesStore.add({ ...f, appId: id });
+      apps.put(app);
+      return app;
+    }
+    const id = await allocateAppId(async (x) => (await request(apps.getKey(x))) !== undefined);
+    const app = {
+      id,
+      name: plan.name,
+      originalName: meta.name,
+      ...content,
+      createdAt: now,
       lastRunAt: null,
     };
     apps.add(app);
@@ -190,12 +211,14 @@ function writeOnce(db, analysis, source) {
  * @param {IDBDatabase} db
  * @param {Awaited<ReturnType<typeof analyze>>} analysis
  * @param {'folder' | 'zip' | 'qr'} source
+ * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: ReturnType<typeof planDuplicate>}} [options]
+ *   QR로 받은 앱의 보낸 사람, 같은 이름 처리, 확인 화면에서 보여준 계획(다르면 InstallError 'changed')
  * @returns {Promise<object>} 기록한 apps 레코드
  */
-export async function install(db, analysis, source) {
+export async function install(db, analysis, source, options = {}) {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await writeOnce(db, analysis, source);
+      return await writeOnce(db, analysis, source, options);
     } catch (err) {
       // 다른 창이 같은 ID를 동시에 쓴 경우만 다시 시도한다
       if (err?.name === 'ConstraintError' && attempt < ADD_RETRIES) continue;

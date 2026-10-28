@@ -1,6 +1,7 @@
 // 단방향 전송 프레임 v2 (TASK T7.3, TRANSPORT §5)
 //   magic(1)=0x54 | ver(1)=2 | sid(4) | type(1) | payload(N) | CRC32(4)
 //   META: fmt(1) ‖ fileCount(2) ‖ zipSize(4) ‖ symbolSize(2) ‖ k(4) ‖ sha256(zip)(32) ‖ nameLen(1) ‖ name(UTF-8)
+//         fmt 2(v2.3~)는 뒤에 senderLen(1) ‖ sender(UTF-8, 보낸 사람 이름)를 더한다. 보내기는 2만, 받기는 1·2 모두
 //   SYM:  firstId(4) ‖ count(1) ‖ count × symbolSize 바이트 (id firstId, firstId+1, … 의 LT 심볼)
 // 다중 바이트 정수는 big-endian. 파서는 예외를 던지지 않고 null을 돌려주며, 모든 길이를 상한과 비교한다.
 // 암호화하지 않는다(TASK D7.1). 무결성은 프레임 CRC32(전송 오류)와 META의 SHA-256(본문)으로 본다.
@@ -18,8 +19,10 @@ export const MAX_FRAME_SIZE = 4096;
 
 export const TYPE = Object.freeze({ META: 1, SYM: 2 });
 
-export const META_FORMAT = 1;
+export const META_FORMAT = 2;
+export const META_FORMAT_V1 = 1; // v2.0~2.2 보내는 쪽
 export const NAME_MAX = 180; // 60자 × 최대 3바이트
+export const SENDER_MAX = 90; // 30자 × 최대 3바이트 (names.js USER_NAME_MAX)
 // 받는 앱 상한: 앱 50MB(C-3) + zip 여유 2MB. zip이 늘어나는 최악의 양은 약 1.65MB다
 //   (파일 헤더 1000개 × (76 + 경로 2번 × 255자 × UTF-8 3B), deflate stored 블록 약 38KB).
 //   validate.js LIMITS를 올리면 다시 계산한다
@@ -90,11 +93,12 @@ export function decodeFrame(buf) {
 
 // ───────── META ─────────
 
-/** @param {{fileCount: number, zipSize: number, symbolSize: number, k: number, sha256: Uint8Array, name: string}} m */
+/** @param {{fileCount: number, zipSize: number, symbolSize: number, k: number, sha256: Uint8Array, name: string, sender?: string}} m */
 export function encodeMeta(m) {
   if (m.sha256.length !== 32) throw new RangeError('sha256');
   const name = truncateUtf8(m.name, NAME_MAX);
-  const p = new Uint8Array(META_FIXED + name.length);
+  const sender = truncateUtf8(m.sender ?? '', SENDER_MAX);
+  const p = new Uint8Array(META_FIXED + name.length + 1 + sender.length);
   const v = new DataView(p.buffer);
   p[0] = META_FORMAT;
   v.setUint16(1, m.fileCount);
@@ -104,15 +108,31 @@ export function encodeMeta(m) {
   p.set(m.sha256, 13);
   p[45] = name.length;
   p.set(name, META_FIXED);
+  p[META_FIXED + name.length] = sender.length;
+  p.set(sender, META_FIXED + name.length + 1);
   return p;
 }
 
-/** 필드 사이의 관계까지 검사한다 (k = ceil(zipSize / symbolSize)). 설치 상한(C-4)을 넘는 앱은 버퍼를 잡기 전에 거부한다 */
+/**
+ * 필드 사이의 관계까지 검사한다 (k = ceil(zipSize / symbolSize)). 설치 상한(C-4)을 넘는 앱은 버퍼를 잡기 전에 거부한다.
+ * format 1(보낸 사람 없음)도 받는다. 이때 sender는 ''.
+ */
 export function decodeMeta(p) {
-  if (!(p instanceof Uint8Array) || p.length < META_FIXED || p[0] !== META_FORMAT) return null;
+  if (!(p instanceof Uint8Array) || p.length < META_FIXED) return null;
+  const fmt = p[0];
+  if (fmt !== META_FORMAT && fmt !== META_FORMAT_V1) return null;
   const v = new DataView(p.buffer, p.byteOffset, p.byteLength);
   const nameLen = p[45];
-  if (nameLen > NAME_MAX || p.length !== META_FIXED + nameLen) return null;
+  if (nameLen > NAME_MAX) return null;
+  const nameEnd = META_FIXED + nameLen;
+  let senderLen = 0;
+  if (fmt === META_FORMAT_V1) {
+    if (p.length !== nameEnd) return null;
+  } else {
+    if (p.length < nameEnd + 1) return null;
+    senderLen = p[nameEnd];
+    if (senderLen > SENDER_MAX || p.length !== nameEnd + 1 + senderLen) return null;
+  }
   const meta = {
     fileCount: v.getUint16(1),
     zipSize: v.getUint32(3),
@@ -125,7 +145,8 @@ export function decodeMeta(p) {
   if (meta.symbolSize < SYMBOL_MIN || meta.symbolSize > SYMBOL_MAX) return null;
   if (meta.k !== Math.ceil(meta.zipSize / meta.symbolSize)) return null;
   try {
-    meta.name = td.decode(p.subarray(META_FIXED));
+    meta.name = td.decode(p.subarray(META_FIXED, nameEnd));
+    meta.sender = td.decode(p.subarray(nameEnd + 1, nameEnd + 1 + senderLen));
   } catch {
     return null;
   }

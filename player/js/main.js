@@ -11,6 +11,10 @@ import { setupInstallPrompt, maybeShowIosGuide, requestPersistence, isStandalone
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
+import { fillIcons } from './ui/icons.js';
+import { setupThemeButton } from './ui/theme.js';
+import { openSettings } from './ui/settings.js';
+import { getUserName } from './settings.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +40,8 @@ function notice(message, { sticky = false, action = null } = {}) {
   }
 }
 
+fillIcons();
+setupThemeButton($('theme-button'));
 const store = new Store();
 // beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
 $('version').textContent = `v${VERSION}`;
@@ -111,10 +117,10 @@ async function showMenu(id, anchor) {
   // 실행 중에는 목록이 숨겨지지만, 만일을 위해 삭제·초기화를 막는다 (F-03 5)
   if (!app || viewer.running) return;
   const choice = await openMenu(anchor, [
-    { icon: '✏️', label: '이름 바꾸기', value: 'rename' },
-    { icon: '📤', label: '전송하기', value: 'send' },
-    { icon: '🔄', label: '초기화', value: 'reset' },
-    { icon: '🗑️', label: '삭제', value: 'delete', danger: true, separator: true },
+    { icon: 'pencil', label: '이름 바꾸기', value: 'rename' },
+    { icon: 'send', label: '전송하기', value: 'send' },
+    { icon: 'rotate-ccw', label: '초기화', value: 'reset' },
+    { icon: 'trash-2', label: '삭제', value: 'delete', danger: true, separator: true },
   ]);
   try {
     if (choice === 'rename') {
@@ -146,17 +152,21 @@ async function showMenu(id, anchor) {
   if (choice) list.focusMenuButton(id);
 }
 
-/** [앱 받기]·시트의 [QR로 받기] (SPEC F-05): 받은 앱은 새 ID로 설치되고 선택된다 */
+/** 설치(새로 추가 또는 덮어쓰기)한 앱을 목록에 반영하고 선택한다 */
+function showInstalled(app) {
+  viewer.clearError(app.id); // 덮어쓴 앱의 지난 실행 오류는 지운다
+  store.upsertApp(app);
+  store.select(app.id);
+  list.reveal(app.id);
+}
+
+/** [앱 받기]·시트의 [QR로 받기] (SPEC F-05): 받은 앱은 설치되고 선택된다 */
 function receiveByQr() {
   if (!db || viewer.running) return;
   openTransfer({
     db,
     role: ROLE.RECEIVER,
-    onInstalled: (app) => {
-      store.upsertApp(app);
-      store.select(app.id);
-      list.reveal(app.id);
-    },
+    onInstalled: showInstalled,
     onLaunch: (id) => {
       store.select(id);
       viewer.play(id);
@@ -186,16 +196,18 @@ async function start() {
   // 설치하면 Chrome이 저장소 유지를 허용하므로 한 번 더 요청한다
   installPrompt.onInstalled(() => requestPersistence(db, { force: true }));
   maybeShowIosGuide();
+  // 내 이름이 없으면 처음 한 번 인디언식 이름을 지어 둔다
+  getUserName(db).catch((err) => console.warn('내 이름', err));
   if (store.state.selectedId) list.reveal(store.state.selectedId);
 
   $('add-button').addEventListener('click', async () => {
     const app = await openAddSheet(db, { onQr: receiveByQr });
-    if (!app) return;
-    store.upsertApp(app);
-    store.select(app.id);
-    list.reveal(app.id);
+    if (app) showInstalled(app);
   });
   $('receive-button').addEventListener('click', receiveByQr);
+  $('settings-button').addEventListener('click', async () => {
+    if (await openSettings(db)) notice('설정을 저장했습니다.');
+  });
 }
 
 start();

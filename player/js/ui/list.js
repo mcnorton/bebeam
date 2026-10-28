@@ -1,10 +1,11 @@
 // 앱 목록 (F-03, W-04)
-//   항목: [아이콘 40px] 이름 / 설명(1줄)  [⋯]
+//   항목: [아이콘 40px] 이름 / 설명(작게 2줄) / 보낸 사람(오른쪽, QR로 받은 앱만)  [⋯]
 //   앱 문자열은 textContent로만 렌더링한다. 아이콘은 iconUrl()로 만든 URL을 <img>에 넣는다
 //   (<img> 문맥의 SVG는 스크립트를 실행하지 않는다, ARCHITECTURE §6 T8).
 
 import { request } from '../db.js';
 import { h } from './dialogs.js';
+import { icon as lineIcon } from './icons.js';
 
 const SVG_ICON_MAX = 256 * 1024;
 
@@ -33,7 +34,7 @@ export async function iconUrl(blob, mime) {
 export class AppList {
   #ul;
   #db = null;
-  /** appId → {iconPath, url: string | null, pending: Promise} */
+  /** appId → {iconPath, updatedAt, url: string | null, pending: Promise} */
   #icons = new Map();
   #onSelect;
   #onMenu;
@@ -73,11 +74,12 @@ export class AppList {
           h('span', { class: 'app-text' }, [
             h('span', { class: 'app-name', text: app.name }),
             h('span', { class: `app-desc${app.description ? '' : ' none'}`, text: app.description || '(설명 없음)' }),
+            app.senderName ? h('span', { class: 'app-sender', text: app.senderName }) : '',
           ]),
         ]),
         h('button', {
-          type: 'button', class: 'app-menu-button', 'aria-haspopup': 'menu', 'aria-label': `${app.name} 메뉴`, text: '⋯',
-        }),
+          type: 'button', class: 'app-menu-button', 'aria-haspopup': 'menu', 'aria-label': `${app.name} 메뉴`,
+        }, [lineIcon('ellipsis')]),
       ]);
     });
     this.#ul.replaceChildren(...items);
@@ -96,12 +98,13 @@ export class AppList {
     img.src = DEFAULT_ICON;
     if (!app.iconPath || !this.#db) return;
     let entry = this.#icons.get(app.id);
-    if (entry && entry.iconPath !== app.iconPath) {
+    // 덮어쓰기로 파일이 바뀌면 경로가 같아도 updatedAt이 달라진다
+    if (entry && (entry.iconPath !== app.iconPath || entry.updatedAt !== app.updatedAt)) {
       this.#dropIcon(app.id);
       entry = undefined;
     }
     if (!entry) {
-      entry = { iconPath: app.iconPath, url: null };
+      entry = { iconPath: app.iconPath, updatedAt: app.updatedAt, url: null };
       entry.pending = request(this.#db.transaction('files').objectStore('files').get([app.id, app.iconPath]))
         .then((file) => (file?.blob ? iconUrl(file.blob, file.mime) : null))
         .then((icon) => {

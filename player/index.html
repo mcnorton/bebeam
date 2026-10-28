@@ -6,18 +6,25 @@
   <meta name="color-scheme" content="light dark">
   <!-- CSP meta를 두지 않는다: srcdoc 앱 iframe이 셸의 CSP를 상속하기 때문 (ARCHITECTURE §4.4) -->
   <title>BeBeam</title>
+  <meta name="robots" content="noindex">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
+  <script src="js/theme-init.js"></script>
   <link rel="stylesheet" href="css/player.css">
   <script type="module" src="js/main.js"></script>
 </head>
 <body>
   <div class="shell" id="shell">
     <header class="app-header">
-      <h1 class="brand"><span aria-hidden="true">🧸</span> BeBeam</h1>
+      <h1 class="brand"><img class="brand-icon" src="icons/icon-192.png" alt="" width="24" height="24"> BeBeam</h1>
+      <div class="header-actions">
+        <button type="button" class="icon-button" id="theme-button"></button>
+        <button type="button" class="icon-button" id="settings-button" aria-label="설정" title="설정" data-icon="settings"></button>
+      </div>
     </header>
 
     <div class="install-banner" id="install-banner" role="region" aria-label="설치 안내" hidden></div>
@@ -33,8 +40,8 @@
       <p class="empty" id="empty" hidden>아래 '나의 앱 추가' 버튼을 눌러서<br>멋진 작품을 등록하세요</p>
       <div class="library-footer">
         <div class="footer-actions">
-          <button type="button" class="add-button" id="add-button">＋ 나의 앱 추가</button>
-          <button type="button" class="receive-button" id="receive-button">📷 앱 받기</button>
+          <button type="button" class="add-button" id="add-button" data-icon="plus">나의 앱 추가</button>
+          <button type="button" class="receive-button" id="receive-button" data-icon="scan-qr-code">앱 받기</button>
         </div>
         <p class="version" id="version"></p>
         <button type="button" class="install-help" id="install-help" hidden>(?) 설치안내</button>

@@ -120,14 +120,17 @@ export function touchLastRun(db, id) {
   return updateApp(db, id, () => ({ lastRunAt: Date.now() }));
 }
 
-/** plan 버전이 바뀌었을 때 다시 계산한 plan을 저장한다 (DATABASE §7). 파일은 그대로 둔다 */
-export function savePlan(db, id, rewritePlan) {
-  return updateApp(db, id, () => ({ rewritePlan }));
+/**
+ * plan 버전이 바뀌었을 때 다시 계산한 plan을 저장한다 (DATABASE §7). 파일은 그대로 둔다.
+ * contentHash: 계산에 쓴 파일의 해시. 그사이 덮어쓰기로 파일이 바뀌었으면 저장하지 않는다
+ */
+export function savePlan(db, id, rewritePlan, contentHash) {
+  return updateApp(db, id, (app) => (app.contentHash === contentHash ? { rewritePlan } : {}));
 }
 
-/** 뷰어 배경(og:image) 경로를 저장한다. 없으면 null (다시 찾지 않는다, DATABASE §2) */
-export function saveOgImage(db, id, ogImagePath) {
-  return updateApp(db, id, () => ({ ogImagePath }));
+/** 뷰어 배경(og:image) 경로를 저장한다. 없으면 null (다시 찾지 않는다, DATABASE §2). contentHash는 savePlan과 같다 */
+export function saveOgImage(db, id, ogImagePath, contentHash) {
+  return updateApp(db, id, (app) => (app.contentHash === contentHash ? { ogImagePath } : {}));
 }
 
 /** 초기화: 앱 저장 데이터만 삭제한다. 파일은 유지 */

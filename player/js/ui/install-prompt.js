@@ -6,6 +6,7 @@
 
 import { getMeta, setMeta } from '../db.js';
 import { h, openDialog } from './dialogs.js';
+import { icon as lineIcon } from './icons.js';
 
 export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
 export const IOS_SHOWN_KEY = 'bebeam.ui.iosGuideShown';
@@ -91,7 +92,7 @@ export function setupInstallPrompt({ banner }) {
       }
     });
     banner.replaceChildren(
-      h('p', { class: 'install-banner-text', text: '📲 BeBeam을 설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
+      h('p', { class: 'install-banner-text' }, [lineIcon('download'), 'BeBeam을 설치하면 오프라인에서도 바로 실행할 수 있어요.']),
       h('div', { class: 'install-banner-actions' }, [later, install]),
     );
     banner.hidden = false;

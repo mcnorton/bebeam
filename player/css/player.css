@@ -116,7 +116,27 @@ button { font: inherit; color: inherit; }
   background: var(--surface);
 }
 
-.brand { margin: 0; font-size: 1rem; font-weight: 400; }
+.brand { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 400; }
+.brand-icon { display: block; width: 24px; height: 24px; }
+.header-actions { display: flex; gap: 4px; margin-left: auto; margin-right: -8px; }
+/* ghost 아이콘 버튼 (shadcn size=icon) */
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-button:hover { background: var(--selected); color: var(--text); }
+.icon-button .icon { width: 20px; height: 20px; }
+
+/* 선 아이콘 (js/ui/icons.js, lucide). 글자와 같은 색, 기본 16px */
+.icon { flex: none; width: 16px; height: 16px; vertical-align: -3px; }
 
 .viewer {
   grid-area: viewer;
@@ -166,6 +186,10 @@ button { font: inherit; color: inherit; }
 
 .footer-actions { display: flex; gap: 8px; }
 .add-button, .receive-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-width: 0;
   white-space: nowrap;
   min-height: var(--tap);
@@ -206,7 +230,7 @@ button { font: inherit; color: inherit; }
 /* ── 목록 항목 (F-03) ── */
 .app-list li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   border-radius: var(--radius);
 }
@@ -217,7 +241,7 @@ button { font: inherit; color: inherit; }
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   min-height: 56px;
   padding: 8px;
@@ -239,14 +263,28 @@ button { font: inherit; color: inherit; }
 }
 .app-icon.large { width: 56px; height: 56px; border-radius: 12px; }
 
-.app-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.app-name, .app-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.app-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-name { color: var(--text); }
-.app-desc { color: var(--muted); }
+.app-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--muted);
+  word-break: keep-all; /* 한국어는 어절 단위로 줄바꿈 */
+  overflow-wrap: anywhere;
+}
+.app-sender { unicode-bidi: isolate; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 14px; color: var(--muted); }
 .app-desc.none { font-style: italic; }
 
 .app-menu-button {
   flex: none;
+  margin-top: 6px;
+  display: grid;
+  place-items: center;
   width: var(--tap);
   height: var(--tap);
   border: 0;
@@ -274,7 +312,8 @@ button { font: inherit; color: inherit; }
 /* ── 뷰어 오류 (W-08 c) ── */
 .viewer-error { max-width: 420px; text-align: center; }
 .viewer-error p { margin: 0; }
-.viewer-error-icon { font-size: 2rem; }
+.viewer-error-icon { color: #fbbf24; }
+.viewer-error-icon .icon { width: 32px; height: 32px; }
 .viewer-error-title { color: #fafafa; }
 .viewer-error-message { color: #a1a1aa; line-height: 1.5; overflow-wrap: anywhere; }
 .viewer-actions { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
@@ -351,7 +390,8 @@ button { font: inherit; color: inherit; }
 .menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--selected); outline: none; }
 .menu-item:disabled { color: var(--muted); opacity: .6; cursor: default; }
 .menu-item.danger { color: var(--danger); }
-.menu-icon { width: 1.25em; text-align: center; }
+.menu-icon { color: var(--muted); }
+.menu-item.danger .menu-icon { color: inherit; }
 .menu-sep { height: 1px; margin: 4px -4px; background: var(--line); }
 
 /* ── 설치 유도 배너 (W-02): 목록을 가리지 않도록 grid 한 행을 차지한다 ── */
@@ -368,7 +408,8 @@ button { font: inherit; color: inherit; }
   background: var(--selected);
   font-size: 1rem;
 }
-.install-banner-text { margin: 0; line-height: 1.4; }
+.install-banner-text { margin: 0; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; }
+.install-banner-text .icon { margin-top: 3px; }
 .install-banner-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* ── 설치 안내 (W-03): iOS는 Safari·Chrome 공용 3단계, 그 밖에는 브라우저 설치 메뉴 ── */
@@ -429,6 +470,18 @@ button { font: inherit; color: inherit; }
   font: inherit;
 }
 .text-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.field { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field-label { padding: 0; color: var(--text); }
+.field-row { display: flex; gap: 8px; }
+.field-row .text-input { flex: 1; min-width: 0; }
+.field-row .btn { min-width: 0; }
+.btn-square { width: var(--tap); padding: 0; flex: none; }
+.field-desc { margin: 0; font-size: 14px; color: var(--muted); }
+.radio-option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.radio-option:has(input:checked) { border-color: var(--text); }
+.radio-option input { margin: 4px 0 0; accent-color: var(--accent); }
+.radio-text { display: flex; flex-direction: column; gap: 2px; }
+.radio-desc { font-size: 14px; color: var(--muted); }
 .counter { margin: -8px 0 0; text-align: right; color: var(--muted); }
 .counter.over { color: var(--danger); }
 
@@ -440,6 +493,8 @@ button { font: inherit; color: inherit; }
 .install-stat { margin: 0; }
 .muted { color: var(--muted); }
 .warning {
+  display: flex;
+  gap: 10px;
   padding: 12px 16px;
   border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent);
   border-radius: var(--radius);
@@ -466,7 +521,8 @@ button { font: inherit; color: inherit; }
 .sheet-option { color: var(--text); }
 .sheet-option:hover:not(:disabled) { background: var(--selected); }
 .sheet-option:disabled { opacity: .5; cursor: default; }
-.sheet-icon { font-size: 1.4rem; }
+.warning-icon { margin-top: 3px; color: #d97706; }
+.sheet-icon { width: 20px; height: 20px; color: var(--muted); }
 .sheet-text { display: flex; flex-direction: column; gap: 2px; }
 .sheet-desc { color: var(--muted); }
 
@@ -589,6 +645,9 @@ button { font: inherit; color: inherit; }
 .tx-info { width: var(--info-w, min(100%, 480px)); display: flex; flex-direction: column; gap: 8px; text-align: center; }
 .tx-info p { margin: 0; line-height: 1.4; overflow-wrap: anywhere; }
 .tx-headline { color: #fafafa; }
+.tx-headline .icon, .tx-send-head .icon { margin-right: 6px; }
+.tx-switch { display: inline-flex; align-items: center; gap: 6px; }
+.tx-close, .run-close { display: inline-grid; place-items: center; }
 .tx-sub { color: #a1a1aa; font-variant-numeric: tabular-nums; }
 .tx-sub.warn { color: #fbbf24; }
 .tx-bar { height: 8px; border-radius: 4px; background: #27272a; overflow: hidden; }
@@ -611,7 +670,7 @@ button { font: inherit; color: inherit; }
   text-align: center;
 }
 .tx-detail { white-space: pre-line; color: #d4d4d8; line-height: 1.45; overflow-wrap: anywhere; }
-.tx-detail p { margin: 0; }
+.tx-detail p { margin: 0; unicode-bidi: isolate; }
 .tx-detail.lines p:first-child { color: #fff; margin-bottom: 4px; }
 .tx-detail:empty { display: none; }
 .tx-panel[hidden] { display: none; }
@@ -625,6 +684,8 @@ button { font: inherit; color: inherit; }
   left: 50%;
   bottom: calc(16px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
+  /* left:50%면 남은 폭이 절반이라 짧은 문구도 줄바꿈된다. 내용 폭을 쓰고 화면 안으로 제한 */
+  width: max-content;
   max-width: min(480px, calc(100vw - 32px));
   padding: 12px 16px;
   border: 1px solid var(--line);
@@ -636,20 +697,37 @@ button { font: inherit; color: inherit; }
   z-index: 100;
 }
 
+/* 버튼이 있는 안내(새 버전)는 화면 가운데에 반전 색으로 띄운다 */
 .notice:has(.notice-action) {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  padding: 16px 20px;
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+  /* 검은 뷰어 위에서도 테두리가 보이게 바깥에 옅은 링 */
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-lg);
 }
 
 .notice-action {
   flex: none;
   min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--accent);
+  padding: 0 16px;
+  border: 1px solid var(--bg);
   border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--bg);
+  color: var(--text);
   font: inherit;
+  white-space: nowrap;
   cursor: pointer;
+}
+.notice-action:hover { opacity: .9; }
+
+/* 세로 화면: 글자가 잘리지 않게 버튼을 다음 줄에 꽉 채운다 */
+@media (max-aspect-ratio: 1/1) {
+  .notice:has(.notice-action) { flex-direction: column; align-items: stretch; text-align: center; gap: 12px; }
 }

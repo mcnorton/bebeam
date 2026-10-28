@@ -2,12 +2,13 @@
 //   방향키·Home/End로 이동, Esc·바깥 클릭·Tab으로 닫고 원래 버튼으로 포커스를 돌린다.
 
 import { h } from './dialogs.js';
+import { icon } from './icons.js';
 
 let open = null;
 
 /**
  * @param {HTMLElement} anchor
- * @param {{label: string, icon?: string, value: string, danger?: boolean, disabled?: boolean, separator?: boolean}[]} items
+ * @param {{label: string, icon?: string (icons.js 이름), value: string, danger?: boolean, disabled?: boolean, separator?: boolean}[]} items
  * @returns {Promise<string | null>} 고른 항목의 value, 닫으면 null
  */
 export function openMenu(anchor, items) {
@@ -23,7 +24,7 @@ export function openMenu(anchor, items) {
         'data-value': it.value,
         disabled: it.disabled ?? false,
       }, [
-        it.icon ? h('span', { class: 'menu-icon', 'aria-hidden': 'true', text: it.icon }) : '',
+        it.icon ? icon(it.icon, { class: 'menu-icon' }) : '',
         it.label,
       ]));
     }

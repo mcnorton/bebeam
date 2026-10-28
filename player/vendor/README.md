@@ -9,6 +9,7 @@
 | [fflate](https://github.com/101arrowz/fflate) | 0.8.3 | MIT | `esm/browser.js` → `fflate/fflate.js` | zip / deflate |
 | [es-module-lexer](https://github.com/guybedford/es-module-lexer) | 3.0.4 | MIT | `dist/lexer.js` (wasm 내장) | JS import 분석 |
 | [Neo둥근모 Pro](https://github.com/neodgm/neodgm-pro) | 1.020 | SIL OFL 1.1 (`neodgm-pro/LICENSE`) | 릴리스의 `NeoDunggeunmoPro-Regular.woff2` | 기본 글꼴 (플레이어·랜딩) |
+| [lucide-static](https://github.com/lucide-icons/lucide) | 1.56.0 | ISC (일부 아이콘은 Feather, MIT) | 아이콘 SVG의 path만 `js/ui/icons.js`로 옮김 (라이선스 전문은 그 파일 머리말) | 선 아이콘 |
 
 ## 주의
 

@@ -52,7 +52,10 @@ export async function analyzeReceived(zip, name) {
   return analyze(await fromZip(new Blob([zip]), { name }));
 }
 
-/** analyzeReceived 결과를 새 ID로 설치한다 (source: 'qr') */
-export function installReceived(db, analysis) {
-  return install(db, analysis, 'qr');
+/**
+ * analyzeReceived 결과를 설치한다 (source: 'qr').
+ * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: object | null}} [options] META의 보낸 사람(정리한 값), 같은 이름 처리, 확인 화면의 계획
+ */
+export function installReceived(db, analysis, { senderName = null, policy = 'separate', expect = null } = {}) {
+  return install(db, analysis, 'qr', { senderName, policy, expect });
 }
