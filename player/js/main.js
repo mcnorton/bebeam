@@ -46,12 +46,14 @@ const store = new Store();
 // beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
 $('version').textContent = `v${VERSION}`;
 const installPrompt = setupInstallPrompt({ banner: $('install-banner') });
-// "(?) 설치안내": 홈 화면에 추가하기 전(브라우저 탭)에만 보인다 (W-03)
-$('install-help').hidden = isStandalone();
-$('install-help').addEventListener('click', () => installPrompt.openGuide());
-installPrompt.onInstalled(() => {
-  $('install-help').hidden = true;
-});
+// [비빔 앱 설치하기]는 설치 전(브라우저 탭)에만, 설치한 뒤에는 사이트 링크를 보인다 (W-03)
+function showInstalledLink(installed) {
+  $('install-help').hidden = installed;
+  $('site-link').hidden = !installed;
+}
+showInstalledLink(isStandalone());
+$('install-help').addEventListener('click', () => installPrompt.install());
+installPrompt.onInstalled(() => showInstalledLink(true));
 
 /** 새 버전 토스트 (SPEC F-01 6). 앱 실행·전송 중에는 홈으로 돌아올 때까지 미룬다 */
 let updatePending = false;

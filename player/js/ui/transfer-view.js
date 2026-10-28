@@ -1,5 +1,6 @@
 // 단방향 전송 화면 (TASK M7, F-05)
-//   보내기: 흰 바탕에 짧은 변을 채우는 QR 애니메이션. 받는 쪽 상태는 모르므로 [완료]로 닫는다. 여러 명이 함께 받을 수 있다.
+//   보내기: 먼저 QR 칸에 '보낼 준비'(사이트 QR + 받는 법 3단계)를 띄우고, [전송 시작]을 누르면 짧은 변을 채우는
+//   QR 애니메이션. 받는 쪽 상태는 모르므로 [전송 끝]으로 닫는다. 여러 명이 함께 받을 수 있다.
 //   받기: 위 = 스캐너 정사각형(한 변 = 화면 세로의 1/2, 후면 카메라 영상의 가운데 정사각형), 아래 = 전송 정보.
 //   다 받으면 스캐너 칸 위에 앱 정보와 [취소] [설치 시작]을 띄운다(설치 동의는 받은 뒤에).
 //   앱이 제공한 이름은 textContent로만 넣는다. ?diag면 받는 화면에 카메라·디코더 수치를 보인다.
@@ -13,6 +14,7 @@ import { h } from './dialogs.js';
 import { icon } from './icons.js';
 import { cleanUserName } from '../names.js';
 import { getUserName, getDuplicatePolicy } from '../settings.js';
+import { SITE_LABEL, drawSiteQr } from './install-prompt.js';
 import { listApps } from '../db.js';
 import { planDuplicate } from '../installer/duplicates.js';
 import { duplicateNote } from './add-sheet.js';
@@ -116,45 +118,83 @@ class Modal {
 
 class SendView extends Modal {
   #canvas;
+  #prep;
+  #siteQr;
   #head;
   #hints;
-  #select;
+  #speed;
+  #speedButtons;
+  #begin;
   #display = null;
   #sender = null;
-  #onResize = () => this.#display?.invalidate();
+  #onResize = () => {
+    this.#display?.invalidate();
+    if (!this.#prep.hidden) drawSiteQr(this.#siteQr);
+  };
 
   constructor(o) {
-    const canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드' });
-    const head = h('p', { class: 'tx-send-head', 'aria-live': 'polite', text: '준비하는 중…' });
-    const hints = h('div', { class: 'tx-send-info' });
-    const select = h('select', { 'aria-label': '전송 속도' },
-      Object.keys(SPEED).map((k) => h('option', { value: k, text: SPEED_LABEL[k] })));
-    const done = h('button', { type: 'button', class: 'btn btn-primary', text: '완료' });
-    const actions = h('div', { class: 'tx-send-actions' }, [h('label', { class: 'tx-speed' }, [h('span', { text: '속도' }), select]), done]);
+    const canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드', hidden: true });
+    // 보낼 준비: 받는 사람이 BeBeam을 열고 [앱 받기]까지 할 여유를 준다. 처음 쓰는 사람은 작은 QR로 사이트를 연다
+    const siteQr = h('canvas', { class: 'tx-prep-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` });
+    // 받는 법: 실제 화면의 버튼 모양(칩)과 아이콘으로 보여준다
+    const chip = (cls, iconName, text) => h('span', { class: `tx-chip ${cls}` }, [...(iconName ? [icon(iconName)] : []), text]);
+    const stepItem = (...parts) => h('li', {}, [h('span', { class: 'tx-step' }, parts)]);
+    const prep = h('div', { class: 'tx-prep' }, [
+      h('h2', { class: 'tx-prep-title' }, ['BeBeam 다운로드 :', h('br'), '처음으로 비빈다면...']),
+      h('div', { class: 'tx-prep-body' }, [
+        h('div', { class: 'tx-prep-site' }, [siteQr, h('span', { class: 'tx-prep-url', text: SITE_LABEL })]),
+        h('ol', { class: 'tx-prep-steps' }, [
+          stepItem(icon('globe'), ' QR을 찍거나 주소 열기'),
+          stepItem(chip('tx-chip-launch', 'play', 'BeBeam 실행'), ' 누르기'),
+          stepItem(chip('tx-chip-outline', 'scan-qr-code', '앱 받기'), ' 누르기'),
+          stepItem(icon('camera'), ' 카메라 ', chip('tx-chip-allow', '', '허용')),
+        ]),
+      ]),
+    ]);
+    const head = h('h2', { class: 'tx-send-head', 'aria-live': 'polite', text: '준비하는 중…' });
+    const hints = h('div', { class: 'tx-send-info' }, [h('p', { class: 'tx-hint', text: '받는 쪽이 준비되면 누르세요.' })]);
+    // 전송 속도: 고른 것을 강조색 버튼으로
+    const speedButtons = Object.keys(SPEED).map((k) => {
+      const b = h('button', { type: 'button', class: 'btn tx-speed-option', 'data-speed': k, 'aria-pressed': 'false', text: SPEED_LABEL[k] });
+      b.addEventListener('click', () => this.#setSpeed(k));
+      return b;
+    });
+    const begin = h('button', { type: 'button', class: 'btn btn-primary tx-start', text: '전송 시작', disabled: true });
+    const actions = h('div', { class: 'tx-send-actions' }, [
+      h('div', { class: 'tx-speed', role: 'group', 'aria-label': '전송속도' }, [
+        h('span', { class: 'tx-speed-label', text: '전송속도를 선택하세요' }),
+        h('div', { class: 'tx-speed-options' }, speedButtons),
+      ]),
+      begin,
+    ]);
     super(o, 'tx-send', '앱 보내기', [
-      h('div', { class: 'tx-send-sq' }, [canvas]),
+      h('div', { class: 'tx-send-sq' }, [prep, canvas]),
       h('div', { class: 'tx-send-side' }, [head, hints, actions]),
     ]);
     this.#canvas = canvas;
+    this.#prep = prep;
+    this.#siteQr = siteQr;
     this.#head = head;
     this.#hints = hints;
-    this.#select = select;
-    select.value = savedSpeed();
-    select.addEventListener('change', () => this.#setSpeed(select.value));
-    done.addEventListener('click', () => this.close());
+    this.#speedButtons = speedButtons;
+    this.#begin = begin;
+    this.#markSpeed(savedSpeed());
+    begin.addEventListener('click', () => (this.#sender && !this.#display ? this.#startBeam() : this.close()));
   }
 
   async start() {
     this.open();
     addEventListener('resize', this.#onResize);
+    drawSiteQr(this.#siteQr);
     if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
       this.#fail(['lock', '이 주소에서는 보낼 수 없어요'], '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.');
       return;
     }
+    // 준비 화면을 보는 동안 미리 묶어 둔다: [전송 시작]을 누르면 바로 QR이 나온다
     let sender;
     try {
       const [offer, me] = await Promise.all([packApp(this.o.db, this.o.appId), getUserName(this.o.db)]);
-      sender = await new FountainSender({ ...offer, sender: me, speed: this.#select.value }).init();
+      sender = await new FountainSender({ ...offer, sender: me, speed: this.#speed }).init();
     } catch (err) {
       console.error(err);
       this.#fail(['circle-x', '앱을 보낼 준비를 하지 못했어요'], err?.message ?? '');
@@ -162,20 +202,43 @@ class SendView extends Modal {
     }
     if (this.closing) return;
     this.#sender = sender;
-    const name = clean(sender.name, NAME_MAX) || DEFAULT_NAME;
-    this.#head.textContent = `‘${name}’ 보내는 중`;
-    this.#display = new QrDisplay({ sender, canvas: this.#canvas });
+    this.#head.textContent = `‘${this.#name}’ 보낼 준비`;
+    this.#begin.disabled = false;
+    this.#begin.focus();
+  }
+
+  get #name() {
+    return clean(this.#sender?.name, NAME_MAX) || DEFAULT_NAME;
+  }
+
+  async #startBeam() {
+    if (!this.#sender || this.#display || this.closing) return;
+    this.#prep.hidden = true;
+    this.#canvas.hidden = false;
+    this.#head.textContent = `‘${this.#name}’ 보내는 중`;
+    this.#begin.textContent = '전송 끝';
+    this.#display = new QrDisplay({ sender: this.#sender, canvas: this.#canvas });
     await this.#display.start();
     this.#renderHints();
   }
 
+  #markSpeed(speed) {
+    this.#speed = speed;
+    for (const b of this.#speedButtons) {
+      const on = b.dataset.speed === speed;
+      b.setAttribute('aria-pressed', String(on));
+      b.classList.toggle('selected', on);
+    }
+  }
+
   #setSpeed(speed) {
+    this.#markSpeed(speed);
     try {
       localStorage.setItem(SPEED_KEY, speed);
     } catch { /* 저장 못 해도 이번 전송에는 적용된다 */ }
     this.#sender?.setSpeed(speed);
     this.#display?.invalidate();
-    this.#renderHints();
+    if (this.#display) this.#renderHints();
   }
 
   #renderHints() {
@@ -194,6 +257,8 @@ class SendView extends Modal {
   }
 
   #fail(headline, detail) {
+    this.#begin.textContent = '닫기';
+    this.#begin.disabled = false;
     this.#head.replaceChildren(...withIcon(headline));
     this.#hints.replaceChildren(h('p', { class: 'tx-hint warn', text: detail }));
   }

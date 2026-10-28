@@ -172,17 +172,25 @@ button { font: inherit; color: inherit; }
 
 .library-footer { padding: 8px 8px 12px; }
 .version { margin: 8px 0 0; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* [비빔 앱 설치하기] (설치 전) / 사이트 링크 (설치 뒤) */
 .install-help {
-  display: block;
-  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   min-height: var(--tap);
+  margin: 8px 0 0;
   padding: 0 12px;
-  border: 0;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
   background: transparent;
-  color: var(--muted);
+  color: var(--text);
   cursor: pointer;
 }
-.install-help:hover { color: var(--text); text-decoration: underline; }
+.install-help:hover { background: var(--selected); }
+.site-link { display: block; min-height: var(--tap); line-height: var(--tap); text-align: center; color: var(--muted); text-decoration: none; }
+.site-link:hover { color: var(--text); text-decoration: underline; }
 
 .footer-actions { display: flex; gap: 8px; }
 .add-button, .receive-button {
@@ -415,6 +423,9 @@ button { font: inherit; color: inherit; }
 /* ── 설치 안내 (W-03): iOS는 Safari·Chrome 공용 3단계, 그 밖에는 브라우저 설치 메뉴 ── */
 .ios-guide-steps { margin: 0; padding-left: 1.4em; line-height: 2; }
 /* 단계 아이콘: 브라우저 메뉴 모양을 흉내 낸 선 그림 */
+/* iOS: 사이트 QR(흰 여백 포함)과 주소 */
+.site-qr-row { display: flex; align-items: center; gap: 12px; }
+.site-qr { width: 88px; height: 88px; flex: none; border-radius: 4px; image-rendering: pixelated; }
 .guide-icon { width: 1.25em; height: 1.25em; vertical-align: -0.25em; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ── 대화창 (W-06, W-10~W-13) ── */
@@ -572,27 +583,66 @@ button { font: inherit; color: inherit; }
 .tx-close:focus-visible, .tx-switch:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 2px; }
 
 /* 보내기 */
-.transfer.tx-send { --head: 56px; --foot: 150px; background: #fff; color: #23232b; justify-content: center; gap: 8px; }
+.transfer.tx-send { --head: 64px; --foot: 210px; background: #fff; color: #23232b; justify-content: center; gap: 8px; }
 .tx-send .tx-close { background: rgba(0, 0, 0, .06); color: #23232b; }
-.tx-send-head { margin: 0; min-height: var(--head); padding: 0 48px; display: flex; align-items: center; justify-content: center; text-align: center; overflow-wrap: anywhere; }
+.tx-send-head { margin: 0; min-height: var(--head); padding: 0 48px; display: flex; align-items: center; justify-content: center; text-align: center; overflow-wrap: anywhere;
+                font-size: 1.4rem; font-weight: 400; line-height: 1.3; }
 .tx-send-sq { --side: min(100vw - 2 * var(--safe-x) - 2 * var(--pad), 100dvh - var(--safe-t) - var(--safe-b) - var(--head) - var(--foot) - 2 * var(--pad)); width: var(--side); height: var(--side); flex: none; }
 .tx-qr { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+/* 보낼 준비: QR 칸 안에 사이트 QR(왼쪽)과 받는 법(오른쪽). 칸 크기가 같아 [전송 시작] 뒤 화면이 흔들리지 않는다 */
+.tx-prep { width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+           padding: 14px; border: 1px solid #e4e4e7; border-radius: 14px; background: #fafafa; overflow: hidden; }
+.tx-prep-title { margin: 0; font-size: 1.15rem; font-weight: 400; line-height: 1.35; color: #18181b; }
+.tx-prep-body { display: flex; align-items: center; gap: 12px; }
+.tx-prep-site { width: 38%; flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tx-prep-qr { width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
+.tx-prep-url { font-size: .72rem; color: #52525b; overflow-wrap: anywhere; text-align: center; }
+.tx-prep-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 10px; font-size: .88rem; line-height: 1.35; min-width: 0; }
+.tx-prep-steps li { counter-increment: step; display: flex; align-items: flex-start; }
+.tx-step { min-width: 0; line-height: 1.9; word-break: keep-all; } /* 칩이 줄바꿈돼도 위아래가 붙지 않게 */
+.tx-prep-steps .icon { vertical-align: -.15em; }
+.tx-prep-steps li::before { content: counter(step); flex: none; display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; margin: .3em 5px 0 0;
+                            border-radius: 50%; background: #18181b; color: #fafafa; font-size: .8em; }
+.tx-prep-steps .icon { width: 1.1em; height: 1.1em; color: #2563eb; }
+/* 실제 버튼을 흉내 낸 칩: 랜딩 [▶ BeBeam 실행](파랑), 플레이어 [앱 받기](테두리), 브라우저 권한 창 [허용] */
+.tx-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; border: 1px solid transparent; white-space: nowrap; font-size: .92em; }
+.tx-chip .icon { width: .95em; height: .95em; color: inherit; }
+.tx-chip-launch { background: #2a6ae8; color: #fff; }
+.tx-chip-outline { background: #fff; border-color: #d4d4d8; color: #18181b; box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
+.tx-chip-allow { background: #fff; border-color: #2563eb; color: #2563eb; }
 .tx-send-side { display: contents; } /* 세로: 머리말은 QR 위, 안내·버튼은 아래 */
 .tx-send-head { order: -1; }
-.tx-send-info { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-height: var(--foot); justify-content: flex-start; }
+.tx-send-info { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-height: 66px; justify-content: flex-start; }
 .tx-send-info p { margin: 0; line-height: 1.4; }
 .tx-hint { color: #71717a; }
 .tx-hint.warn { color: #b45309; }
-.tx-send-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
-.tx-speed { display: flex; align-items: center; gap: 8px; }
-.tx-speed select { min-height: 44px; padding: 0 10px; border-radius: var(--radius); border: 1px solid #e4e4e7; background: #fff; color: #09090b; box-shadow: 0 1px 2px rgba(0, 0, 0, .05); font: inherit; }
+.tx-send-actions { width: min(100%, 400px); display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.tx-speed { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 10px; }
+.tx-speed-label { color: #52525b; }
+.tx-speed-options { display: flex; gap: 0; }
+.tx-speed-options .btn { border-radius: 0; margin-left: -1px; padding: 0 14px; }
+.tx-speed-options .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+.tx-speed-options .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+/* 흰 바탕 고정: 셸의 다크 모드 hover 색(밝은 배경)을 쓰지 않는다 */
 .tx-send .btn { min-height: 44px; border-color: #e4e4e7; background: #fff; color: #09090b; }
-.tx-send .btn-primary { border-color: #18181b; background: #18181b; color: #fafafa; }
+.tx-send .btn:hover:not(:disabled) { background: #f4f4f5; color: #09090b; opacity: 1; }
+.tx-send .btn-primary, .tx-send .btn-primary:hover:not(:disabled) { border-color: #18181b; background: #18181b; color: #fafafa; }
+.tx-send .btn-primary:hover:not(:disabled) { background: #27272a; }
+.tx-speed-options .btn.selected, .tx-speed-options .btn.selected:hover:not(:disabled) { position: relative; z-index: 1; border-color: #2563eb; background: #2563eb; color: #fff; }
+/* [전송 시작]·[전송 끝]: 한 줄 전체. 노랑/검정 사선 테이프 테두리가 늘 0.5초마다 깜빡인다 (모바일엔 hover가 없다) */
+.tx-send .tx-start { position: relative; min-height: 52px; width: 100%; font-size: 1.05rem; }
+.tx-start::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: calc(var(--radius) + 4px); opacity: 0;
+                    background: repeating-linear-gradient(-45deg, #facc15 0 8px, #18181b 8px 16px); pointer-events: none; }
+.tx-start:not(:disabled)::before { animation: tape-blink 1s steps(1, end) infinite; }
+@keyframes tape-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .tx-start:not(:disabled)::before { animation: none; opacity: 1; }
+}
 @media (orientation: landscape) {
   .transfer.tx-send { flex-direction: row; justify-content: center; gap: 24px; }
   .tx-send-sq { --side: min(100dvh - var(--safe-t) - var(--safe-b) - 2 * var(--pad) - 8px, 60vw); order: 0; }
   .tx-send-head { order: 0; }
-  .tx-send-side { display: flex; flex-direction: column; justify-content: center; gap: 8px; max-width: 320px; }
+  .tx-send-side { display: flex; flex-direction: column; justify-content: center; gap: 8px; max-width: 340px; }
   .tx-send-head { padding: 0; min-height: 0; justify-content: flex-start; text-align: left; }
   .tx-send-info { align-items: flex-start; text-align: left; min-height: 0; }
 }

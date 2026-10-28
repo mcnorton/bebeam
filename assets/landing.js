@@ -1,4 +1,4 @@
-// 랜딩 (SPEC F-01 2, W-01): [플레이어 실행]은 새 창에서 연다. 팝업이 막히면 같은 창으로 이동한다.
+// 랜딩 (SPEC F-01 2, W-01): [BeBeam 실행]은 새 창에서 연다. 팝업이 막히면 같은 창으로 이동한다.
 //   noopener를 넘기면 window.open이 항상 null을 돌려줘 차단 여부를 알 수 없으므로, 연 뒤에 opener를 끊는다.
 
 const link = document.getElementById('launch');

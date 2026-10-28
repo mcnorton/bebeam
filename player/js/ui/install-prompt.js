@@ -1,18 +1,31 @@
 // 플레이어 설치 유도와 저장소 유지 요청 (SPEC F-01 3–4, W-02, W-03)
 //   Chrome/Edge/Android: beforeinstallprompt → 상단 배너 [나중에](7일 숨김) [설치]
-//   설치 안내(W-03): iOS는 처음 한 번 자동으로, 그 뒤에는 목록 아래 "(?) 설치안내"로 연다. 기기별 단계를 보여준다
+//   목록 아래 [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면 바로 띄우고, 없으면 설치 안내(W-03)를 연다.
+//   설치 안내: iOS는 처음 한 번 자동으로도 연다. 기기별 단계를 보여주고, iOS에는 사이트 QR·주소를 덧붙인다
 //   이미 standalone이면 아무것도 띄우지 않는다.
 //   navigator.storage.persist()는 처음 한 번 요청하고 결과를 meta.settings.persisted에 기록한다.
 
 import { getMeta, setMeta } from '../db.js';
 import { h, openDialog } from './dialogs.js';
 import { icon as lineIcon } from './icons.js';
+import { renderQR } from '../transfer/qr.js';
 
 export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
 export const IOS_SHOWN_KEY = 'bebeam.ui.iosGuideShown';
 /** v1.3 전의 [다시 보지 않기]. 눌렀던 사용자는 안내를 본 것으로 친다 */
 export const IOS_HIDDEN_KEY = 'bebeam.ui.iosGuideHidden';
 export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** 비빔 사이트: 처음 받는 사람 안내(보낼 준비)와 iOS 설치 안내의 작은 QR */
+export const SITE_URL = 'https://www.bebeam.net/';
+export const SITE_LABEL = 'www.bebeam.net';
+// renderQR은 Alphanumeric 모드라 대문자로 넣는다 (스킴·호스트는 대소문자를 가리지 않는다)
+const SITE_QR_TEXT = SITE_URL.toUpperCase();
+
+/** 사이트 QR을 canvas에 그린다. canvas는 화면에 붙어 CSS 크기가 정해진 뒤여야 한다 */
+export function drawSiteQr(canvas) {
+  renderQR(canvas, SITE_QR_TEXT, 'M');
+}
 
 /** iPhone/iPad (iPadOS는 데스크톱 Safari처럼 Mac으로 보이므로 터치 지점 수로 구별) */
 export function isIos({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
@@ -27,7 +40,7 @@ export function shouldOfferInstall({ standalone, dismissedAt, now }) {
   return !Number.isFinite(t) || t <= 0 || now - t >= SNOOZE_MS;
 }
 
-/** iOS 안내를 자동으로 띄울지: 처음 한 번만 (그 뒤에는 "(?) 설치안내") */
+/** iOS 안내를 자동으로 띄울지: 처음 한 번만 (그 뒤에는 [비빔 앱 설치하기]) */
 export function shouldShowIosGuide({ ios, standalone, shown }) {
   return ios && !standalone && !shown;
 }
@@ -112,16 +125,16 @@ export function setupInstallPrompt({ banner }) {
 
   return {
     onInstalled: (fn) => installedHandlers.push(fn),
-    /** "(?) 설치안내": 받아 둔 설치 창이 있으면 [설치]도 함께 */
-    openGuide: () => openInstallGuide({
-      deferred,
-      onInstall: () => {
-        const e = deferred;
-        deferred = null;
-        hide();
-        return e?.prompt().then(() => e.userChoice).catch((err) => console.warn(err));
-      },
-    }),
+    /**
+     * [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면(Android·PC) 바로 띄우고, 없으면(iOS 등) 설치 안내를 연다
+     */
+    install: () => {
+      const e = deferred;
+      if (!e || isIos(navigator)) return openInstallGuide();
+      deferred = null;
+      hide();
+      return e.prompt().then(() => e.userChoice).catch((err) => console.warn(err));
+    },
   };
 }
 
@@ -151,11 +164,11 @@ function icon(kind, label) {
 const step = (...parts) => h('li', {}, parts);
 
 /**
- * 설치 안내 (W-03). iOS는 Safari·Chrome 공용 3단계, 그 밖에는 브라우저의 설치 메뉴를 안내한다.
- * @param {{deferred?: object | null, onInstall?: () => void}} [o]
+ * 설치 안내 (W-03). iOS는 Safari·Chrome 공용 3단계와 사이트 QR·주소, 그 밖에는 브라우저의 설치 메뉴를 안내한다.
  */
-export async function openInstallGuide({ deferred = null, onInstall } = {}) {
+export async function openInstallGuide() {
   const ios = isIos(navigator);
+  const qr = ios ? h('canvas', { class: 'site-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` }) : null;
   const body = ios
     ? [
       h('ol', { class: 'ios-guide-steps' }, [
@@ -164,6 +177,9 @@ export async function openInstallGuide({ deferred = null, onInstall } = {}) {
         step(icon('add', '추가'), ' 홈 화면에 추가'),
       ]),
       h('p', { class: 'dialog-message', text: '홈 화면에서 실행해야 앱이 지워지지 않고 전체 화면으로 실행돼요.' }),
+      h('div', { class: 'site-qr-row' }, [qr, h('p', { class: 'dialog-message' }, [
+        '다른 브라우저에서 열었다면 Safari로 이 주소를 열어 주세요.', h('br'), h('strong', { text: SITE_LABEL }),
+      ])]),
     ]
     : [
       h('ol', { class: 'ios-guide-steps' }, [
@@ -172,10 +188,13 @@ export async function openInstallGuide({ deferred = null, onInstall } = {}) {
       ]),
       h('p', { class: 'dialog-message', text: '설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
     ];
-  const buttons = [{ label: '확인', value: 'ok', kind: deferred ? '' : 'primary', autofocus: !deferred }];
-  if (deferred && !ios) buttons.unshift({ label: '설치', value: 'install', kind: 'primary', autofocus: true });
-  const { value } = await openDialog({ title: '홈 화면에 추가하기', className: 'ios-guide', body, buttons });
-  if (value === 'install') onInstall?.();
+  await openDialog({
+    title: '홈 화면에 추가하기',
+    className: 'ios-guide',
+    body,
+    buttons: [{ label: '확인', value: 'ok', kind: 'primary', autofocus: true }],
+    onOpen: () => qr && drawSiteQr(qr),
+  });
 }
 
 /** iOS 홈 화면 추가 안내 (W-03). 처음 한 번만 자동으로 연다 */

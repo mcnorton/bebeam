@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>BeBeam - 내가 만든 웹앱을 폰에 담고 나누는 플레이어</title>
-  <meta name="description" content="내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어">
+  <title>비빔 BeBeam - Beam으로 전송하는 Webapp Launcher</title>
+  <meta name="description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처">
   <link rel="canonical" href="https://bebeam.net/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="BeBeam">
-  <meta property="og:title" content="BeBeam - 내가 만든 웹앱을 폰에 담고 나누는 플레이어">
-  <meta property="og:description" content="내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어">
+  <meta property="og:title" content="비빔 BeBeam - Beam으로 전송하는 Webapp Launcher">
+  <meta property="og:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처">
   <meta property="og:url" content="https://bebeam.net/">
   <meta property="og:locale" content="ko_KR">
   <meta property="og:image" content="https://bebeam.net/assets/og.png">
@@ -18,8 +18,8 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="BeBeam">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="BeBeam - 내가 만든 웹앱을 폰에 담고 나누는 플레이어">
-  <meta name="twitter:description" content="내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어">
+  <meta name="twitter:title" content="비빔 BeBeam - Beam으로 전송하는 Webapp Launcher">
+  <meta name="twitter:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처">
   <meta name="twitter:image" content="https://bebeam.net/assets/og.png">
   <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
@@ -30,9 +30,9 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "BeBeam",
+    "name": "비빔 BeBeam",
     "url": "https://bebeam.net/",
-    "description": "내가 만든 웹앱을 폰에 담고, 친구와 폰을 맞대어 나누는 플레이어",
+    "description": "내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",
     "inLanguage": "ko",
@@ -54,22 +54,36 @@
               margin: 24px 0; padding: 0 24px; border-radius: 14px; background: var(--accent); color: var(--accent-text);
               font-size: 1.1rem; font-weight: 700; text-decoration: none; }
     .launch:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
-    .features { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px;
-                color: var(--muted); font-size: .9rem; }
-    .features li::before { content: "· "; }
+    .tagline { color: var(--muted); margin-bottom: 20px; }
+    .points { margin: 0 auto; padding: 0; list-style: none; text-align: left; display: inline-block; }
+    .points li { line-height: 1.6; margin: 0 0 6px; padding-left: 1.2em; text-indent: -1.2em; }
+    .points li::before { content: "▸ "; color: var(--accent); }
+    .tags { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
+    .tags li { padding: 2px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--muted); font-size: .9rem; }
+    .scope { margin-top: 12px; color: var(--muted); font-size: .9rem; }
   </style>
 </head>
 <body>
   <main>
     <img class="logo" src="player/icons/icon-192.png" alt="">
-    <h1>BeBeam</h1>
-    <p>내가 만든 웹앱을 폰에 담고,<br>친구와 폰을 맞대어 나눠요.</p>
-    <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> 플레이어 실행</a>
-    <ul class="features">
-      <li>서버 없이</li>
-      <li>오프라인 실행</li>
-      <li>안전한 샌드박스</li>
+    <h1>비빔 BeBeam</h1>
+    <p class="tagline">Beam으로 전송하는 Webapp Launcher</p>
+    <ul class="points">
+      <li>내가 만든 웹앱을 스마트폰에서 비벼요.</li>
+      <li>와이파이 없이 친구에게 전송하고 함께 비벼요.</li>
+      <li>서버에 올리고, 앱스토어 등록 없이 바로 비벼요.</li>
+      <li>한 번에 여러 명에게 비빔을 쏘고 비벼요.</li>
     </ul>
+    <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+    <ul class="tags" aria-label="이런 앱을 비벼요">
+      <li>#스낵게임</li>
+      <li>#작업시뮬레이터</li>
+      <li>#업무용데이터베이스</li>
+      <li>#습관관리</li>
+      <li>#용돈기입장</li>
+      <li>#수업시간표</li>
+    </ul>
+    <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
   </main>
   <script src="assets/landing.js"></script>
 </body>
