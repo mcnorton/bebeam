@@ -13,12 +13,20 @@ const MAX_CROP_SIDE = 1280; // zxing에 넘기는 크롭 한 변 상한 (워커 
  * @param {HTMLCanvasElement} canvas  CSS로 정사각형 크기가 정해져 있어야 한다
  * @param {string} text  base45 문자열
  * @param {'L'|'M'|'Q'|'H'} ecc
+ * @param {number} [version] 고정할 QR 버전. 주면 짧은 데이터도 같은 밀도로 그린다(넘치면 자동). 0이면 자동
  * @returns {{version: number, modules: number}}
  */
-export function renderQR(canvas, text, ecc = 'M') {
-  const qr = qrcode(0, ecc);
-  qr.addData(text, 'Alphanumeric');
-  qr.make();
+export function renderQR(canvas, text, ecc = 'M', version = 0) {
+  let qr;
+  try {
+    qr = qrcode(version, ecc);
+    qr.addData(text, 'Alphanumeric');
+    qr.make();
+  } catch {
+    qr = qrcode(0, ecc); // 고정 버전에 들어가지 않으면 자동으로
+    qr.addData(text, 'Alphanumeric');
+    qr.make();
+  }
   const n = qr.getModuleCount();
   const total = n + QUIET_ZONE * 2;
   const target = Math.floor(Math.min(canvas.clientWidth, canvas.clientHeight) * (globalThis.devicePixelRatio || 1));

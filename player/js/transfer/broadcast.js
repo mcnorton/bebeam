@@ -96,19 +96,22 @@ export class FountainSender {
     return this.stats.symbols / this.k;
   }
 
-  /** @returns {{bytes: Uint8Array, ecc: 'L'|'M'}} */
+  /**
+   * version: 속도 단계의 QR 버전. META처럼 짧은 프레임도 같은 버전으로 그려 화면 밀도를 일정하게 한다
+   * @returns {{bytes: Uint8Array, ecc: 'L'|'M', version: number}}
+   */
   nextFrame() {
     if (!this.#metaFrame) throw new Error('init() first');
     const s = SPEED[this.#speed];
     this.stats.frames++;
-    if (this.#frameNo++ % META_EVERY === 0) return { bytes: this.#metaFrame, ecc: s.ecc };
+    if (this.#frameNo++ % META_EVERY === 0) return { bytes: this.#metaFrame, ecc: s.ecc, version: s.version };
     const n = symbolsPerFrame(s.bytes, this.symbolSize);
     const firstId = this.#nextId;
     const symbols = [];
     for (let i = 0; i < n; i++) symbols.push(this.#encoder.symbol((firstId + i) >>> 0));
     this.#nextId = (firstId + n) >>> 0;
     this.stats.symbols += n;
-    return { bytes: encodeFrame({ sid: this.sid, type: TYPE.SYM, payload: encodeSym({ firstId, symbols }) }), ecc: s.ecc };
+    return { bytes: encodeFrame({ sid: this.sid, type: TYPE.SYM, payload: encodeSym({ firstId, symbols }) }), ecc: s.ecc, version: s.version };
   }
 }
 

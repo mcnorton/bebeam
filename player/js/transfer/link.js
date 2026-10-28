@@ -110,7 +110,7 @@ export class QrDisplay {
     if (text === this.#lastText) return;
     this.#lastText = text;
     try {
-      renderQR(this.#canvas, text, f.ecc);
+      renderQR(this.#canvas, text, f.ecc, f.version);
     } catch {
       this.#lastText = null; // 캔버스 크기가 0인 순간 등은 다음 tick에 다시 그린다
     }
