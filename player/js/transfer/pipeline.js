@@ -14,8 +14,8 @@ const STORED = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'mp3', 'ogg
 
 /** 전송 권장 크기 (압축 후, SPEC C-3). 넘으면 예상 시간을 경고한다 */
 export const TRANSFER_WARN = 2 * 1024 * 1024;
-/** 예상 시간 계산용 보수적 처리량 (ARCHITECTURE §5.2: 3–10 KB/s, 실측은 T4.6) */
-export const ESTIMATE_BPS = 4 * 1024;
+/** 예상 시간 계산용 보수적 처리량: 보통 속도(v25, 10fps) 이론 약 10 KB/s에서 인식 실패를 뺀 값 (R4 §2.1, 실측 대기) */
+export const ESTIMATE_BPS = 6 * 1024;
 
 export function estimateSeconds(bytes) {
   return Math.ceil(bytes / ESTIMATE_BPS);
@@ -43,13 +43,16 @@ export async function packApp(db, appId) {
 }
 
 /**
- * 받은 zip을 일반 설치 경로로 설치한다. 검증에 실패하면 InstallError.
- * @param {IDBDatabase} db
- * @param {Uint8Array} zip 세션이 복호화·해시 검증을 마친 zip
- * @param {string} name INFO의 이름 (index.html에 title이 없을 때 이름 후보)
+ * 받은 zip을 일반 설치 경로로 분석한다(C-2~C-6). 검증에 실패하면 InstallError.
+ * 설치 동의 화면은 송신자가 META로 주장한 값이 아니라 이 분석 결과(실제 이름·파일 수·크기)를 보여준다.
+ * @param {Uint8Array} zip 수신자가 SHA-256까지 확인한 zip
+ * @param {string} name META의 이름 (index.html에 title이 없을 때 이름 후보)
  */
-export async function installReceived(db, zip, name) {
-  const source = await fromZip(new Blob([zip]), { name });
-  const analysis = await analyze(source);
+export async function analyzeReceived(zip, name) {
+  return analyze(await fromZip(new Blob([zip]), { name }));
+}
+
+/** analyzeReceived 결과를 새 ID로 설치한다 (source: 'qr') */
+export function installReceived(db, analysis) {
   return install(db, analysis, 'qr');
 }

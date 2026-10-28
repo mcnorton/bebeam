@@ -1,51 +1,40 @@
-// 맞대기 전송 화면 (F-05, W-14, W-15)
-//   카메라에 가까운 절반은 스캔 카메라 칸, 먼 절반은 QR. 두 칸은 같은 크기로 구분선에 대칭이라
-//   한 폰을 거꾸로 들고 마주 보면 내 QR이 상대의 카메라 칸에 겹친다. 송신과 수신이 같은 화면을 쓴다.
-//   구분선이 진행 막대이고, 그 위에 안내(headline), 아래에 진행률·오류(sub)를 둔다.
-//   앱이 제공한 이름은 textContent로만 넣는다.
+// 단방향 전송 화면 (TASK M7, F-05)
+//   보내기: 흰 바탕에 짧은 변을 채우는 QR 애니메이션. 받는 쪽 상태는 모르므로 [완료]로 닫는다. 여러 명이 함께 받을 수 있다.
+//   받기: 위 = 스캐너 정사각형(한 변 = 화면 세로의 1/2, 후면 카메라 영상의 가운데 정사각형), 아래 = 전송 정보.
+//   다 받으면 스캐너 칸 위에 앱 정보와 [취소] [설치 시작]을 띄운다(설치 동의는 받은 뒤에).
+//   앱이 제공한 이름은 textContent로만 넣는다. ?diag면 받는 화면에 카메라·디코더 수치를 보인다.
 
-import { TransferSession, ROLE, STATE, CANCEL_REASON, RTC } from '../transfer/session.js';
-import { OpticalLink, cameraErrorMessage, cameraSide } from '../transfer/link.js';
-import { RtcLink } from '../transfer/rtc-link.js';
-import { packApp, installReceived, formatEstimate, TRANSFER_WARN } from '../transfer/pipeline.js';
+import { FountainSender, FountainReceiver, STATE, SPEED, DEFAULT_SPEED } from '../transfer/broadcast.js';
+import { QrDisplay, QrScanner, scannerErrorMessage } from '../transfer/link.js';
+import { packApp, analyzeReceived, installReceived, formatEstimate, estimateSeconds, TRANSFER_WARN } from '../transfer/pipeline.js';
 import { clean, NAME_MAX, DEFAULT_NAME } from '../installer/meta.js';
 import { formatBytes } from '../installer/install.js';
-import { h, objectParticle } from './dialogs.js';
+import { h } from './dialogs.js';
 
-const INTRO_MS = 3000;
-const CANCEL_SHOW_MS = 1000; // CANCEL 프레임을 보여주는 시간 (SPEC F-05 규칙 5)
-const SENDER_LINGER_MS = 10_000; // 성공 후 RESULT를 더 보여주는 시간 (상대가 못 읽었을 수 있으므로)
+export const ROLE = Object.freeze({ SENDER: 1, RECEIVER: 2 });
+
 const UI_INTERVAL = 250;
+const SPEED_LABEL = { slow: '느리게', normal: '보통', fast: '빠르게' };
+const SPEED_KEY = 'bebeam.tx.speed';
 
-const FAIL_SUB = {
-  timeout: '두 화면이 서로를 볼 수 있는지 확인해 주세요.',
-  idle: '3분 동안 연결되지 않아 멈췄어요. 준비되면 [다시 시도]를 눌러 주세요.',
-};
-
-const FAIL_TEXT = {
-  timeout: '❌ 연결이 끊겼어요',
-  'hash-mismatch': '❌ 파일이 손상되었어요',
-  decrypt: '❌ 파일이 손상되었어요',
-  'peer-cancel': '상대방이 취소했습니다',
-  'peer-verify-failed': '❌ 친구 쪽에서 파일이 손상되었어요',
-  'peer-too-large': '❌ 친구가 받을 수 없는 앱이에요 (크기·파일 수 상한)',
-  'bad-info': '❌ 받을 수 없는 앱 정보예요',
-  idle: '⌛ 친구의 폰을 찾지 못했어요',
-};
-
-/** 상대가 보낸 이름은 C-5와 같이 다듬어 보여준다 (길이, 양방향 제어·폭 없는 문자) */
-function peerAppName(info) {
-  return info ? clean(info.name, NAME_MAX) : '';
+/** 보낸 쪽이 정한 이름은 C-5와 같이 다듬어 보여준다 (길이, 양방향 제어·폭 없는 문자) */
+function appName(meta) {
+  return (meta && clean(meta.name, NAME_MAX)) || DEFAULT_NAME;
 }
 
-function deviceName() {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return 'iPhone';
-  if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'iPad';
-  if (/Android/.test(ua)) return 'Android';
-  if (/Mac/.test(ua)) return 'Mac';
-  if (/Windows/.test(ua)) return 'Windows PC';
-  return 'BeBeam';
+function formatRate(bps) {
+  if (!bps) return '';
+  const kbs = bps / 1024;
+  return kbs >= 1024 ? `${(kbs / 1024).toFixed(1)} MB/s` : `${kbs.toFixed(1)} KB/s`;
+}
+
+function savedSpeed() {
+  try {
+    const s = localStorage.getItem(SPEED_KEY);
+    return SPEED[s] ? s : DEFAULT_SPEED;
+  } catch {
+    return DEFAULT_SPEED;
+  }
 }
 
 /**
@@ -58,16 +47,158 @@ function deviceName() {
  */
 export function openTransfer(o) {
   return new Promise((resolve) => {
-    const view = new TransferView({ ...o, onClose: resolve });
-    view.start();
+    const View = o.role === ROLE.SENDER ? SendView : ReceiveView;
+    new View({ ...o, onClose: resolve }).start();
   });
 }
 
-class TransferView {
+/** 모달 공통: 뒤쪽 셸 inert, Escape·✕로 닫기, 포커스 되돌리기 */
+class Modal {
+  root;
+  closing = false;
   #o;
-  #root;
-  #video;
+  #prevFocus = null;
+  #shell = null;
+  #onKey = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.close();
+    }
+  };
+
+  constructor(o, className, label, children) {
+    this.#o = o;
+    const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '닫기', text: '✕' });
+    close.addEventListener('click', () => this.close());
+    this.root = h('div', { class: `transfer ${className}`, role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': label }, [close, ...children]);
+  }
+
+  get o() {
+    return this.#o;
+  }
+
+  open() {
+    this.#prevFocus = document.activeElement;
+    this.#shell = document.getElementById('shell');
+    if (this.#shell) this.#shell.inert = true;
+    document.body.append(this.root);
+    this.root.focus();
+    document.addEventListener('keydown', this.#onKey);
+  }
+
+  /** 하위 클래스가 정리를 덧붙인다 */
+  teardown() {}
+
+  close() {
+    if (this.closing) return;
+    this.closing = true;
+    this.teardown();
+    document.removeEventListener('keydown', this.#onKey);
+    this.root.remove();
+    if (this.#shell) this.#shell.inert = false;
+    if (this.#prevFocus?.isConnected) this.#prevFocus.focus();
+    this.#o.onClose();
+  }
+}
+
+// ───────── 보내기 ─────────
+
+class SendView extends Modal {
   #canvas;
+  #head;
+  #hints;
+  #select;
+  #display = null;
+  #sender = null;
+  #onResize = () => this.#display?.invalidate();
+
+  constructor(o) {
+    const canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드' });
+    const head = h('p', { class: 'tx-send-head', 'aria-live': 'polite', text: '준비하는 중…' });
+    const hints = h('div', { class: 'tx-send-info' });
+    const select = h('select', { 'aria-label': '전송 속도' },
+      Object.keys(SPEED).map((k) => h('option', { value: k, text: SPEED_LABEL[k] })));
+    const done = h('button', { type: 'button', class: 'btn btn-primary', text: '완료' });
+    const actions = h('div', { class: 'tx-send-actions' }, [h('label', { class: 'tx-speed' }, [h('span', { text: '속도' }), select]), done]);
+    super(o, 'tx-send', '앱 보내기', [
+      h('div', { class: 'tx-send-sq' }, [canvas]),
+      h('div', { class: 'tx-send-side' }, [head, hints, actions]),
+    ]);
+    this.#canvas = canvas;
+    this.#head = head;
+    this.#hints = hints;
+    this.#select = select;
+    select.value = savedSpeed();
+    select.addEventListener('change', () => this.#setSpeed(select.value));
+    done.addEventListener('click', () => this.close());
+  }
+
+  async start() {
+    this.open();
+    addEventListener('resize', this.#onResize);
+    if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
+      this.#fail('🔒 이 주소에서는 보낼 수 없어요', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.');
+      return;
+    }
+    let sender;
+    try {
+      const offer = await packApp(this.o.db, this.o.appId);
+      sender = await new FountainSender({ ...offer, speed: this.#select.value }).init();
+    } catch (err) {
+      console.error(err);
+      this.#fail('❌ 앱을 보낼 준비를 하지 못했어요', err?.message ?? '');
+      return;
+    }
+    if (this.closing) return;
+    this.#sender = sender;
+    const name = clean(sender.name, NAME_MAX) || DEFAULT_NAME;
+    this.#head.textContent = `‘${name}’ 보내는 중`;
+    this.#display = new QrDisplay({ sender, canvas: this.#canvas });
+    await this.#display.start();
+    this.#renderHints();
+  }
+
+  #setSpeed(speed) {
+    try {
+      localStorage.setItem(SPEED_KEY, speed);
+    } catch { /* 저장 못 해도 이번 전송에는 적용된다 */ }
+    this.#sender?.setSpeed(speed);
+    this.#display?.invalidate();
+    this.#renderHints();
+  }
+
+  #renderHints() {
+    const s = this.#sender;
+    const lines = [
+      ['받는 쪽 화면에서 진행을 확인하세요.'],
+      ['여러 명이 함께 받을 수 있어요.'],
+      ['화면 밝기를 최대로 하면 더 잘 읽혀요.'],
+    ];
+    if (s && s.zip.length > TRANSFER_WARN) {
+      const sec = estimateSeconds(s.zip.length) * (SPEED.normal.bytes / SPEED[s.speed].bytes);
+      lines.push([`큰 앱이라 오래 걸려요 (${formatEstimate(sec)})`, 'warn']);
+    }
+    if (this.#display && !this.#display.wakeLockSupported) lines.push(['화면이 꺼지지 않게 해 주세요.', 'warn']);
+    this.#hints.replaceChildren(...lines.map(([text, cls]) => h('p', { class: `tx-hint${cls ? ` ${cls}` : ''}`, text })));
+  }
+
+  #fail(headline, detail) {
+    this.#head.textContent = headline;
+    this.#hints.replaceChildren(h('p', { class: 'tx-hint warn', text: detail }));
+  }
+
+  teardown() {
+    removeEventListener('resize', this.#onResize);
+    this.#display?.stop();
+    this.#display = null;
+  }
+}
+
+// ───────── 받기 ─────────
+
+class ReceiveView extends Modal {
+  #scan;
+  #video;
   #headline;
   #sub;
   #bar;
@@ -75,161 +206,103 @@ class TransferView {
   #panel;
   #detail;
   #actions;
-  #intro;
-  #session = null;
-  #link = null;
-  #rtc = null;
-  #offer = null;
+  #diag = null;
+  #switch;
+  #receiver = null;
+  #scanner = null;
   #uiTimer = 0;
-  #closing = false;
+  #actionsKey = '';
   #installed = null;
   #installError = null;
   #installing = false;
-  #installApproved = false;
-  #lingerTimer = 0;
-  #actionsKey = '';
-  #accepted = false;
-  #prevFocus = null;
-  #shell = null;
-  #onResize = () => this.#layout();
-  #onKey = (e) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      this.#cancelOrClose();
-    }
-  };
+  #approved = false;
+  #analysis = null;
+  #analyzing = false;
+  #lastHits = 0;
 
   constructor(o) {
-    this.#o = o;
-    this.#video = h('video', { class: 'tx-preview', playsinline: true, muted: true, 'aria-hidden': 'true' });
-    this.#canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드' });
-    this.#headline = h('p', { class: 'tx-headline', 'aria-live': 'polite' });
-    this.#sub = h('p', { class: 'tx-sub' });
-    this.#fill = h('div', { class: 'tx-bar-fill' });
-    this.#bar = h('div', { class: 'tx-bar', role: 'progressbar', 'aria-label': '전송 진행률', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, [this.#fill]);
-    this.#actions = h('div', { class: 'tx-actions' });
-    this.#detail = h('div', { class: 'tx-detail' });
-    this.#panel = h('div', { class: 'tx-panel', hidden: true }, [this.#detail, this.#actions]);
-    const close = h('button', { type: 'button', class: 'tx-close', 'aria-label': '취소', text: '✕' });
-    close.addEventListener('click', () => this.#cancelOrClose());
-    this.#intro = h('div', { class: 'tx-intro', role: 'note' }, [
-      h('p', { class: 'tx-intro-art', 'aria-hidden': 'true', text: '📱 ⇅ 📱' }),
-      h('p', { text: '한 명은 폰을 거꾸로 들고, 화면끼리 마주 보게 15–25cm 거리에서 들어 주세요.' }),
-      h('p', { text: '내 QR이 친구 화면의 카메라 칸에 겹치게 맞추면 돼요.' }),
-      h('p', { class: 'tx-intro-sub', text: '화면 밝기를 최대로 하면 더 잘 읽혀요.' }),
-      h('p', { class: 'tx-intro-sub', text: '같은 Wi-Fi면 네트워크로 빠르게 보내요.' }),
-    ]);
-    this.#root = h('div', { class: 'transfer', role: 'dialog', 'aria-modal': 'true', tabindex: '-1', 'aria-label': this.#o.role === ROLE.SENDER ? '앱 보내기' : 'QR로 받기' }, [
-      // 미리보기는 카메라 쪽 절반 전체를 채우고, 가운데 가이드(QR 칸과 같은 크기·위치)가 친구 QR을 둘 자리를 보여준다.
-      // 디코더는 미리보기와 관계없이 카메라 영상 전체를 읽는다
-      h('div', { class: 'tx-cam-half' }, [this.#video, h('div', { class: 'tx-square tx-cam-sq' }, [this.#panel])]),
-      h('div', { class: 'tx-band' }, [this.#headline, this.#bar, this.#sub]),
-      h('div', { class: 'tx-qr-half' }, [h('div', { class: 'tx-square tx-qr-sq' }, [this.#canvas])]),
-      close,
-      this.#intro,
-    ]);
+    const video = h('video', { class: 'tx-preview', playsinline: true, muted: true, 'aria-hidden': 'true' });
+    const detail = h('div', { class: 'tx-detail' });
+    const actions = h('div', { class: 'tx-actions' });
+    const panel = h('div', { class: 'tx-panel', hidden: true }, [detail, actions]);
+    const scan = h('div', { class: 'tx-scan' }, [video, h('div', { class: 'tx-guide', 'aria-hidden': 'true' }), panel]);
+    const headline = h('p', { class: 'tx-headline', 'aria-live': 'polite' });
+    const sub = h('p', { class: 'tx-sub' });
+    const fill = h('div', { class: 'tx-bar-fill' });
+    const bar = h('div', { class: 'tx-bar', role: 'progressbar', 'aria-label': '받는 진행률', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, [fill]);
+    const sw = h('button', { type: 'button', class: 'tx-switch', text: '🔄 카메라 전환', hidden: true });
+    const info = h('div', { class: 'tx-info' }, [headline, bar, sub]);
+    const diag = new URLSearchParams(location.search).has('diag') ? h('p', { class: 'tx-diag' }) : null;
+    if (diag) info.append(diag);
+    super(o, 'tx-recv', 'QR로 받기', [sw, scan, info]);
+    this.#scan = scan;
+    this.#video = video;
+    this.#headline = headline;
+    this.#sub = sub;
+    this.#bar = bar;
+    this.#fill = fill;
+    this.#panel = panel;
+    this.#detail = detail;
+    this.#actions = actions;
+    this.#diag = diag;
+    this.#switch = sw;
+    sw.addEventListener('click', () => this.#switchCamera());
   }
 
   async start() {
-    // 모달: 뒤쪽 셸을 inert로 해 Tab·스크린 리더가 가려진 목록으로 가지 않게 하고, 닫으면 포커스를 돌려준다
-    this.#prevFocus = document.activeElement;
-    this.#shell = document.getElementById('shell');
-    if (this.#shell) this.#shell.inert = true;
-    document.body.append(this.#root);
-    this.#root.focus();
-    this.#layout();
-    addEventListener('resize', this.#onResize);
-    screen.orientation?.addEventListener?.('change', this.#onResize);
-    document.addEventListener('keydown', this.#onKey);
-    // 페이드 후 요소를 지운다 (보이지 않는 탭 등에서 transition이 끝나지 않아도 남지 않게)
-    setTimeout(() => {
-      this.#intro.classList.add('hidden');
-      setTimeout(() => this.#intro.remove(), 500);
-    }, INTRO_MS);
+    this.open();
     await this.#begin();
   }
 
-  /** 세션과 링크를 (다시) 만든다 */
   async #begin() {
     this.#installed = null;
     this.#installError = null;
     this.#installing = false;
-    this.#installApproved = false;
-    clearTimeout(this.#lingerTimer);
-    this.#setStatus('준비하는 중…');
+    this.#approved = false;
+    this.#analysis = null;
+    this.#analyzing = false;
     this.#setProgress(null);
     this.#setActions([]);
-
-    // 키 교환(crypto.subtle)과 카메라(getUserMedia)는 보안 컨텍스트에서만 있다. http://내부IP로 열면 둘 다 없다
+    // 카메라(getUserMedia)와 SHA-256(crypto.subtle)은 보안 컨텍스트에서만 있다. http://내부IP로 열면 둘 다 없다
     if (!globalThis.isSecureContext || !globalThis.crypto?.subtle) {
-      this.#setStatus('🔒 이 주소에서는 전송할 수 없어요');
-      this.#setActions([['닫기', () => this.#close(), 'primary']],
-        ['카메라와 암호화는 https:// 주소에서만 동작해요.', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.']);
+      this.#setStatus('🔒 이 주소에서는 받을 수 없어요');
+      this.#setActions([['닫기', () => this.close(), 'primary']],
+        ['카메라는 https:// 주소에서만 동작해요.', '주소창이 https://로 시작하는 주소에서 플레이어를 열어 주세요.']);
       return;
     }
-
-    const { role, db, appId } = this.#o;
+    const receiver = new FountainReceiver({ onChange: () => this.#render() });
+    this.#receiver = receiver;
+    const scanner = new QrScanner({ receiver, video: this.#video });
+    this.#scanner = scanner;
+    this.#setStatus('📷 카메라 사용을 허용해 주세요', '보내는 쪽 화면의 QR을 읽으려면 카메라가 필요해요.');
     try {
-      if (role === ROLE.SENDER) this.#offer ??= await packApp(db, appId);
+      await scanner.start();
     } catch (err) {
-      console.error(err);
-      this.#setStatus('❌ 앱을 보낼 준비를 하지 못했어요');
-      this.#setActions([['닫기', () => this.#close(), 'primary']], err.message);
-      return;
-    }
-    if (this.#closing) return;
-
-    const session = new TransferSession({
-      role,
-      offer: this.#offer ?? undefined,
-      deviceName: deviceName(),
-      onChange: () => this.#render(),
-      // 같은 내부망이면 QR과 함께 DataChannel로 보낸다. 묻지 않는다: 맞대어 짝지은 것이 동의다 (M5 D5.2)
-      rtc: this.#rtc = new RtcLink(),
-    });
-    try {
-      await session.init();
-    } catch (err) {
-      // 잡지 않으면 "준비하는 중…"에서 멈추고 카메라도 요청하지 않는다
-      console.error(err);
-      if (this.#closing) return;
-      this.#setStatus('❌ 전송을 준비하지 못했어요');
-      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']],
-        '브라우저가 암호화 키를 만들지 못했어요. 다시 시도하거나 브라우저를 최신으로 바꿔 주세요.');
-      return;
-    }
-    if (this.#closing) return;
-    this.#session = session;
-    // 권한 대기 중에 닫히거나 다시 시작될 수 있으므로 지역 변수로 잡아 둔다
-    const link = new OpticalLink({ session, video: this.#video, canvas: this.#canvas });
-    this.#link = link;
-    this.#setStatus('📷 카메라 사용을 허용해 주세요', '상대의 화면을 읽으려면 카메라가 필요해요.');
-    try {
-      await link.start();
-    } catch (err) {
-      link.stop();
-      if (this.#link !== link) return;
-      this.#link = null;
+      scanner.stop();
+      if (this.#scanner !== scanner) return;
+      this.#scanner = null;
       this.#setStatus('📷 카메라를 쓸 수 없어요');
-      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']], cameraErrorMessage(err));
+      this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.close(), 'primary']], scannerErrorMessage(err));
       return;
     }
-    if (this.#closing || this.#link !== link) {
-      link.stop();
+    if (this.closing || this.#scanner !== scanner) {
+      scanner.stop();
       return;
     }
+    this.#switch.hidden = false;
     clearInterval(this.#uiTimer);
     this.#uiTimer = setInterval(() => this.#render(), UI_INTERVAL);
     this.#render();
   }
 
-  #layout() {
-    const side = cameraSide();
-    this.#root.className = `transfer cam-${side}`;
-    this.#link?.invalidate();
+  async #switchCamera() {
+    try {
+      await this.#scanner?.switchCamera();
+    } catch (err) {
+      this.#setStatus('📷 카메라를 바꾸지 못했어요', scannerErrorMessage(err), true);
+    }
   }
 
-  /** 구분선 위 안내, 아래 진행률·오류. warn이면 아래 줄을 경고색으로 */
   #setStatus(headline, sub = '', warn = false) {
     this.#headline.textContent = headline;
     this.#sub.textContent = sub;
@@ -238,22 +311,18 @@ class TransferView {
 
   /** @param {number | null} p 0–1, null이면 막대를 비운다 */
   #setProgress(p) {
-    const pct = p == null ? 0 : Math.round(p * 100);
+    const pct = p == null ? 0 : Math.floor(p * 100);
     this.#fill.style.width = `${pct}%`;
     this.#bar.setAttribute('aria-valuenow', String(pct));
-    this.#bar.classList.toggle('active', p != null);
   }
 
   /**
-   * 카메라가 꺼진 뒤의 버튼(다시 시도·닫기·바로 실행)은 카메라 칸 위에 띄운다. 취소는 모서리 ✕가 맡는다.
-   * 구분선 아래 두 줄에 다 들어가지 않는 설명(detail)도 버튼 위에 함께 둔다.
+   * 끝난 뒤의 버튼과 설명은 스캐너 칸 위에 띄운다.
    * @param {[string, () => void, string?][]} list
-   * @param {string | string[]} [detail] 배열이면 한 줄씩, 첫 줄을 굵게. 문자열 안의 줄바꿈은 그대로 보인다
-   * @param {{stack?: boolean}} [o] 버튼을 세로로 쌓는다
+   * @param {string | string[]} [detail] 배열이면 한 줄씩, 첫 줄을 굵게
    */
-  #setActions(list, detail = '', { stack = false } = {}) {
+  #setActions(list, detail = '') {
     this.#panel.hidden = list.length === 0;
-    this.#actions.classList.toggle('stack', stack);
     const lines = [detail].flat().filter(Boolean);
     this.#detail.classList.toggle('lines', Array.isArray(detail));
     if (lines.join('\n') !== this.#detail.dataset.text) {
@@ -272,114 +341,117 @@ class TransferView {
   }
 
   #render() {
-    const s = this.#session;
-    if (!s || this.#closing) return;
-    const sum = s.summary();
-    const sender = s.role === ROLE.SENDER;
-    const name = sender ? this.#offer.name : peerAppName(s.info) || DEFAULT_NAME;
-    const code = s.sas ? `확인 코드 ${s.sas}` : '';
-    const STALL = '📐 화면을 정확히 마주 보게 해 주세요';
-    const PAUSED = '⏸ 일시 중지';
+    const r = this.#receiver;
+    if (!r || this.closing) return;
+    this.#renderDiag();
+    // 디코딩에 성공하는 동안 틀을 밝게 (손에 든 채 맞추는 데 도움)
+    this.#scan.classList.toggle('hit', r.stats.decodeHits > this.#lastHits);
+    this.#lastHits = r.stats.decodeHits;
+    const legacy = r.legacySeen ? '보내는 쪽 BeBeam을 2.0 이상으로 업데이트해 주세요.' : '';
 
-    switch (s.state) {
-      case STATE.ADVERTISING:
+    switch (r.state) {
       case STATE.SCANNING:
         this.#setProgress(null);
-        if (s.roleConflict) {
-          this.#setStatus('⚠️ 상대도 같은 역할이에요', '한 명은 [전송하기], 다른 한 명은 [QR로 받기]를 선택하세요.', true);
+        if (legacy) this.#setStatus('⚠️ 이전 버전의 QR이에요', legacy, true);
+        else this.#setStatus('📷 보내는 쪽 QR을 틀 안에 맞춰 주세요', '15–30cm 거리에서, 반사광이 보이면 살짝 기울여 주세요.');
+        return;
+      case STATE.RECEIVING:
+      case STATE.STALLED: {
+        const m = r.meta;
+        const pct = Math.floor(r.progress * 100);
+        this.#setProgress(r.progress);
+        const head = `📥 ‘${appName(m)}’ · ${formatBytes(m.zipSize)}`;
+        if (r.state === STATE.STALLED) {
+          this.#setStatus(head, `${pct}% · ⏸ QR을 틀 안에 맞춰 주세요`, true);
         } else {
-          this.#setStatus('🔍 친구의 폰을 찾는 중…', sender ? `‘${name}’${objectParticle(name)} 보낼 준비가 됐어요.` : '친구가 [전송하기]를 누르고 화면을 마주 보게 해 주세요.');
+          const eta = r.etaSeconds != null ? `약 ${formatEstimate(r.etaSeconds).replace('약 ', '')} 남음` : '';
+          this.#setStatus(head, [`${pct}%`, eta, formatRate(r.bytesPerSecond)].filter(Boolean).join(' · '));
         }
-        this.#setActions([]);
-        return;
-      case STATE.PAIRED:
-      case STATE.OFFERING:
-        this.#setProgress(0);
-        this.#setStatus(sum.stalled ? PAUSED : `🔗 연결됨 · ${code}`, sum.stalled ? STALL : '곧 전송을 시작해요.', sum.stalled);
-        this.#setActions([]);
-        return;
-      case STATE.REVIEW:
-        // 암호를 주고받았으면 바로 받는다 ([전송 시작] 없음, SPEC F-05 규칙 3)
-        if (!this.#accepted) {
-          this.#accepted = true;
-          s.accept();
-        }
-        this.#setProgress(0);
-        this.#setStatus(`🔗 연결됨 · ${code}`, '곧 전송을 시작해요.');
-        this.#setActions([]);
-        return;
-      case STATE.SENDING:
-      case STATE.RECEIVING: {
-        const pct = Math.floor(sum.progress * 100);
-        this.#setProgress(sum.progress);
-        if (sum.stalled) {
-          this.#setStatus(`${PAUSED} · ${name}`, `${pct}% · ${STALL}`, true);
-        } else {
-          const kbs = sum.bytesPerSec / 1024;
-          const speed = !sum.bytesPerSec ? '' : kbs >= 1024 ? `${(kbs / 1024).toFixed(1)} MB/s` : `${kbs.toFixed(1)} KB/s`;
-          // 지금 경로 (M5): 내부망으로 보내는 중이면 ⚡, 내부망이 끊겨 QR로 이어 가면 📷. 처음부터 QR이면 표시하지 않는다
-          const path = sum.rtc === RTC.OPEN && !sum.rtcStalled ? '⚡ Wi-Fi' : s.rtcOpened ? '📷 QR로 계속' : '';
-          const eta = sum.etaSec != null ? `남은 시간 ${formatEstimate(sum.etaSec).replace('약 ', '')}` : '';
-          const big = !sender && s.info?.cipherSize > TRANSFER_WARN && !(sum.rtc === RTC.OPEN && !sum.rtcStalled) ? '큰 앱이라 오래 걸려요' : '';
-          const awake = this.#link?.wakeLockSupported ? '' : '화면이 꺼지지 않게 해 주세요';
-          this.#setStatus(`${sender ? '📤' : '📥'} ‘${name}’ ${sender ? '보내는' : '받는'} 중`, [`${pct}%`, speed, eta, big, awake, path].filter(Boolean).join(' · '));
-        }
-        this.#setActions([]);
         return;
       }
       case STATE.VERIFYING:
         this.#setProgress(1);
-        this.#setStatus(sum.stalled ? PAUSED : '🔎 확인 중…', sum.stalled ? STALL : '100%', sum.stalled);
-        this.#setActions([]);
+        this.#setStatus(`🔎 ‘${appName(r.meta)}’ 확인 중…`, '100%');
         return;
       case STATE.DONE:
         this.#setProgress(1);
-        if (sender) {
-          this.#setStatus('✅ 전송 성공!', '친구가 파일을 받았어요.');
-          // 같은 앱을 다음 친구에게: [전송준비]는 새 키·세션으로 다시 HELLO를 띄운다 (묶은 앱은 재사용)
-          this.#setActions([['전송준비', () => this.#retry(), 'primary'], ['완료', () => this.#close()]],
-            '이 앱을 다른 친구에게도\n전송할까요?', { stack: true });
-          this.#linger();
+        this.#onReceived(r);
+        return;
+      case STATE.FAILED:
+        this.#scanner?.stop();
+        this.#scanner = null;
+        this.#switch.hidden = true;
+        clearInterval(this.#uiTimer);
+        this.#setProgress(null);
+        if (r.failReason === 'too-many-symbols') {
+          this.#setStatus('❌ 이 화면으로는 받을 수 없어요', '조각을 충분히 모았는데도 풀리지 않았어요. 다른 화면이 섞였을 수 있어요.', true);
+          this.#setActions([['닫기', () => this.close()], ['다시 받기', () => this.#retry(), 'primary']]);
+        } else if (r.failReason === 'hash-mismatch') {
+          this.#setStatus('❌ 받은 파일이 손상되었어요', '다시 받으면 처음부터 모아요.', true);
+          this.#setActions([['닫기', () => this.close()], ['다시 받기', () => this.#retry(), 'primary']]);
         } else {
-          this.#onReceived(s);
+          this.#setStatus('⌛ QR을 찾지 못했어요', '3분 동안 읽지 못해 멈췄어요. 준비되면 [다시 시도]를 눌러 주세요.', true);
+          this.#setActions([['닫기', () => this.close()], ['다시 시도', () => this.#retry(), 'primary']]);
         }
         return;
-      case STATE.FAILED: {
-        if (s.failReason === 'local-cancel') return; // #cancelOrClose가 닫는다
-        this.#link?.stopCamera();
-        this.#setProgress(null);
-        this.#setStatus(FAIL_TEXT[s.failReason] ?? '❌ 전송하지 못했어요', FAIL_SUB[s.failReason] ?? '', true);
-        this.#setActions([['다시 시도', () => this.#retry()], ['닫기', () => this.#close(), 'primary']]);
-        clearInterval(this.#uiTimer);
-        return;
-      }
       default:
     }
   }
 
-  async #onReceived(s) {
-    this.#link?.stopCamera();
+  #renderDiag() {
+    if (!this.#diag) return;
+    const r = this.#receiver, s = this.#scanner?.stats;
+    const hit = r.stats.decodeTries ? Math.round((r.stats.decodeHits / r.stats.decodeTries) * 100) : 0;
+    this.#diag.textContent = [
+      `카메라 ${s?.width}×${s?.height}${s?.fps ? ` @${Math.round(s.fps)}` : ''} · 크롭 ${s?.crop} · ${this.#scanner?.facing ?? '-'}`,
+      `디코더 ${this.#scanner?.decoderKind ?? '-'} · ${s?.decodeMs?.toFixed(1) ?? '-'}ms · 인식 ${hit}% (${r.stats.decodeHits}/${r.stats.decodeTries})`,
+      `프레임 ${r.stats.frames} · 다른 송신자 ${r.stats.foreign} · 심볼 ${r.received}/${r.k} · 풀림 ${r.decoded}`,
+    ].join('\n');
+  }
+
+  async #onReceived(r) {
+    if (this.#scanner) {
+      this.#scanner.stop();
+      this.#scanner = null;
+      this.#switch.hidden = true;
+    }
     if (this.#installed) {
-      // W-06 대신 이 화면에서 설치 동의를 받았으므로 실제 이름과 외부 리소스 경고(C-6)는 설치 뒤 여기서 보여준다
+      clearInterval(this.#uiTimer);
+      // W-06 대신 이 화면에서 설치 동의를 받았으므로 외부 리소스 경고(C-6)는 설치 뒤 여기서 보여준다
       const ext = this.#installed.externalRefs ?? [];
       const warn = ext.length ? `⚠️ 이 앱은 인터넷의 파일을 사용해서(${ext.slice(0, 3).join(', ')}${ext.length > 3 ? ' 외' : ''}) 일부 기능이 동작하지 않을 수 있어요.` : '';
       this.#setStatus('✅ 설치 완료', `목록에 ‘${this.#installed.name}’ 앱을 추가했어요.`);
-      this.#setActions([['닫기', () => this.#close()], ['바로 실행', () => this.#launch(), 'primary']], warn);
+      this.#setActions([['닫기', () => this.close()], ['바로 실행', () => this.#launch(), 'primary']], warn);
       return;
     }
     if (this.#installError) {
+      clearInterval(this.#uiTimer);
       this.#setStatus('❌ 설치할 수 없어요');
-      this.#setActions([['닫기', () => this.#close(), 'primary']], this.#installError);
+      this.#setActions([['닫기', () => this.close(), 'primary']], this.#installError);
       return;
     }
-    if (this.#installing) return;
-    if (!this.#installApproved) {
-      // 전송은 버튼 없이 진행하지만 설치는 받은 앱을 다시 보여주고 동의를 받는다 (T11)
-      const info = s.info;
-      this.#setStatus('📦 전송이 끝났어요. 설치를 시작할까요?', s.sas ? `확인 코드 ${s.sas} · 친구 화면과 같은지 확인하세요` : '');
-      this.#setActions([['취소', () => this.#close()], ['설치 시작', () => this.#approveInstall(s), 'primary']], [
-        peerAppName(info) || DEFAULT_NAME,
-        `파일 ${info.fileCount}개 · ${formatBytes(info.plainSize)}`,
+    if (this.#installing || this.#analyzing) return;
+    if (!this.#analysis) {
+      // 동의 전에 먼저 분석한다: 이름·파일 수·크기는 송신자가 주장한 META가 아니라 실제 zip에서 (보안 검토 T7.8)
+      this.#analyzing = true;
+      this.#setStatus('🔎 받은 앱을 살펴보는 중…');
+      try {
+        this.#analysis = await analyzeReceived(r.zip, r.meta.name);
+      } catch (err) {
+        console.error(err);
+        this.#installError = err?.name === 'InstallError' ? err.message : '받은 앱을 설치할 수 없습니다.';
+      }
+      this.#analyzing = false;
+      if (!this.closing) this.#onReceived(r);
+      return;
+    }
+    if (!this.#approved) {
+      // 받는 것은 버튼 없이 했지만 설치는 받은 앱을 다시 보여주고 동의를 받는다 (T11)
+      const a = this.#analysis;
+      this.#setStatus('📦 다 받았어요. 설치를 시작할까요?', '받으려던 앱이 맞는지 확인하세요.');
+      this.#setActions([['취소', () => this.close()], ['설치 시작', () => this.#approve(r), 'primary']], [
+        clean(a.name, NAME_MAX) || DEFAULT_NAME,
+        `파일 ${a.fileCount}개 · ${formatBytes(a.size)}`,
       ]);
       return;
     }
@@ -387,80 +459,38 @@ class TransferView {
     this.#setStatus('📦 설치하는 중…');
     this.#setActions([]);
     try {
-      this.#installed = await installReceived(this.#o.db, s.zip, s.info.name);
-      this.#o.onInstalled?.(this.#installed);
+      this.#installed = await installReceived(this.o.db, this.#analysis);
+      this.o.onInstalled?.(this.#installed);
     } catch (err) {
       console.error(err);
       this.#installError = err?.name === 'InstallError' ? err.message : '받은 앱을 설치하지 못했습니다.';
     }
     this.#installing = false;
-    clearInterval(this.#uiTimer);
-    this.#onReceived(s);
+    if (!this.closing) this.#onReceived(r);
   }
 
-  #approveInstall(s) {
-    if (this.#installApproved || this.#closing) return;
-    this.#installApproved = true;
-    this.#onReceived(s);
-  }
-
-  #linger() {
-    if (this.#lingerTimer) return;
-    this.#link?.stopCamera();
-    this.#lingerTimer = setTimeout(() => {
-      this.#link?.stop();
-      this.#rtc?.close();
-      clearInterval(this.#uiTimer);
-    }, SENDER_LINGER_MS);
+  #approve(r) {
+    if (this.#approved || this.closing) return;
+    this.#approved = true;
+    this.#onReceived(r);
   }
 
   #launch() {
     const id = this.#installed?.id;
-    this.#close();
-    if (id) this.#o.onLaunch?.(id);
-  }
-
-  /** 진행 중이면 CANCEL을 1초 보여주고 닫는다. 끝났으면 바로 닫는다 */
-  #cancelOrClose() {
-    const s = this.#session;
-    if (!s || s.finished) {
-      this.#close();
-      return;
-    }
-    s.cancel(CANCEL_REASON.USER);
-    this.#setStatus('취소하는 중…');
-    this.#setActions([]);
-    setTimeout(() => this.#close(), CANCEL_SHOW_MS);
+    this.close();
+    if (id) this.o.onLaunch?.(id);
   }
 
   async #retry() {
-    this.#teardown();
-    this.#accepted = false;
+    this.teardown();
     this.#actionsKey = '';
     await this.#begin();
   }
 
-  #teardown() {
+  teardown() {
     clearInterval(this.#uiTimer);
-    clearTimeout(this.#lingerTimer);
-    this.#lingerTimer = 0;
-    this.#link?.stop();
-    this.#link = null;
-    this.#rtc?.close();
-    this.#rtc = null;
-    this.#session = null;
-  }
-
-  #close() {
-    if (this.#closing) return;
-    this.#closing = true;
-    this.#teardown();
-    removeEventListener('resize', this.#onResize);
-    screen.orientation?.removeEventListener?.('change', this.#onResize);
-    document.removeEventListener('keydown', this.#onKey);
-    this.#root.remove();
-    if (this.#shell) this.#shell.inert = false;
-    if (this.#prevFocus?.isConnected) this.#prevFocus.focus();
-    this.#o.onClose();
+    this.#scanner?.stop();
+    this.#scanner = null;
+    this.#receiver = null;
   }
 }

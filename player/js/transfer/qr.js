@@ -1,10 +1,12 @@
 // QR 생성(qrcode-generator)과 디코더 어댑터 (ARCHITECTURE §5.2)
-// 디코더: BarcodeDetector가 qr_code를 지원하면 그것을, 아니면 zxing-wasm 워커를 쓴다.
+// 디코더: BarcodeDetector가 qr_code를 지원하면 그것을, 아니면 zxing-wasm 워커를 쓴다 (jsQR은 R4 §2 벤치에서 제외).
+// crop을 주면 영상의 그 정사각형만 읽는다(2.0 스캐너 칸). native는 원본 해상도, zxing은 MAX_CROP_SIDE까지 줄인다.
 
 import qrcode from '../../vendor/qrcode-generator/qrcode.mjs';
 
 const QUIET_ZONE = 4;
 const MAX_GRAB_SIDE = 960;
+const MAX_CROP_SIDE = 1280; // zxing에 넘기는 크롭 한 변 상한 (워커 전송·디코딩 시간)
 
 /**
  * alphanumeric 모드 QR을 canvas에 정수 배율로 그린다.
@@ -38,7 +40,8 @@ export function renderQR(canvas, text, ecc = 'M') {
 
 /**
  * @param {{forceZxing?: boolean}} [opts]
- * @returns {Promise<{kind: 'native'|'zxing', detect(source: HTMLVideoElement|HTMLCanvasElement): Promise<string|null>, dispose(): void}>}
+ * @typedef {{sx: number, sy: number, side: number}} Crop
+ * @returns {Promise<{kind: 'native'|'zxing', detect(source: HTMLVideoElement|HTMLCanvasElement, crop?: Crop): Promise<string|null>, dispose(): void}>}
  */
 export async function createDetector({ forceZxing = false } = {}) {
   if (!forceZxing && 'BarcodeDetector' in globalThis) {
@@ -48,9 +51,18 @@ export async function createDetector({ forceZxing = false } = {}) {
         const d = new globalThis.BarcodeDetector({ formats: ['qr_code'] });
         return {
           kind: 'native',
-          async detect(source) {
-            const r = await d.detect(source);
-            return r.length ? r[0].rawValue : null;
+          async detect(source, crop) {
+            if (!crop) {
+              const r = await d.detect(source);
+              return r.length ? r[0].rawValue : null;
+            }
+            const bitmap = await createImageBitmap(source, crop.sx, crop.sy, crop.side, crop.side);
+            try {
+              const r = await d.detect(bitmap);
+              return r.length ? r[0].rawValue : null;
+            } finally {
+              bitmap.close();
+            }
           },
           dispose() {},
         };
@@ -75,14 +87,15 @@ function createZxingDetector() {
 
   return {
     kind: 'zxing',
-    detect(source) {
+    detect(source, crop) {
       const vw = source.videoWidth ?? source.width, vh = source.videoHeight ?? source.height;
       if (!vw || !vh) return Promise.resolve(null);
-      const s = Math.min(1, MAX_GRAB_SIDE / Math.max(vw, vh));
-      const w = Math.round(vw * s), h = Math.round(vh * s);
+      const [sx, sy, sw, sh] = crop ? [crop.sx, crop.sy, crop.side, crop.side] : [0, 0, vw, vh];
+      const s = Math.min(1, (crop ? MAX_CROP_SIDE : MAX_GRAB_SIDE) / Math.max(sw, sh));
+      const w = Math.round(sw * s), h = Math.round(sh * s);
       if (canvas.width !== w) canvas.width = w;
       if (canvas.height !== h) canvas.height = h;
-      ctx.drawImage(source, 0, 0, w, h);
+      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
       const image = ctx.getImageData(0, 0, w, h);
       const id = ++seq;
       return new Promise((resolve) => {

@@ -182,7 +182,7 @@ function option({ value, icon, title, desc, disabled = false }) {
  */
 export async function openAddSheet(db, { onQr } = {}) {
   const options = [
-    option({ value: 'qr', icon: '📷', title: 'QR로 받기', desc: '친구와 폰을 맞대어 받기', disabled: !onQr }),
+    option({ value: 'qr', icon: '📷', title: 'QR로 받기', desc: '친구 화면의 QR을 카메라로 받기', disabled: !onQr }),
     supportsFolderPick() ? option({ value: 'folder', icon: '📁', title: '폴더 추가', desc: 'index.html이 있는 폴더' }) : '',
     option({ value: 'zip', icon: '🗜️', title: 'zip 파일 추가', desc: '폴더를 압축한 파일' }),
   ];

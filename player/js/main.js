@@ -9,8 +9,7 @@ import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './u
 import { registerServiceWorker, applyUpdate } from './update.js';
 import { setupInstallPrompt, maybeShowIosGuide, requestPersistence, isStandalone } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
-import { openTransfer } from './ui/transfer-view.js';
-import { ROLE } from './transfer/session.js';
+import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
 
 const $ = (id) => document.getElementById(id);

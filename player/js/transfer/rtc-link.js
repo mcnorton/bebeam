@@ -1,10 +1,10 @@
-// 내부망 고속 전송의 브라우저 어댑터 (M5, T5.6). session.js의 RtcAdapter를 RTCPeerConnection으로 구현한다.
+// 내부망 고속 전송의 브라우저 어댑터 (M5, T5.6). 2.0 단방향 전송에서는 쓰지 않는다(TASK D7.2). Wi-Fi 경로를 다시 붙일 때를 위해 남겨 둔다.
 //   ICE 서버는 쓰지 않는다(D5.1: 같은 내부망의 host 후보만, 외부 서버에 주소를 알리지 않는다).
 //   축소 SDP(sdp.js)는 세션이 세션 키로 암호화해 QR로 주고받으므로, DTLS fingerprint로 맞대기 상대만 연결된다.
 //   앱 샌드박스에서 RTCPeerConnection을 지우는 것(ARCHITECTURE §4.5)은 플레이어 셸과 무관하다.
 
 import { compact, parseCompact, expand } from './sdp.js';
-import { MAX_FRAME_SIZE } from './frame.js';
+import { MAX_FRAME_SIZE } from './beam.js';
 
 export const GATHER_MS = 2000; // non-trickle: 수집이 끝나거나 이 시간이 지나면 보낸다
 const HIGH_WATER = 1024 * 1024; // 이만큼 쌓이면 보내기를 멈춘다

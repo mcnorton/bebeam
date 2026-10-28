@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '9e89a9cf81b1';
+const VERSION = 'e62652fa75ac';
 const SHELL = [
   './',
   'css/player.css',
@@ -26,17 +26,16 @@ const SHELL = [
   'js/runtime/rewrite.js',
   'js/store.js',
   'js/transfer/base45.js',
+  'js/transfer/beam.js',
+  'js/transfer/broadcast.js',
   'js/transfer/crc32.js',
-  'js/transfer/crypto.js',
   'js/transfer/decoder.worker.js',
-  'js/transfer/frame.js',
+  'js/transfer/fountain.js',
   'js/transfer/link.js',
-  'js/transfer/payload.js',
   'js/transfer/pipeline.js',
   'js/transfer/qr.js',
   'js/transfer/rtc-link.js',
   'js/transfer/sdp.js',
-  'js/transfer/session.js',
   'js/ui/add-sheet.js',
   'js/ui/dialogs.js',
   'js/ui/install-prompt.js',
