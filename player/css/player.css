@@ -311,9 +311,9 @@ button { font: inherit; color: inherit; }
 .viewer-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; pointer-events: none; user-select: none; }
 /* 검은 뷰어 위 버튼은 테마와 무관하게 흰색 계열로 고정한다 */
 .viewer-card .btn { width: min(240px, 70vw); }
-.viewer-card .btn-primary { background: #fafafa; border-color: #fafafa; color: #18181b; }
-.viewer-card .btn-outline { background: rgba(0, 0, 0, .35); border-color: rgba(255, 255, 255, .45); color: #fafafa; }
-.viewer-card .btn:hover:not(:disabled) { opacity: .9; }
+/* 뷰어는 테마와 관계없이 검은 바탕이라 색을 고정한다 (버튼 색은 --btn-* 변수로만 바꾼다) */
+.viewer-card .btn-primary { --btn-bg: #fafafa; --btn-fg: #18181b; --btn-line: #fafafa; --btn-hover: #e4e4e7; }
+.viewer-card .btn-outline { --btn-bg: rgba(0, 0, 0, .35); --btn-fg: #fafafa; --btn-line: rgba(255, 255, 255, .45); --btn-hover: rgba(255, 255, 255, .16); }
 .play-button:disabled { opacity: .5; cursor: default; }
 .viewer-name { margin: 0 0 4px; max-width: 90%; color: #fafafa; text-align: center; overflow-wrap: anywhere; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 
@@ -325,8 +325,8 @@ button { font: inherit; color: inherit; }
 .viewer-error-title { color: #fafafa; }
 .viewer-error-message { color: #a1a1aa; line-height: 1.5; overflow-wrap: anywhere; }
 .viewer-actions { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
-.viewer-actions .btn { background: rgba(0, 0, 0, .35); border-color: rgba(255, 255, 255, .45); color: #fafafa; }
-.viewer-actions .btn-danger { background: var(--danger); border-color: var(--danger); color: var(--danger-text); }
+.viewer-actions .btn { --btn-bg: rgba(0, 0, 0, .35); --btn-fg: #fafafa; --btn-line: rgba(255, 255, 255, .45); --btn-hover: rgba(255, 255, 255, .16); }
+.viewer-actions .btn-danger { --btn-bg: var(--danger); --btn-fg: var(--danger-text); --btn-line: var(--danger); --btn-hover: #b91c1c; }
 .viewer-logs { width: 100%; text-align: left; color: #a1a1aa; }
 .viewer-logs pre { max-height: 30vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; }
 
@@ -453,21 +453,25 @@ button { font: inherit; color: inherit; }
   min-height: var(--tap);
   min-width: 80px;
   padding: 0 16px;
-  border: 1px solid var(--line);
+  /* 색은 변수로만 정한다. 맥락(뷰어·전송 화면 등)은 변수를 바꾸고, hover는 --btn-hover만 쓴다.
+     예전에는 .btn-primary:hover가 맥락의 고정 색을 이겨 글자와 바탕이 같은 색이 됐다 */
+  --btn-bg: var(--surface);
+  --btn-fg: var(--text);
+  --btn-line: var(--line);
+  --btn-hover: var(--selected);
+  border: 1px solid var(--btn-line);
   border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
   cursor: pointer;
   transition: background-color .15s, opacity .15s;
 }
-.btn:hover:not(:disabled) { background: var(--selected); }
+.btn:hover:not(:disabled) { background: var(--btn-hover); color: var(--btn-fg); }
 .btn:disabled { opacity: .5; cursor: default; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-.btn-primary:hover:not(:disabled) { background: var(--accent); opacity: .9; }
-.btn-danger { background: var(--danger); border-color: var(--danger); color: var(--danger-text); }
-.btn-danger:hover:not(:disabled) { background: var(--danger); opacity: .9; }
+.btn-primary { --btn-bg: var(--accent); --btn-fg: var(--accent-text); --btn-line: var(--accent); --btn-hover: color-mix(in srgb, var(--accent) 85%, var(--accent-text)); }
+.btn-danger { --btn-bg: var(--danger); --btn-fg: var(--danger-text); --btn-line: var(--danger); --btn-hover: #b91c1c; }
 
 .text-input {
   width: 100%;
@@ -624,11 +628,9 @@ button { font: inherit; color: inherit; }
 .tx-speed-options .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
 .tx-speed-options .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
 /* 흰 바탕 고정: 셸의 다크 모드 hover 색(밝은 배경)을 쓰지 않는다 */
-.tx-send .btn { min-height: 44px; border-color: #e4e4e7; background: #fff; color: #09090b; }
-.tx-send .btn:hover:not(:disabled) { background: #f4f4f5; color: #09090b; opacity: 1; }
-.tx-send .btn-primary, .tx-send .btn-primary:hover:not(:disabled) { border-color: #18181b; background: #18181b; color: #fafafa; }
-.tx-send .btn-primary:hover:not(:disabled) { background: #27272a; }
-.tx-speed-options .btn.selected, .tx-speed-options .btn.selected:hover:not(:disabled) { position: relative; z-index: 1; border-color: #2563eb; background: #2563eb; color: #fff; }
+.tx-send .btn { min-height: 44px; --btn-bg: #fff; --btn-fg: #09090b; --btn-line: #e4e4e7; --btn-hover: #f4f4f5; }
+.tx-send .btn-primary { --btn-bg: #18181b; --btn-fg: #fafafa; --btn-line: #18181b; --btn-hover: #3f3f46; }
+.tx-speed-options .btn.selected { position: relative; z-index: 1; --btn-bg: #2563eb; --btn-fg: #fff; --btn-line: #2563eb; --btn-hover: #1d4ed8; }
 /* [전송 시작]·[전송 끝]: 한 줄 전체. 노랑/검정 사선 테이프 테두리가 늘 0.5초마다 깜빡인다 (모바일엔 hover가 없다) */
 .tx-send .tx-start { position: relative; min-height: 52px; width: 100%; font-size: 1.05rem; }
 .tx-start::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: calc(var(--radius) + 4px); opacity: 0;
@@ -725,9 +727,8 @@ button { font: inherit; color: inherit; }
 .tx-detail:empty { display: none; }
 .tx-panel[hidden] { display: none; }
 .tx-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.tx-actions .btn { border-color: #27272a; background: #09090b; color: #fafafa; }
-.tx-actions .btn:hover:not(:disabled) { background: #27272a; }
-.tx-actions .btn-primary, .tx-actions .btn-primary:hover:not(:disabled) { border-color: #fafafa; background: #fafafa; color: #18181b; }
+.tx-actions .btn { --btn-bg: #09090b; --btn-fg: #fafafa; --btn-line: #27272a; --btn-hover: #27272a; }
+.tx-actions .btn-primary { --btn-bg: #fafafa; --btn-fg: #18181b; --btn-line: #fafafa; --btn-hover: #e4e4e7; }
 
 .notice {
   position: fixed;
@@ -755,7 +756,9 @@ button { font: inherit; color: inherit; }
   top: 50%;
   bottom: auto;
   transform: translate(-50%, -50%);
-  padding: 16px 20px;
+  min-width: min(360px, calc(100vw - 48px));
+  padding: 24px 28px;
+  font-size: 1.15rem;
   border-color: var(--text);
   background: var(--text);
   color: var(--bg);
@@ -763,10 +766,29 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 0 0 1px var(--line), var(--shadow-lg);
 }
 
+/* 새 버전 안내 테두리: 노랑/검정 사선 테이프가 0.5초마다 깜빡인다. 안내창이 쌓임 맥락이라 뒤에 깔 수 없어서
+   바깥 고리만 남기도록 마스크로 가운데를 뚫는다 */
+.notice:has(.notice-action)::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  padding: 7px;
+  border-radius: calc(var(--radius) + 7px);
+  background: repeating-linear-gradient(-45deg, #facc15 0 10px, #18181b 10px 20px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: tape-blink 1s steps(1, end) infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice:has(.notice-action)::after { animation: none; }
+}
+
 .notice-action {
   flex: none;
-  min-height: 44px;
-  padding: 0 16px;
+  min-height: 52px;
+  padding: 0 24px;
   border: 1px solid var(--bg);
   border-radius: var(--radius);
   background: var(--bg);

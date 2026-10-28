@@ -1,5 +1,5 @@
 // 뷰어와 실행 모드 (F-04, W-08~W-10)
-//   상태: (a) 선택 없음 (b) 이름 / [▶ 재생] / [📤 앱 보내기] (og:image가 있으면 배경) (c) 오류 + [앱 삭제]
+//   상태: (a) 선택 없음 (b) 이름 / [▶ 실행하기] / [📤 앱 보내기] (og:image가 있으면 배경) (c) 오류 + [앱 삭제]
 //   실행: requestFullscreen(미지원이면 CSS 전체화면) → 목록·헤더 숨김 → sandbox iframe 부팅 → [X]
 //   종료 확인: [X], Esc/전체화면 해제, Android 뒤로가기(history 가드)
 
@@ -93,7 +93,7 @@ export class Viewer {
       ]));
       return;
     }
-    const play = h('button', { type: 'button', class: 'btn btn-primary play-button', 'aria-label': `${app.name} 실행` }, [icon('play'), '재생']);
+    const play = h('button', { type: 'button', class: 'btn btn-primary play-button', 'aria-label': `${app.name} 실행` }, [icon('play'), '실행하기']);
     play.addEventListener('click', () => this.play(app.id));
     const send = h('button', { type: 'button', class: 'btn btn-outline send-button' }, [icon('send'), '앱 보내기']);
     send.addEventListener('click', () => this.#onSend(app.id));
