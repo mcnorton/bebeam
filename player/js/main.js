@@ -63,7 +63,21 @@ const list = new AppList($('app-list'), {
   onMenu: (id, anchor) => showMenu(id, anchor),
 });
 
-const viewer = new Viewer($('viewer'), { store, onDelete: (id) => confirmDelete(id) });
+const viewer = new Viewer($('viewer'), {
+  store,
+  onDelete: (id) => confirmDelete(id),
+  onSend: (id) => sendApp(id).catch(async (err) => {
+    console.error(err);
+    await alertDialog({ title: '작업을 끝내지 못했습니다', message: '잠시 후 다시 시도해 주세요.' });
+  }),
+});
+
+/** 앱 보내기 (SPEC F-05 송신): 뷰어 [앱 보내기]와 [⋯]→[전송하기] */
+async function sendApp(id) {
+  if (!db || viewer.running) return;
+  await openTransfer({ db, role: ROLE.SENDER, appId: id });
+  if (updatePending) showUpdateNotice();
+}
 
 /** 삭제 확인 (W-12) → 단일 트랜잭션 삭제. 삭제했으면 true */
 async function confirmDelete(id) {
@@ -123,8 +137,7 @@ async function showMenu(id, anchor) {
     } else if (choice === 'delete') {
       if (await confirmDelete(id)) return;
     } else if (choice === 'send') {
-      await openTransfer({ db, role: ROLE.SENDER, appId: id });
-      if (updatePending) showUpdateNotice();
+      await sendApp(id);
     }
   } catch (err) {
     console.error(err);
@@ -133,8 +146,9 @@ async function showMenu(id, anchor) {
   if (choice) list.focusMenuButton(id);
 }
 
-/** [QR로 받기] (SPEC F-05): 받은 앱은 새 ID로 설치되고 선택된다 */
+/** [앱 받기]·시트의 [QR로 받기] (SPEC F-05): 받은 앱은 새 ID로 설치되고 선택된다 */
 function receiveByQr() {
+  if (!db || viewer.running) return;
   openTransfer({
     db,
     role: ROLE.RECEIVER,
@@ -181,6 +195,7 @@ async function start() {
     store.select(app.id);
     list.reveal(app.id);
   });
+  $('receive-button').addEventListener('click', receiveByQr);
 }
 
 start();

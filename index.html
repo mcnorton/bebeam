@@ -9,10 +9,12 @@
   <link rel="icon" href="player/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="player/icons/apple-touch-icon.png">
   <style>
+    @font-face { font-family: "NeoDunggeunmo Pro"; src: url("player/vendor/neodgm-pro/NeoDunggeunmoPro-Regular.woff2") format("woff2"); font-display: swap; }
     :root { color-scheme: light dark; --bg: #fafaf7; --fg: #1d1d1b; --muted: #6b6b66; --accent: #2a6ae8; --accent-text: #fff; }
     @media (prefers-color-scheme: dark) { :root { --bg: #141413; --fg: #f0efea; --muted: #9a9993; --accent: #5b92ff; --accent-text: #0b1530; } }
     body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
-           font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+           font-family: "NeoDunggeunmo Pro", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+           font-synthesis: none; }
     main { padding: 24px 16px; max-width: 480px; text-align: center; }
     .logo { width: 96px; height: 96px; margin: 0 auto 16px; display: block; }
     h1 { font-size: 2rem; margin: 0 0 12px; }

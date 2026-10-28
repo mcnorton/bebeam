@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '7e8f2de4e401';
+const VERSION = '488131c5aaec';
 const SHELL = [
   './',
   'css/player.css',
@@ -47,6 +47,7 @@ const SHELL = [
   'manifest.webmanifest',
   'vendor/es-module-lexer/lexer.js',
   'vendor/fflate/fflate.js',
+  'vendor/neodgm-pro/NeoDunggeunmoPro-Regular.woff2',
   'vendor/qrcode-generator/qrcode.mjs',
   'vendor/zxing-wasm/es/reader/index.js',
   'vendor/zxing-wasm/es/share.js',

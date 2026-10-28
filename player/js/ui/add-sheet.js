@@ -44,7 +44,7 @@ function progressDialog() {
   const text = h('p', { class: 'dialog-message', 'aria-live': 'polite' });
   const bar = h('progress', { class: 'progress' });
   const dlg = h('dialog', { class: 'dialog progress-dialog', 'aria-label': '앱 분석' }, [
-    h('div', { class: 'dialog-form' }, [h('h2', { class: 'dialog-title', text: '앱 추가' }), text, bar]),
+    h('div', { class: 'dialog-form' }, [h('h2', { class: 'dialog-title', text: '나의 앱 추가' }), text, bar]),
   ]);
   dlg.addEventListener('cancel', (e) => e.preventDefault());
   document.body.append(dlg);
@@ -188,7 +188,7 @@ export async function openAddSheet(db, { onQr } = {}) {
   ];
   let picked = null;
   await openDialog({
-    title: '앱 추가',
+    title: '나의 앱 추가',
     className: 'sheet',
     body: [h('div', { class: 'sheet-options' }, options)],
     buttons: [{ label: '닫기', value: 'cancel' }],

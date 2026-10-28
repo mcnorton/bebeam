@@ -1,5 +1,5 @@
 // 뷰어와 실행 모드 (F-04, W-08~W-10)
-//   상태: (a) 선택 없음 (b) ▶ (og:image가 있으면 배경) (c) 오류 + [앱 삭제]
+//   상태: (a) 선택 없음 (b) 이름 / [▶ 재생] / [📤 앱 보내기] (og:image가 있으면 배경) (c) 오류 + [앱 삭제]
 //   실행: requestFullscreen(미지원이면 CSS 전체화면) → 목록·헤더 숨김 → sandbox iframe 부팅 → [X]
 //   종료 확인: [X], Esc/전체화면 해제, Android 뒤로가기(history 가드)
 
@@ -18,6 +18,7 @@ export class Viewer {
   #db = null;
   #store;
   #onDelete;
+  #onSend;
   /** appId → 마지막 실행 오류 {message, logs} (새로고침하면 사라진다) */
   #errors = new Map();
   #run = null;
@@ -30,13 +31,14 @@ export class Viewer {
 
   /**
    * @param {HTMLElement} el 뷰어 영역
-   * @param {{store: import('../store.js').Store, onDelete: (id: string) => void}} options
+   * @param {{store: import('../store.js').Store, onDelete: (id: string) => void, onSend: (id: string) => void}} options
    */
-  constructor(el, { store, onDelete }) {
+  constructor(el, { store, onDelete, onSend }) {
     this.#el = el;
     this.#hint = el.querySelector('#viewer-hint');
     this.#store = store;
     this.#onDelete = onDelete;
+    this.#onSend = onSend;
 
     document.addEventListener('fullscreenchange', () => this.#onFullscreenChange());
     document.addEventListener('webkitfullscreenchange', () => this.#onFullscreenChange());
@@ -90,12 +92,15 @@ export class Viewer {
       ]));
       return;
     }
-    const play = h('button', { type: 'button', class: 'play-button', 'aria-label': `${app.name} 실행`, text: '▶' });
+    const play = h('button', { type: 'button', class: 'btn btn-primary play-button', 'aria-label': `${app.name} 실행`, text: '▶ 재생' });
     play.addEventListener('click', () => this.play(app.id));
+    const send = h('button', { type: 'button', class: 'btn btn-outline send-button', text: '📤 앱 보내기' });
+    send.addEventListener('click', () => this.#onSend(app.id));
     const bg = h('img', { class: 'viewer-bg', alt: '', draggable: 'false', hidden: true });
     this.#el.replaceChildren(this.#hint, bg, h('div', { class: 'viewer-card' }, [
-      play,
       h('p', { class: 'viewer-name', text: app.name }),
+      play,
+      send,
     ]));
     this.#paintBackground(app, bg).catch((err) => console.warn('뷰어 배경', err));
   }
