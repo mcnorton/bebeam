@@ -45,8 +45,20 @@ export function shouldShowIosGuide({ ios, standalone, shown }) {
   return ios && !standalone && !shown;
 }
 
+/**
+ * 설치한 앱 창의 display-mode. 데스크톱에서는 standalone만 보면 안 된다:
+ * macOS 전체 화면이면 fullscreen, 제목 표시줄을 접으면 window-controls-overlay가 된다
+ */
+export const INSTALLED_DISPLAY_QUERY = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay']
+  .map((m) => `(display-mode: ${m})`).join(', ');
+
 export function isStandalone() {
-  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  return matchMedia(INSTALLED_DISPLAY_QUERY).matches || navigator.standalone === true;
+}
+
+/** 창 모드가 바뀌면(전체 화면 들어가기·나오기 등) 부른다 */
+export function onDisplayModeChange(fn) {
+  matchMedia(INSTALLED_DISPLAY_QUERY).addEventListener('change', fn);
 }
 
 function storage() {

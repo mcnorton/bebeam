@@ -633,8 +633,12 @@ button { font: inherit; color: inherit; }
 .tx-speed-options .btn.selected { position: relative; z-index: 1; --btn-bg: #2563eb; --btn-fg: #fff; --btn-line: #2563eb; --btn-hover: #1d4ed8; }
 /* [전송 시작]·[전송 끝]: 한 줄 전체. 노랑/검정 사선 테이프 테두리가 늘 0.5초마다 깜빡인다 (모바일엔 hover가 없다) */
 .tx-send .tx-start { position: relative; min-height: 52px; width: 100%; font-size: 1.05rem; }
-.tx-start::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: calc(var(--radius) + 4px); opacity: 0;
-                    background: repeating-linear-gradient(-45deg, #facc15 0 8px, #18181b 8px 16px); pointer-events: none; }
+/* 테이프는 버튼 바깥 고리만 그린다(마스크로 가운데를 뚫음). 뒤에 까는 방식(z-index:-1)은 버튼이 사용 가능해지며
+   opacity가 .5→1로 바뀌는 동안 버튼 위로 올라와 빗금이 버튼 전체에 잠깐 보였다 */
+.tx-start::before { content: ""; position: absolute; inset: -5px; padding: 5px; border-radius: calc(var(--radius) + 5px); opacity: 0;
+                    background: repeating-linear-gradient(-45deg, #facc15 0 8px, #18181b 8px 16px); pointer-events: none;
+                    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+                    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 .tx-start:not(:disabled)::before { animation: tape-blink 1s steps(1, end) infinite; }
 @keyframes tape-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

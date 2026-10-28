@@ -3,14 +3,16 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '2f23c243a345';
+const VERSION = '7f14a193f4e7';
 const SHELL = [
   './',
   'css/player.css',
+  'icons/app-1024.png',
+  'icons/app-192.png',
+  'icons/app-512.png',
   'icons/apple-touch-icon.png',
   'icons/favicon.ico',
   'icons/icon-192.png',
-  'icons/icon-512.png',
   'icons/maskable-512.png',
   'index.html',
   'js/db.js',

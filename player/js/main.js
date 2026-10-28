@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, maybeShowIosGuide, requestPersistence, isStandalone } from './ui/install-prompt.js';
+import { setupInstallPrompt, maybeShowIosGuide, requestPersistence, isStandalone, onDisplayModeChange } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -47,13 +47,19 @@ const store = new Store();
 $('version').textContent = `v${VERSION}`;
 const installPrompt = setupInstallPrompt({ banner: $('install-banner') });
 // [비빔 앱 설치하기]는 설치 전(브라우저 탭)에만, 설치한 뒤에는 사이트 링크를 보인다 (W-03)
-function showInstalledLink(installed) {
+let justInstalled = false; // 이 탭에서 방금 설치함 (탭은 그대로 브라우저 모드다)
+function showInstalledLink() {
+  const installed = justInstalled || isStandalone();
   $('install-help').hidden = installed;
   $('site-link').hidden = !installed;
 }
-showInstalledLink(isStandalone());
+showInstalledLink();
+onDisplayModeChange(showInstalledLink);
 $('install-help').addEventListener('click', () => installPrompt.install());
-installPrompt.onInstalled(() => showInstalledLink(true));
+installPrompt.onInstalled(() => {
+  justInstalled = true;
+  showInstalledLink();
+});
 
 /** 새 버전 토스트 (SPEC F-01 6). 앱 실행·전송 중에는 홈으로 돌아올 때까지 미룬다 */
 let updatePending = false;
