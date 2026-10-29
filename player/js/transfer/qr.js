@@ -17,15 +17,17 @@ const MAX_CROP_SIDE = 1280; // zxing에 넘기는 크롭 한 변 상한 (워커 
  * @returns {{version: number, modules: number}}
  */
 export function renderQR(canvas, text, ecc = 'M', version = 0) {
+  const make = (v) => {
+    const q = qrcode(v, ecc);
+    q.addData(text, 'Alphanumeric');
+    q.make();
+    return q;
+  };
   let qr;
   try {
-    qr = qrcode(version, ecc);
-    qr.addData(text, 'Alphanumeric');
-    qr.make();
+    qr = make(version);
   } catch {
-    qr = qrcode(0, ecc); // 고정 버전에 들어가지 않으면 자동으로
-    qr.addData(text, 'Alphanumeric');
-    qr.make();
+    qr = make(0); // 고정 버전에 들어가지 않으면 자동으로
   }
   const n = qr.getModuleCount();
   const total = n + QUIET_ZONE * 2;
@@ -37,12 +39,15 @@ export function renderQR(canvas, text, ecc = 'M', version = 0) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, px, px);
-  ctx.fillStyle = '#000';
+  // 검은 칸을 경로 하나에 모아 한 번에 칠한다 (v30이면 칸마다 fillRect를 부르면 프레임당 수천 번)
+  ctx.beginPath();
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
-      if (qr.isDark(r, c)) ctx.fillRect((c + QUIET_ZONE) * scale, (r + QUIET_ZONE) * scale, scale, scale);
+      if (qr.isDark(r, c)) ctx.rect((c + QUIET_ZONE) * scale, (r + QUIET_ZONE) * scale, scale, scale);
     }
   }
+  ctx.fillStyle = '#000';
+  ctx.fill();
   return { version: (n - 17) / 4, modules: n };
 }
 
@@ -60,16 +65,12 @@ export async function createDetector({ forceZxing = false } = {}) {
         return {
           kind: 'native',
           async detect(source, crop) {
-            if (!crop) {
-              const r = await d.detect(source);
-              return r.length ? r[0].rawValue : null;
-            }
-            const bitmap = await createImageBitmap(source, crop.sx, crop.sy, crop.side, crop.side);
+            const src = crop ? await createImageBitmap(source, crop.sx, crop.sy, crop.side, crop.side) : source;
             try {
-              const r = await d.detect(bitmap);
+              const r = await d.detect(src);
               return r.length ? r[0].rawValue : null;
             } finally {
-              bitmap.close();
+              if (src !== source) src.close();
             }
           },
           dispose() {},

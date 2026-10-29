@@ -1,7 +1,7 @@
 // 플레이어 설치 유도와 저장소 유지 요청 (SPEC F-01 3–4, W-02, W-03)
 //   Chrome/Edge/Android: beforeinstallprompt → 상단 배너 [나중에](7일 숨김) [설치]
 //   목록 아래 [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면 바로 띄우고, 없으면 설치 안내(W-03)를 연다.
-//   설치 안내: iOS는 처음 한 번 자동으로도 연다. 기기별 단계를 보여주고, iOS에는 사이트 QR·주소를 덧붙인다
+//   iOS는 브라우저 탭과 홈 화면 앱의 저장소가 따로라서, 홈 화면에서 실행하지 않으면 셸 대신 막는 화면(W-03)만 보인다.
 //   이미 standalone이면 아무것도 띄우지 않는다.
 //   navigator.storage.persist()는 처음 한 번 요청하고 결과를 meta.settings.persisted에 기록한다.
 
@@ -11,9 +11,6 @@ import { icon as lineIcon } from './icons.js';
 import { renderQR } from '../transfer/qr.js';
 
 export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
-export const IOS_SHOWN_KEY = 'bebeam.ui.iosGuideShown';
-/** v1.3 전의 [다시 보지 않기]. 눌렀던 사용자는 안내를 본 것으로 친다 */
-export const IOS_HIDDEN_KEY = 'bebeam.ui.iosGuideHidden';
 export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 비빔 사이트: 처음 받는 사람 안내(보낼 준비)와 iOS 설치 안내의 작은 QR */
@@ -27,7 +24,7 @@ export function drawSiteQr(canvas) {
   renderQR(canvas, SITE_QR_TEXT, 'M');
 }
 
-/** iPhone/iPad (iPadOS는 데스크톱 Safari처럼 Mac으로 보이므로 터치 지점 수로 구별) */
+/** iPhone/iPad (iPadOS는 데스크톱 Safari처럼 Mac으로 보이므로 터치 지점 수로 구별). assets/landing.js에 같은 규칙이 있다 */
 export function isIos({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
   if (/iPhone|iPad|iPod/.test(userAgent)) return true;
   return platform === 'MacIntel' && maxTouchPoints > 1;
@@ -40,9 +37,9 @@ export function shouldOfferInstall({ standalone, dismissedAt, now }) {
   return !Number.isFinite(t) || t <= 0 || now - t >= SNOOZE_MS;
 }
 
-/** iOS 안내를 자동으로 띄울지: 처음 한 번만 (그 뒤에는 [비빔 앱 설치하기]) */
-export function shouldShowIosGuide({ ios, standalone, shown }) {
-  return ios && !standalone && !shown;
+/** iOS인데 홈 화면에서 실행한 것이 아니면 막는 화면만 보인다 (탭에 설치한 앱은 홈 화면 앱에 보이지 않으므로) */
+export function needsHomeScreen({ ios, standalone }) {
+  return ios && !standalone;
 }
 
 /**
@@ -138,11 +135,11 @@ export function setupInstallPrompt({ banner }) {
   return {
     onInstalled: (fn) => installedHandlers.push(fn),
     /**
-     * [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면(Android·PC) 바로 띄우고, 없으면(iOS 등) 설치 안내를 연다
+     * [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면(Android·PC) 바로 띄우고, 없으면 설치 안내를 연다
      */
     install: () => {
       const e = deferred;
-      if (!e || isIos(navigator)) return openInstallGuide();
+      if (!e) return openInstallGuide();
       deferred = null;
       hide();
       return e.prompt().then(() => e.userChoice).catch((err) => console.warn(err));
@@ -161,7 +158,7 @@ function icon(kind, label) {
   svg.setAttribute('aria-label', label);
   const paths = {
     share: ['M8 10H6v10h12V10h-2', 'M12 3v12', 'M8.5 6.5 12 3l3.5 3.5'],
-    more: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M7.5 12h.01', 'M12 12h.01', 'M16.5 12h.01'],
+    more: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M8 10.5l4 4 4-4'], // iOS 공유 시트의 더보기: 원 안의 아래 꺾쇠
     add: ['M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z', 'M12 8v8', 'M8 12h8'],
   }[kind];
   for (const d of paths) {
@@ -175,47 +172,53 @@ function icon(kind, label) {
 /** 한 단계: 아이콘과 글을 한 줄에 */
 const step = (...parts) => h('li', {}, parts);
 
+/** iOS 홈 화면 추가 3단계 (Safari·Chrome 공용) */
+function iosSteps() {
+  return h('ol', { class: 'ios-guide-steps' }, [
+    step('주소표시줄 옆 메뉴의 ', icon('share', '공유'), ' 공유 누르기'),
+    step(icon('more', '더보기'), ' 더보기 메뉴 펼치기'),
+    step(icon('add', '추가'), ' 홈 화면에 추가'),
+  ]);
+}
+
 /**
- * 설치 안내 (W-03). iOS는 Safari·Chrome 공용 3단계와 사이트 QR·주소, 그 밖에는 브라우저의 설치 메뉴를 안내한다.
+ * 설치 안내 (W-03, iOS 밖). 브라우저의 설치 메뉴를 안내한다.
  */
 export async function openInstallGuide() {
-  const ios = isIos(navigator);
-  const qr = ios ? h('canvas', { class: 'site-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` }) : null;
-  const body = ios
-    ? [
-      h('ol', { class: 'ios-guide-steps' }, [
-        step('주소표시줄 옆 메뉴의 ', icon('share', '공유'), ' 공유 누르기'),
-        step(icon('more', '더보기'), ' 더보기 메뉴 펼치기'),
-        step(icon('add', '추가'), ' 홈 화면에 추가'),
-      ]),
-      h('p', { class: 'dialog-message', text: '홈 화면에서 실행해야 앱이 지워지지 않고 전체 화면으로 실행돼요.' }),
-      h('div', { class: 'site-qr-row' }, [qr, h('p', { class: 'dialog-message' }, [
-        '다른 브라우저에서 열었다면 Safari로 이 주소를 열어 주세요.', h('br'), h('strong', { text: SITE_LABEL }),
-      ])]),
-    ]
-    : [
+  await openDialog({
+    title: '홈 화면에 추가하기',
+    className: 'ios-guide',
+    body: [
       h('ol', { class: 'ios-guide-steps' }, [
         step('주소표시줄 오른쪽의 설치 아이콘을 누르거나'),
         step('브라우저 메뉴(⋮)에서 [앱 설치] 또는 [홈 화면에 추가]'),
       ]),
       h('p', { class: 'dialog-message', text: '설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
-    ];
-  await openDialog({
-    title: '홈 화면에 추가하기',
-    className: 'ios-guide',
-    body,
+    ],
     buttons: [{ label: '확인', value: 'ok', kind: 'primary', autofocus: true }],
-    onOpen: () => qr && drawSiteQr(qr),
   });
 }
 
-/** iOS 홈 화면 추가 안내 (W-03). 처음 한 번만 자동으로 연다 */
-export async function maybeShowIosGuide() {
-  const ios = isIos(navigator);
-  const shown = read(IOS_SHOWN_KEY) === '1' || read(IOS_HIDDEN_KEY) === '1';
-  if (!shouldShowIosGuide({ ios, standalone: isStandalone(), shown })) return;
-  write(IOS_SHOWN_KEY, '1');
-  await openInstallGuide();
+/**
+ * iOS 브라우저 탭의 막는 화면 (W-03). 셸을 숨기고 홈 화면 추가 방법만 보인다. 닫을 수 없다.
+ */
+export function showHomeScreenGate() {
+  document.getElementById('shell').hidden = true;
+  document.getElementById('notice').hidden = true;
+  const qr = h('canvas', { class: 'site-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` });
+  const gate = h('main', { class: 'ios-gate' }, [
+    h('div', { class: 'ios-gate-card' }, [
+      h('p', { class: 'brand' }, [h('img', { class: 'brand-icon', src: 'icons/icon-192.png', alt: '', width: '24', height: '24' }), ' BeBeam']),
+      h('h1', { class: 'ios-gate-title', text: '홈 화면에 추가해야 쓸 수 있어요' }),
+      iosSteps(),
+      h('p', { class: 'ios-gate-note', text: '홈 화면의 BeBeam을 눌러 실행하세요.' }),
+      h('div', { class: 'site-qr-row' }, [qr, h('p', { class: 'dialog-message' }, [
+        '카카오톡 등 앱 안 브라우저라면 Safari로 이 주소를 열어 주세요.', h('br'), h('strong', { text: SITE_LABEL }),
+      ])]),
+    ]),
+  ]);
+  document.body.append(gate);
+  drawSiteQr(qr);
 }
 
 /**

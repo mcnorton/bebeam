@@ -6,9 +6,7 @@ import { analyze, install, checkSpace, formatBytes } from '../installer/install.
 import { h, openDialog, alertDialog } from './dialogs.js';
 import { iconUrl } from './list.js';
 import { icon as lineIcon } from './icons.js';
-import { listApps } from '../db.js';
-import { getDuplicatePolicy } from '../settings.js';
-import { planDuplicate } from '../installer/duplicates.js';
+import { previewDuplicate } from '../settings.js';
 
 const STEP_LABEL = {
   read: '파일을 읽는 중…',
@@ -82,6 +80,11 @@ export function duplicateNote(plan) {
   return '';
 }
 
+/** 외부 리소스 호스트 요약: 처음 3개, 더 있으면 '외' */
+export function externalHostsLabel(refs) {
+  return `${refs.slice(0, 3).join(', ')}${refs.length > 3 ? ' 외' : ''}`;
+}
+
 /** W-06 본문 */
 function summaryBody(a, space, iconUrl, plan) {
   const rows = [
@@ -102,7 +105,7 @@ function summaryBody(a, space, iconUrl, plan) {
   }
   if (a.externalRefs.length) {
     rows.push(warning([
-      h('p', { text: `이 앱은 인터넷의 파일을 사용합니다 (${a.externalRefs.slice(0, 3).join(', ')}${a.externalRefs.length > 3 ? ' 외' : ''}).` }),
+      h('p', { text: `이 앱은 인터넷의 파일을 사용합니다 (${externalHostsLabel(a.externalRefs)}).` }),
       h('p', { text: 'BeBeam에서는 외부 통신이 차단되어 일부 기능이 동작하지 않을 수 있습니다.' }),
     ]));
   }
@@ -142,8 +145,7 @@ async function analyzeAndInstall(db, readSource, sourceKind) {
   progress.close();
 
   const space = await checkSpace(analysis.size);
-  const policy = await getDuplicatePolicy(db);
-  const plan = planDuplicate(await listApps(db), analysis.name, policy);
+  const { policy, plan } = await previewDuplicate(db, analysis.name);
   const icon = analysis.iconPath && analysis.files.find((f) => f.path === analysis.iconPath);
   const iconRef = icon ? await iconUrl(icon.blob, icon.mime).catch(() => null) : null;
   let ok;

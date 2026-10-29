@@ -1,6 +1,6 @@
 // 전송 파이프라인 (TASK T3.7, T3.8)
-//   송신: files → zip(deflate) → (session이 AES-GCM으로 암호화하고 블록으로 나눈다)
-//   수신: (session이 조립·복호화·해시 검증) → zip 해제 → 검증(C-2~C-6) → 설치(source: 'qr', 새 ID)
+//   송신: files → zip(deflate) → (broadcast.js가 분수 부호로 QR 프레임을 만든다)
+//   수신: (broadcast.js가 조립·해시 검증) → zip 해제 → 검증(C-2~C-6) → 설치(source: 'qr', 새 ID)
 // 앱 데이터(appStorage)는 보내지 않는다 (SPEC F-05 규칙 8).
 
 import { zipSync } from '../../vendor/fflate/fflate.js';
@@ -56,6 +56,6 @@ export async function analyzeReceived(zip, name) {
  * analyzeReceived 결과를 설치한다 (source: 'qr').
  * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: object | null}} [options] META의 보낸 사람(정리한 값), 같은 이름 처리, 확인 화면의 계획
  */
-export function installReceived(db, analysis, { senderName = null, policy = 'separate', expect = null } = {}) {
-  return install(db, analysis, 'qr', { senderName, policy, expect });
+export function installReceived(db, analysis, options) {
+  return install(db, analysis, 'qr', options);
 }

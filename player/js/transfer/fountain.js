@@ -104,15 +104,20 @@ export class LtEncoder {
     this.size = size;
     this.seed = seed >>> 0;
     this.k = Math.max(1, Math.ceil(data.length / size));
-    this.blocks = new Uint8Array(this.k * size);
-    this.blocks.set(data);
+    // 복사하지 않고 참조한다. 0으로 채워야 하는 마지막 블록만 따로 둔다
+    this.data = data;
+    this.tail = new Uint8Array(size);
+    this.tail.set(data.subarray((this.k - 1) * size));
   }
 
   /** @returns {Uint8Array} 길이 size */
   symbol(id) {
     const { size, k } = this;
     const out = new Uint8Array(size);
-    for (const b of neighbors(id, k, this.seed)) xorInto(out, this.blocks, b * size, size);
+    for (const b of neighbors(id, k, this.seed)) {
+      if (b === k - 1) xorInto(out, this.tail, 0, size);
+      else xorInto(out, this.data, b * size, size);
+    }
     return out;
   }
 }
@@ -165,7 +170,13 @@ export class LtDecoder {
     if (this.#seen.has(id)) return false;
     this.#seen.add(id);
     this.received++;
-    const eq = { nbrs: neighbors(id, k, this.seed), bytes: bytes.slice(), count: 0, xorIdx: 0 };
+    const nbrs = neighbors(id, k, this.seed);
+    // 이웃을 모두 알면 새 정보가 없다: 복사·XOR 없이 넘긴다
+    if (nbrs.every((b) => this.#known[b])) {
+      this.#maybeEliminate();
+      return false;
+    }
+    const eq = { nbrs, bytes: bytes.slice(), count: 0, xorIdx: 0 };
     for (const b of eq.nbrs) {
       if (this.#known[b]) xorInto(eq.bytes, this.#data, b * size, size);
       else {
@@ -186,7 +197,7 @@ export class LtDecoder {
   /** @param {number} length 원래 데이터 길이 (마지막 블록의 채움을 잘라낸다) */
   result(length) {
     if (!this.done) return null;
-    return this.#data.slice(0, length);
+    return this.#data.subarray(0, length); // 다 푼 뒤에는 #data를 바꾸지 않으므로 복사하지 않는다
   }
 
   #resolve(block, bytes) {

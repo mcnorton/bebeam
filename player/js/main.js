@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, maybeShowIosGuide, requestPersistence, isStandalone, onDisplayModeChange } from './ui/install-prompt.js';
+import { setupInstallPrompt, requestPersistence, isStandalone, isIos, needsHomeScreen, showHomeScreenGate, onDisplayModeChange } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -39,6 +39,10 @@ function notice(message, { sticky = false, action = null } = {}) {
     }, 4000);
   }
 }
+
+// iOS는 브라우저 탭과 홈 화면 앱의 저장소가 따로다: 탭에서는 셸을 시작하지 않고 홈 화면 추가만 안내한다
+const homeScreenOnly = needsHomeScreen({ ios: isIos(navigator), standalone: isStandalone() });
+if (homeScreenOnly) showHomeScreenGate();
 
 fillIcons();
 setupThemeButton($('theme-button'));
@@ -183,6 +187,7 @@ function receiveByQr() {
 }
 
 async function start() {
+  if (homeScreenOnly) return; // 서비스 워커·DB도 열지 않는다 (탭에 저장소를 새로 만들지 않게)
   store.subscribe(render);
   render(store.state);
   registerServiceWorker({ onWaiting: showUpdateNotice });
@@ -203,7 +208,6 @@ async function start() {
   requestPersistence(db);
   // 설치하면 Chrome이 저장소 유지를 허용하므로 한 번 더 요청한다
   installPrompt.onInstalled(() => requestPersistence(db, { force: true }));
-  maybeShowIosGuide();
   // 내 이름이 없으면 처음 한 번 인디언식 이름을 지어 둔다
   getUserName(db).catch((err) => console.warn('내 이름', err));
   if (store.state.selectedId) list.reveal(store.state.selectedId);

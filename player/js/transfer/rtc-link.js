@@ -1,6 +1,6 @@
 // 내부망 고속 전송의 브라우저 어댑터 (M5, T5.6). 2.0 단방향 전송에서는 쓰지 않는다(TASK D7.2). Wi-Fi 경로를 다시 붙일 때를 위해 남겨 둔다.
 //   ICE 서버는 쓰지 않는다(D5.1: 같은 내부망의 host 후보만, 외부 서버에 주소를 알리지 않는다).
-//   축소 SDP(sdp.js)는 세션이 세션 키로 암호화해 QR로 주고받으므로, DTLS fingerprint로 맞대기 상대만 연결된다.
+//   축소 SDP(sdp.js)를 QR로 주고받아 DTLS fingerprint를 맞추므로, QR을 읽은 상대만 연결된다. (1.x의 세션 키 암호화는 2.0에서 없앴다)
 //   앱 샌드박스에서 RTCPeerConnection을 지우는 것(ARCHITECTURE §4.5)은 플레이어 셸과 무관하다.
 
 import { compact, parseCompact, expand } from './sdp.js';
@@ -102,7 +102,7 @@ export class RtcLink {
     dc.binaryType = 'arraybuffer';
     dc.bufferedAmountLowThreshold = LOW_WATER;
     dc.onmessage = (e) => {
-      // 프레임 하나보다 큰 메시지나 문자열은 받지 않는다 (세션이 CRC·sid·형식을 다시 검사한다)
+      // 프레임 하나보다 큰 메시지나 문자열은 받지 않는다 (이 연결을 쓰는 쪽이 CRC·sid·형식을 다시 검사해야 한다)
       if (e.data instanceof ArrayBuffer && e.data.byteLength <= MAX_FRAME_SIZE) this.onMessage(new Uint8Array(e.data));
     };
     dc.onopen = () => { if (!this.#closed) this.onOpen(); };

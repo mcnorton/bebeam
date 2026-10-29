@@ -138,6 +138,7 @@ export class QrScanner {
   stats = { width: 0, height: 0, crop: 0, decodeMs: 0, fps: 0 };
   #decodes = [];
   #token = 0;
+  #fallback = 0;
 
   /**
    * @param {{receiver: import('./broadcast.js').FountainReceiver, video: HTMLVideoElement, facing?: 'environment'|'user'}} o
@@ -228,13 +229,14 @@ export class QrScanner {
     const v = this.#video;
     const token = ++this.#token;
     const run = () => {
+      clearTimeout(this.#fallback);
       if (token !== this.#token) return;
       this.#token++;
       this.#decodeOnce();
     };
     if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(run);
     else requestAnimationFrame(run);
-    setTimeout(run, DECODE_FALLBACK_MS);
+    this.#fallback = setTimeout(run, DECODE_FALLBACK_MS);
   }
 
   async #decodeOnce() {
