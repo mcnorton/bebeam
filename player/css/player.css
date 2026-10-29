@@ -170,7 +170,9 @@ button { font: inherit; color: inherit; }
 
 .empty { margin: 0; padding: 24px 16px 8px; color: var(--muted); text-align: center; line-height: 1.5; }
 
-.library-footer { padding: 8px 8px 12px; }
+/* 목록 → 설치 버튼(또는 사이트 링크) → 버전 → 맨 아래 고정 [나의 앱 추가][앱 받기] */
+.library-info { flex: none; padding: 0 8px; }
+.library-footer { flex: none; margin-top: auto; padding: 8px 8px 12px; }
 .version { margin: 8px 0 0; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* [비빔 앱 설치하기] (설치 전) / 사이트 링크 (설치 뒤) */
 .install-help {
@@ -487,6 +489,8 @@ button { font: inherit; color: inherit; }
 .text-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .field { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .field-label { padding: 0; color: var(--text); }
+/* legend는 fieldset의 flex 항목이 아니라 gap이 안 먹는다. "내 이름은"과 입력창 간격(gap 8px)에 맞춘다 */
+legend.field-label { margin-bottom: 8px; }
 .field-row { display: flex; gap: 8px; }
 .field-row .text-input { flex: 1; min-width: 0; }
 .field-row .btn { min-width: 0; }

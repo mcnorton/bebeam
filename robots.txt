@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://bebeam.net/sitemap.xml
+Sitemap: https://www.bebeam.net/sitemap.xml
