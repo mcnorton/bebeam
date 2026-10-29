@@ -11,6 +11,10 @@ import { icon as lineIcon } from './icons.js';
 import { renderQR } from '../transfer/qr.js';
 
 export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
+/** 설치한 앱 창을 여는 주소. manifest protocol_handlers로 설치한 앱에 등록된다 (컴퓨터 Chrome·Edge) */
+export const OPEN_APP_URL = 'web+bebeam://open';
+/** 설치 이벤트(beforeinstallprompt)를 기다리는 시간. 이 안에 오지 않으면 설치한 것으로 본다 */
+export const OFFER_WAIT_MS = 2000;
 export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 비빔 사이트: 처음 받는 사람 안내(보낼 준비)와 iOS 설치 안내의 작은 QR */
@@ -69,12 +73,14 @@ export function isStandalone() {
 }
 
 /**
- * [비빔 앱 설치하기]를 보일지. Chromium은 이미 설치한 앱이면 브라우저 탭에서도 beforeinstallprompt를 보내지 않으므로,
- * 그 이벤트를 받았을 때만 보인다(설치한 채 탭에서 열면 사이트 링크). 이벤트가 없는 브라우저(Firefox 등)는 설치 안내를 연다
+ * 목록 아래에 보일 것: 'install' [비빔 앱 설치하기] | 'open' [앱으로 열기] | 'link' 사이트 링크.
+ * Chromium은 이미 설치한 앱이면 브라우저 탭에서도 beforeinstallprompt를 보내지 않으므로, 이벤트가 없으면 설치한 것으로 보고
+ * [앱으로 열기]를 보인다(protocol_handlers는 컴퓨터만 되므로 Android는 링크). 이벤트가 없는 브라우저(Firefox 등)는 설치 안내를 연다
  */
-export function shouldShowInstallButton({ installed, promptSupported, offered }) {
-  if (installed) return false;
-  return !promptSupported || offered;
+export function libraryAction({ installed, promptSupported, offered, android }) {
+  if (installed) return 'link';
+  if (!promptSupported || offered) return 'install';
+  return android ? 'link' : 'open';
 }
 
 /** 창 모드가 바뀌면(전체 화면 들어가기·나오기 등) 부른다 */
@@ -270,6 +276,26 @@ export function showInstallGate(kind) {
     ]),
   ]);
   document.body.append(gate);
+}
+
+/**
+ * 설치한 앱을 탭에서 열었을 때의 안내 (W-03). [앱으로 열기]는 OPEN_APP_URL로 앱 창을 연다(처음엔 브라우저가 묻는다).
+ * [나중에]는 이번만 닫는다 (기억하지 않는다: 탭을 다시 열면 또 묻는다)
+ */
+export async function offerOpenApp() {
+  const { value } = await openDialog({
+    title: '설치한 BeBeam 앱이 있어요',
+    className: 'open-app-dialog',
+    body: [
+      h('img', { class: 'open-app-icon', src: 'icons/icon-192.png', alt: '', width: '72', height: '72' }),
+      h('p', { class: 'dialog-message', text: '앱으로 열면 별도 창에서 바로 실행돼요.' }),
+    ],
+    buttons: [
+      { label: '나중에', value: 'later' },
+      { label: '앱으로 열기', value: 'open', kind: 'primary', autofocus: true },
+    ],
+  });
+  if (value === 'open') location.href = OPEN_APP_URL;
 }
 
 /**

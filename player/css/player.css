@@ -195,6 +195,15 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .install-help:hover { background: var(--selected); }
+a.install-help { box-sizing: border-box; text-decoration: none; }
+.open-app-mark { display: block; width: 20px; height: 20px; border-radius: 5px; }
+/* 설치한 앱을 탭에서 열었을 때 가운데 대화창 (큼직하게) */
+.dialog.open-app-dialog { width: min(92vw, 400px); }
+.open-app-dialog .dialog-form { align-items: center; text-align: center; gap: 16px; padding: 28px 24px 20px; }
+.open-app-dialog .dialog-title { font-size: 1.35rem; }
+.open-app-icon { display: block; width: 72px; height: 72px; border-radius: 16px; }
+.open-app-dialog .dialog-actions { width: 100%; }
+.open-app-dialog .dialog-actions .btn { flex: 1; min-height: 48px; }
 .site-link { display: block; min-height: var(--tap); line-height: var(--tap); text-align: center; color: var(--muted); text-decoration: none; }
 .site-link:hover { color: var(--text); text-decoration: underline; }
 
