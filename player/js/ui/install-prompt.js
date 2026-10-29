@@ -68,6 +68,15 @@ export function isStandalone() {
   return matchMedia(INSTALLED_DISPLAY_QUERY).matches || navigator.standalone === true;
 }
 
+/**
+ * [비빔 앱 설치하기]를 보일지. Chromium은 이미 설치한 앱이면 브라우저 탭에서도 beforeinstallprompt를 보내지 않으므로,
+ * 그 이벤트를 받았을 때만 보인다(설치한 채 탭에서 열면 사이트 링크). 이벤트가 없는 브라우저(Firefox 등)는 설치 안내를 연다
+ */
+export function shouldShowInstallButton({ installed, promptSupported, offered }) {
+  if (installed) return false;
+  return !promptSupported || offered;
+}
+
 /** 창 모드가 바뀌면(전체 화면 들어가기·나오기 등) 부른다 */
 export function onDisplayModeChange(fn) {
   matchMedia(INSTALLED_DISPLAY_QUERY).addEventListener('change', fn);
@@ -102,7 +111,9 @@ function write(key, value) {
  */
 export function setupInstallPrompt({ banner }) {
   let deferred = null;
+  let offered = false; // 이 페이지에서 beforeinstallprompt를 받았다 = 아직 설치하지 않았다
   const installedHandlers = [];
+  const offeredHandlers = [];
 
   const hide = () => {
     banner.hidden = true;
@@ -138,6 +149,8 @@ export function setupInstallPrompt({ banner }) {
   addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); // 브라우저 기본 미니 인포바 대신 W-02 배너
     deferred = e;
+    offered = true;
+    for (const fn of offeredHandlers) fn();
     if (shouldOfferInstall({ standalone: isStandalone(), dismissedAt: read(DISMISSED_KEY), now: Date.now() })) show();
   });
 
@@ -149,6 +162,11 @@ export function setupInstallPrompt({ banner }) {
 
   return {
     onInstalled: (fn) => installedHandlers.push(fn),
+    /** beforeinstallprompt를 받으면 부른다 */
+    onOffered: (fn) => offeredHandlers.push(fn),
+    get offered() {
+      return offered;
+    },
     /**
      * [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면(Android·PC) 바로 띄우고, 없으면 설치 안내를 연다
      */

@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
+import { setupInstallPrompt, shouldShowInstallButton, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -50,15 +50,20 @@ const store = new Store();
 // beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
 $('version').textContent = `v${VERSION}`;
 const installPrompt = setupInstallPrompt({ banner: $('install-banner') });
-// [비빔 앱 설치하기]는 설치 전(브라우저 탭)에만, 설치한 뒤에는 사이트 링크를 보인다 (W-03)
+// [비빔 앱 설치하기]는 설치 전에만, 설치한 뒤(설치한 앱을 브라우저 탭에서 연 경우도)에는 사이트 링크를 보인다 (W-03)
 let justInstalled = false; // 이 탭에서 방금 설치함 (탭은 그대로 브라우저 모드다)
 function showInstalledLink() {
-  const installed = justInstalled || isStandalone();
-  $('install-help').hidden = installed;
-  $('site-link').hidden = !installed;
+  const show = shouldShowInstallButton({
+    installed: justInstalled || isStandalone(),
+    promptSupported: 'onbeforeinstallprompt' in globalThis,
+    offered: installPrompt.offered,
+  });
+  $('install-help').hidden = !show;
+  $('site-link').hidden = show;
 }
 showInstalledLink();
 onDisplayModeChange(showInstalledLink);
+installPrompt.onOffered(showInstalledLink);
 $('install-help').addEventListener('click', () => installPrompt.install());
 installPrompt.onInstalled(() => {
   justInstalled = true;
