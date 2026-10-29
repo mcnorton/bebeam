@@ -1,7 +1,7 @@
 // 플레이어 설치 유도와 저장소 유지 요청 (SPEC F-01 3–4, W-02, W-03)
 //   Chrome/Edge/Android: beforeinstallprompt → 상단 배너 [나중에](7일 숨김) [설치]
 //   목록 아래 [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면 바로 띄우고, 없으면 설치 안내(W-03)를 연다.
-//   iOS는 브라우저 탭과 홈 화면 앱의 저장소가 따로라서, 홈 화면에서 실행하지 않으면 셸 대신 막는 화면(W-03)만 보인다.
+//   iOS·macOS Safari는 브라우저 탭과 설치한 웹앱(홈 화면·Dock)의 저장소가 따로라서, 설치해서 열지 않으면 셸 대신 막는 화면(W-03)만 보인다.
 //   이미 standalone이면 아무것도 띄우지 않는다.
 //   navigator.storage.persist()는 처음 한 번 요청하고 결과를 meta.settings.persisted에 기록한다.
 
@@ -37,9 +37,24 @@ export function shouldOfferInstall({ standalone, dismissedAt, now }) {
   return !Number.isFinite(t) || t <= 0 || now - t >= SNOOZE_MS;
 }
 
-/** iOS인데 홈 화면에서 실행한 것이 아니면 막는 화면만 보인다 (탭에 설치한 앱은 홈 화면 앱에 보이지 않으므로) */
-export function needsHomeScreen({ ios, standalone }) {
-  return ios && !standalone;
+/**
+ * macOS의 Safari (Dock에 추가로 웹앱을 만든다). Safari를 흉내 내는 Chrome·Edge·Firefox·Opera는 뺀다.
+ * assets/landing.js에 같은 규칙이 있다
+ */
+export function isMacSafari({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
+  if (isIos({ userAgent, platform, maxTouchPoints })) return false;
+  return /Macintosh/.test(userAgent) && /Version\/[\d.]+.* Safari\//.test(userAgent) && !/Chrome|Chromium|Edg|Firefox|OPR/.test(userAgent);
+}
+
+/**
+ * 설치해서 열지 않았으면 막는 화면의 종류: 'ios'(홈 화면) | 'mac'(Dock) | null.
+ * 브라우저 탭에서 설치한 앱은 설치한 웹앱에 보이지 않으므로 탭에서는 시작하지 않는다
+ */
+export function installGate({ ios, macSafari, standalone }) {
+  if (standalone) return null;
+  if (ios) return 'ios';
+  if (macSafari) return 'mac';
+  return null;
 }
 
 /**
@@ -172,17 +187,33 @@ function icon(kind, label) {
 /** 한 단계: 아이콘과 글을 한 줄에 */
 const step = (...parts) => h('li', {}, parts);
 
-/** iOS 홈 화면 추가 3단계 (Safari·Chrome 공용) */
-function iosSteps() {
-  return h('ol', { class: 'ios-guide-steps' }, [
-    step('주소표시줄 옆 메뉴의 ', icon('share', '공유'), ' 공유 누르기'),
-    step(icon('more', '더보기'), ' 더보기 메뉴 펼치기'),
-    step(icon('add', '추가'), ' 홈 화면에 추가'),
-  ]);
-}
+/** 막는 화면 문구 (W-03). place: 설치한 웹앱을 여는 곳 */
+const GATE = {
+  ios: {
+    lead: '애플 iOS 를 사용하고 있군요',
+    title: '홈 화면에 추가해야 쓸 수 있어요',
+    place: '홈 화면의 BeBeam',
+    steps: () => [
+      step('주소표시줄 옆 메뉴의 ', icon('share', '공유'), ' 공유 누르기'),
+      step(icon('more', '더보기'), ' 더보기 메뉴 펼치기'),
+      step(icon('add', '추가'), ' 홈 화면에 추가'),
+    ],
+    why: ['iOS는 저장소 관리가 까다로워서', '홈화면 저장소 하나로 비벼야 해요.'],
+  },
+  mac: {
+    lead: '애플 MacOS의 Safari를 사용하고 있군요',
+    title: 'Dock 에 추가해야 쓸 수 있어요',
+    place: 'Dock의 BeBeam',
+    steps: () => [
+      step('Safari의 [파일] 메뉴를 펼치기'),
+      step('“Dock에 추가...”를 실행하여 설치하기'),
+    ],
+    why: ['MacOS Safari는 저장소 관리가 까다로워서', 'Dock 저장소 하나로 비벼야 해요.'],
+  },
+};
 
 /**
- * 설치 안내 (W-03, iOS 밖). 브라우저의 설치 메뉴를 안내한다.
+ * 설치 안내 (W-03, 막는 화면이 없는 브라우저). 브라우저의 설치 메뉴를 안내한다.
  */
 export async function openInstallGuide() {
   await openDialog({
@@ -200,25 +231,23 @@ export async function openInstallGuide() {
 }
 
 /**
- * iOS 브라우저 탭의 막는 화면 (W-03). 셸을 숨기고 홈 화면 추가 방법만 보인다. 닫을 수 없다.
+ * iOS·macOS Safari 브라우저 탭의 막는 화면 (W-03). 셸을 숨기고(시작도 하지 않는다) 설치 방법만 보인다. 닫을 수 없다.
+ * @param {'ios' | 'mac'} kind installGate()의 결과
  */
-export function showHomeScreenGate() {
+export function showInstallGate(kind) {
+  const g = GATE[kind];
   document.getElementById('shell').hidden = true;
   document.getElementById('notice').hidden = true;
   const gate = h('main', { class: 'ios-gate' }, [
     h('div', { class: 'ios-gate-card' }, [
       h('p', { class: 'brand' }, [h('img', { class: 'brand-icon', src: 'icons/icon-192.png', alt: '', width: '24', height: '24' }), ' BeBeam']),
-      h('p', { class: 'ios-gate-lead', text: '애플 iOS 를 사용하고 있군요' }),
-      h('h1', { class: 'ios-gate-title', text: '홈 화면에 추가해야 쓸 수 있어요' }),
-      iosSteps(),
-      h('p', { class: 'ios-gate-note' }, [h('span', { class: 'ios-gate-em', text: '“홈 화면의 BeBeam”' }), '을 눌러 실행하세요.']),
+      h('p', { class: 'ios-gate-lead', text: g.lead }),
+      h('h1', { class: 'ios-gate-title', text: g.title }),
+      h('ol', { class: 'ios-guide-steps' }, g.steps()),
+      h('p', { class: 'ios-gate-note' }, [h('span', { class: 'ios-gate-em', text: `“${g.place}”` }), '을 눌러 실행하세요.']),
       h('div', { class: 'ios-gate-why' }, [
         lineIcon('circle-help'),
-        h('div', {}, [
-          h('p', { text: 'iOS는 저장소 관리가 까다로워서' }),
-          h('p', { text: '홈화면 저장소 하나로 비벼야 해요.' }),
-          h('p', { text: SITE_LABEL }),
-        ]),
+        h('div', {}, [...g.why, SITE_LABEL].map((text) => h('p', { text }))),
       ]),
     ]),
   ]);

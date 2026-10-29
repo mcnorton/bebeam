@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, requestPersistence, isStandalone, isIos, needsHomeScreen, showHomeScreenGate, onDisplayModeChange } from './ui/install-prompt.js';
+import { setupInstallPrompt, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -40,9 +40,9 @@ function notice(message, { sticky = false, action = null } = {}) {
   }
 }
 
-// iOS는 브라우저 탭과 홈 화면 앱의 저장소가 따로다: 탭에서는 셸을 시작하지 않고 홈 화면 추가만 안내한다
-const homeScreenOnly = needsHomeScreen({ ios: isIos(navigator), standalone: isStandalone() });
-if (homeScreenOnly) showHomeScreenGate();
+// iOS·macOS Safari는 브라우저 탭과 설치한 웹앱의 저장소가 따로다: 탭에서는 셸을 시작하지 않고 설치만 안내한다
+const gate = installGate({ ios: isIos(navigator), macSafari: isMacSafari(navigator), standalone: isStandalone() });
+if (gate) showInstallGate(gate);
 
 fillIcons();
 setupThemeButton($('theme-button'));
@@ -187,7 +187,7 @@ function receiveByQr() {
 }
 
 async function start() {
-  if (homeScreenOnly) return; // 서비스 워커·DB도 열지 않는다 (탭에 저장소를 새로 만들지 않게)
+  if (gate) return; // 서비스 워커·DB도 열지 않는다 (탭에 저장소를 새로 만들지 않게)
   store.subscribe(render);
   render(store.state);
   registerServiceWorker({ onWaiting: showUpdateNotice });
