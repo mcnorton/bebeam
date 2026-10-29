@@ -205,20 +205,24 @@ export async function openInstallGuide() {
 export function showHomeScreenGate() {
   document.getElementById('shell').hidden = true;
   document.getElementById('notice').hidden = true;
-  const qr = h('canvas', { class: 'site-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` });
   const gate = h('main', { class: 'ios-gate' }, [
     h('div', { class: 'ios-gate-card' }, [
       h('p', { class: 'brand' }, [h('img', { class: 'brand-icon', src: 'icons/icon-192.png', alt: '', width: '24', height: '24' }), ' BeBeam']),
+      h('p', { class: 'ios-gate-lead', text: '애플 iOS 를 사용하고 있군요' }),
       h('h1', { class: 'ios-gate-title', text: '홈 화면에 추가해야 쓸 수 있어요' }),
       iosSteps(),
-      h('p', { class: 'ios-gate-note', text: '홈 화면의 BeBeam을 눌러 실행하세요.' }),
-      h('div', { class: 'site-qr-row' }, [qr, h('p', { class: 'dialog-message' }, [
-        '카카오톡 등 앱 안 브라우저라면 Safari로 이 주소를 열어 주세요.', h('br'), h('strong', { text: SITE_LABEL }),
-      ])]),
+      h('p', { class: 'ios-gate-note' }, [h('span', { class: 'ios-gate-em', text: '“홈 화면의 BeBeam”' }), '을 눌러 실행하세요.']),
+      h('div', { class: 'ios-gate-why' }, [
+        lineIcon('circle-help'),
+        h('div', {}, [
+          h('p', { text: 'iOS는 저장소 관리가 까다로워서' }),
+          h('p', { text: '홈화면 저장소 하나로 비벼야 해요.' }),
+          h('p', { text: SITE_LABEL }),
+        ]),
+      ]),
     ]),
   ]);
   document.body.append(gate);
-  drawSiteQr(qr);
 }
 
 /**
