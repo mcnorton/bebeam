@@ -9,12 +9,16 @@ import { getMeta, setMeta } from '../db.js';
 import { h, openDialog } from './dialogs.js';
 import { icon as lineIcon } from './icons.js';
 import { renderQR } from '../transfer/qr.js';
+import { isAppRunning } from '../presence.js';
 
 export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
 /** 설치한 앱 창을 여는 주소. manifest protocol_handlers로 설치한 앱에 등록된다 (컴퓨터 Chrome·Edge) */
 export const OPEN_APP_URL = 'web+bebeam://open';
 /** 설치 이벤트(beforeinstallprompt)를 기다리는 시간. 이 안에 오지 않으면 설치한 것으로 본다 */
 export const OFFER_WAIT_MS = 2000;
+/** [앱으로 열기] 뒤 앱 창이 뜨기를 기다리는 시간 (브라우저 확인 창을 누르는 시간 포함), 묻는 간격 */
+const APP_WAIT_MS = 8000;
+const APP_POLL_MS = 500;
 export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 비빔 사이트: 처음 받는 사람 안내(보낼 준비)와 iOS 설치 안내의 작은 QR */
@@ -282,7 +286,7 @@ export function showInstallGate(kind) {
  * 설치한 앱을 탭에서 열었을 때의 안내 (W-03). [앱으로 열기]는 OPEN_APP_URL로 앱 창을 연다(처음엔 브라우저가 묻는다).
  * [나중에]는 이번만 닫는다 (기억하지 않는다: 탭을 다시 열면 또 묻는다)
  */
-export async function offerOpenApp() {
+export async function offerOpenApp({ onRefresh } = {}) {
   const { value } = await openDialog({
     title: '설치한 BeBeam 앱이 있어요',
     className: 'open-app-dialog',
@@ -295,7 +299,57 @@ export async function offerOpenApp() {
       { label: '앱으로 열기', value: 'open', kind: 'primary', autofocus: true },
     ],
   });
-  if (value === 'open') location.href = OPEN_APP_URL;
+  if (value === 'open') openInstalledApp({ onRefresh });
+}
+
+/**
+ * 설치한 앱 창을 연다. 이 탭은 앱 창이 뜨면 닫아 보고(스크립트로 연 탭만 닫힌다), 닫히지 않으면 막는 모달을 둔다.
+ * @param {{onRefresh?: () => Promise<void>}} o 앱이 실행 중일 때 [새로고침]이 부른다 (목록 다시 읽기)
+ */
+export function openInstalledApp({ onRefresh } = {}) {
+  location.href = OPEN_APP_URL;
+  showAppWait(onRefresh);
+  closeWhenAppOpens();
+}
+
+async function closeWhenAppOpens() {
+  for (let waited = 0; waited < APP_WAIT_MS; waited += APP_POLL_MS) {
+    if (await isAppRunning(APP_POLL_MS)) {
+      window.close();
+      return;
+    }
+  }
+}
+
+/** 앱으로 비비는 동안 이 탭을 막는다. Esc·배경으로 닫히지 않고 [새로고침]으로만 판단한다 */
+function showAppWait(onRefresh) {
+  if (document.querySelector('.open-app-wait')) return;
+  const shell = document.getElementById('shell');
+  const status = h('p', { class: 'open-app-wait-status', 'aria-live': 'polite' });
+  const refresh = h('button', { type: 'button', class: 'btn btn-primary open-app-refresh' }, ['새로고침', lineIcon('refresh-cw')]);
+  const layer = h('div', { class: 'open-app-wait', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'open-app-wait-title' }, [
+    h('div', { class: 'open-app-wait-card' }, [
+      h('img', { class: 'open-app-icon', src: 'icons/icon-192.png', alt: '', width: '72', height: '72' }),
+      h('p', { id: 'open-app-wait-title', class: 'open-app-wait-title', text: '설치된 앱으로 비비는 중입니다.' }),
+      refresh,
+      status,
+    ]),
+  ]);
+  refresh.addEventListener('click', async () => {
+    refresh.disabled = true;
+    status.textContent = '';
+    if (await isAppRunning()) {
+      await onRefresh?.();
+      status.textContent = '앱이 아직 열려 있어요. 목록을 새로 읽었어요.';
+    } else {
+      layer.remove();
+      shell.inert = false;
+    }
+    refresh.disabled = false;
+  });
+  shell.inert = true;
+  document.body.append(layer);
+  refresh.focus();
 }
 
 /**

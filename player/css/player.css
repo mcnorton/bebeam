@@ -204,6 +204,14 @@ a.install-help { box-sizing: border-box; text-decoration: none; }
 .open-app-icon { display: block; width: 72px; height: 72px; border-radius: 16px; }
 .open-app-dialog .dialog-actions { width: 100%; }
 .open-app-dialog .dialog-actions .btn { flex: 1; min-height: 48px; }
+/* [앱으로 열기] 뒤 이 탭을 막는 층: 닫기 없음, [새로고침]으로만 판단 */
+.open-app-wait { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+.open-app-wait-card { width: min(100%, 400px); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 28px 24px 24px;
+                      border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow-lg); text-align: center; }
+.open-app-wait-title { margin: 0; font-size: 1.35rem; line-height: 1.4; }
+.btn.open-app-refresh { flex-direction: column; gap: 6px; min-width: 160px; padding: 12px 24px; }
+.open-app-refresh .icon { width: 24px; height: 24px; }
+.open-app-wait-status { margin: 0; min-height: 1.5em; color: var(--muted); line-height: 1.5; }
 .site-link { display: block; min-height: var(--tap); line-height: var(--tap); text-align: center; color: var(--muted); text-decoration: none; }
 .site-link:hover { color: var(--text); text-decoration: underline; }
 

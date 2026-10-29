@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, libraryAction, offerOpenApp, OFFER_WAIT_MS, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
+import { setupInstallPrompt, libraryAction, offerOpenApp, openInstalledApp, OFFER_WAIT_MS, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -15,6 +15,7 @@ import { fillIcons } from './ui/icons.js';
 import { setupThemeButton } from './ui/theme.js';
 import { openSettings } from './ui/settings.js';
 import { getUserName } from './settings.js';
+import { answerAsApp } from './presence.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -67,6 +68,14 @@ function showInstalledLink() {
   $('site-link').hidden = action === 'install';
 }
 showInstalledLink();
+/** 앱 창이 열린 동안 탭의 [새로고침]: 목록을 다시 읽는다 (같은 DB를 함께 쓴다) */
+async function refreshApps() {
+  if (db) store.setApps(await listApps(db));
+}
+$('open-app').addEventListener('click', (e) => {
+  e.preventDefault();
+  openInstalledApp({ onRefresh: refreshApps });
+});
 // protocol_handlers로 열린 앱 창의 주소(?launch=…)는 지운다
 if (new URLSearchParams(location.search).has('launch')) history.replaceState(null, '', location.pathname);
 onDisplayModeChange(showInstalledLink);
@@ -218,9 +227,11 @@ async function start() {
   viewer.setDb(db);
   store.setApps(await listApps(db));
   requestPersistence(db);
+  // 앱 창이면 브라우저 탭이 '앱이 열려 있나' 물을 때 대답한다
+  if (isStandalone()) answerAsApp();
   // 설치 이벤트를 기다려 본 뒤에도 [앱으로 열기]면 가운데 대화창으로도 권한다
   setTimeout(() => {
-    if (currentLibraryAction() === 'open' && store.state.screen === 'home') offerOpenApp();
+    if (currentLibraryAction() === 'open' && store.state.screen === 'home') offerOpenApp({ onRefresh: refreshApps });
   }, OFFER_WAIT_MS);
   // 설치하면 Chrome이 저장소 유지를 허용하므로 한 번 더 요청한다
   installPrompt.onInstalled(() => requestPersistence(db, { force: true }));
