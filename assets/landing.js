@@ -16,3 +16,21 @@ link.addEventListener('click', (e) => {
   if (w) w.opener = null;
   else location.href = link.href;
 });
+
+// AI용 앱 제작 규칙 주소 [복사] (TASK T6.1). 복사를 못 하면 칸을 선택해 두어 직접 복사하게 한다
+const aiUrl = document.getElementById('ai-url');
+const aiStatus = document.getElementById('ai-status');
+let aiTimer;
+aiUrl.addEventListener('focus', () => aiUrl.select());
+document.getElementById('ai-copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(aiUrl.value);
+    aiStatus.textContent = '복사했어요';
+  } catch {
+    aiUrl.focus();
+    aiUrl.select();
+    aiStatus.textContent = '선택해 두었어요. 직접 복사해 주세요';
+  }
+  clearTimeout(aiTimer);
+  aiTimer = setTimeout(() => { aiStatus.textContent = ''; }, 2000);
+});

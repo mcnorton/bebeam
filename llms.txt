@@ -1,0 +1,10 @@
+# 비빔 BeBeam
+
+> 내가 만든 웹앱(index.html + JavaScript, CSS)을 폰에 설치해 실행하고, 친구에게 QR로 네트워크 없이 보내는 플레이어(PWA). 앱은 외부 통신이 막힌 sandbox iframe에서 실행된다.
+
+BeBeam용 앱을 만들 때는 먼저 아래 규칙 문서를 읽고 따른다.
+
+## 문서
+
+- [앱 제작 규칙 (AI용)](https://www.bebeam.net/README.md): 폴더 구조, 허용 파일, 실행 환경, 용량과 전송 시간, 자가 점검표, 최소 예제
+- [사용 설명](https://github.com/mcnorton/bebeam): 플레이어 설치, 앱 추가·실행·전송
