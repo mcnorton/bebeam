@@ -239,7 +239,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 /* 차례 */
 .intro-art { display: grid; place-items: center; margin: auto 0 calc(var(--p) * 6); }
 .intro-art .emblem { filter: sepia(.6) saturate(.7); opacity: .85; }
-.intro { margin: 0 0 calc(var(--p) * 5); white-space: pre-line; text-align: center; line-height: 1.7; font-size: clamp(14px, 2.2vmin, 17px); }
+.intro { margin: 0 0 calc(var(--p) * 5); white-space: pre-line; text-align: center; text-wrap: balance; word-break: keep-all; line-height: 1.7; font-size: clamp(14px, 2.2vmin, 17px); }
 .contents { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: calc(var(--p) * 2); }
 .entry {
   position: relative;
@@ -256,7 +256,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 }
 .entry:hover .entry-title, .entry:focus-visible .entry-title { color: var(--scarlet); }
 .entry-no { flex: none; width: 1.6em; color: var(--scarlet); }
-.entry-title { flex: 0 1 auto; min-width: 0; }
+.entry-title { flex: 0 1 auto; min-width: 0; word-break: keep-all; }
 .entry-dots { flex: 1; min-width: 1em; height: var(--p); margin-top: .6em; background: linear-gradient(90deg, var(--ink-faint) 50%, transparent 50%) 0 0 / calc(var(--p) * 3) var(--p); }
 .entry-count { flex: none; color: var(--ink-soft); font-size: .8em; }
 .seal { flex: none; width: calc(var(--p) * 12 * 1.5); height: calc(var(--p) * 12 * 1.5); margin: calc(var(--p) * -2) 0; background: var(--art-seal) center / contain no-repeat; image-rendering: pixelated; transform: rotate(-8deg); }
@@ -264,6 +264,8 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .lang-pair { display: flex; justify-content: center; gap: calc(var(--p) * 2); align-self: center; }
 .lang-pair .lang[aria-pressed="true"] { background: var(--ink-soft); border-color: var(--ink-soft); color: var(--paper); }
 .stamp-space { min-width: 96px; }
+/* 좁은 쪽: 빈 자리를 줄여 [레시피 북 덮기]가 한 줄에 들어가게 */
+@media (max-width: 420px) { .stamp-space { min-width: 0; } }
 .lang {
   min-height: var(--tap);
   min-width: var(--tap);
@@ -291,6 +293,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
   min-height: var(--tap);
   min-width: 96px;
   padding: 0 calc(var(--p) * 5);
+  white-space: nowrap;
   border: 0;
   clip-path: var(--corner);
   background: var(--paper-edge);
