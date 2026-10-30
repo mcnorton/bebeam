@@ -3,9 +3,19 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '584c76223a8f';
+const VERSION = '50cd2a11878c';
 const SHELL = [
   './',
+  'apps/try-bebeam/art.js',
+  'apps/try-bebeam/fonts/NeoDunggeunmoPro-Regular.woff2',
+  'apps/try-bebeam/fonts/OFL.txt',
+  'apps/try-bebeam/icon.png',
+  'apps/try-bebeam/index.html',
+  'apps/try-bebeam/main.js',
+  'apps/try-bebeam/scenes.js',
+  'apps/try-bebeam/screenshot.png',
+  'apps/try-bebeam/style.css',
+  'apps/try-bebeam/text.js',
   'css/player.css',
   'icons/app-192.png',
   'icons/app-512.png',
@@ -13,6 +23,7 @@ const SHELL = [
   'icons/favicon.ico',
   'icons/icon-192.png',
   'index.html',
+  'js/builtin.js',
   'js/db.js',
   'js/ids.js',
   'js/installer/duplicates.js',

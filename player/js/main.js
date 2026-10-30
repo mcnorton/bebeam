@@ -16,6 +16,7 @@ import { setupThemeButton } from './ui/theme.js';
 import { openSettings } from './ui/settings.js';
 import { getUserName } from './settings.js';
 import { answerAsApp } from './presence.js';
+import { ensureGuide } from './builtin.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -226,6 +227,12 @@ async function start() {
   list.setDb(db);
   viewer.setDb(db);
   store.setApps(await listApps(db));
+  // 기본 앱 「비빔 비벼보기」: 처음이면 설치해 고르고, 새 판이면 덮어쓴다
+  ensureGuide(db).then((app) => {
+    if (!app) return;
+    store.upsertApp(app);
+    if (!store.state.selectedId) store.select(app.id);
+  }).catch((err) => console.warn('비빔 비벼보기', err));
   requestPersistence(db);
   // 앱 창이면 브라우저 탭이 '앱이 열려 있나' 물을 때 대답한다
   if (isStandalone()) answerAsApp();
@@ -245,7 +252,13 @@ async function start() {
   });
   $('receive-button').addEventListener('click', receiveByQr);
   $('settings-button').addEventListener('click', async () => {
-    if (await openSettings(db)) notice('설정을 저장했습니다.');
+    const saved = await openSettings(db, {
+      onGuide: (app) => {
+        showInstalled(app);
+        notice('비빔 비벼보기를 다시 추가했습니다.');
+      },
+    });
+    if (saved) notice('설정을 저장했습니다.');
   });
 }
 

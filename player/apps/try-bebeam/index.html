@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>비빔 비벼보기</title>
+  <meta name="description" content="비빔 사용법을 오래된 연금술사의 레시피북처럼 한 장씩 넘겨 보며 익혀요. 설치, 앱 추가·실행, QR로 주고받기, AI로 앱 만들기. How to use BeBeam, step by step.">
+  <link rel="icon" href="icon.png">
+  <meta property="og:image" content="screenshot.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="book" id="book" data-view="cover">
+    <!-- 표지 -->
+    <section class="cover" id="cover">
+      <div class="cover-inner">
+        <p class="cover-sub" id="cover-sub"></p>
+        <h1 class="cover-title" id="cover-title"></h1>
+        <span class="emblem" aria-hidden="true"></span>
+        <button type="button" class="stamp stamp-main" id="open"></button>
+        <div class="lang-pair" role="group" aria-label="Language">
+          <button type="button" class="lang" data-lang="ko" lang="ko">한글</button>
+          <button type="button" class="lang" data-lang="en" lang="en">English</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 차례: 왼쪽 쪽 소개, 오른쪽 쪽 목록 -->
+    <section class="spread" id="toc" hidden>
+      <div class="page left">
+        <div class="marg" aria-hidden="true"></div>
+        <div class="intro-art" aria-hidden="true"><span class="emblem"></span></div>
+        <p class="intro" id="intro"></p>
+        <div class="lang-pair" role="group" aria-label="Language">
+          <button type="button" class="lang" data-lang="ko" lang="ko">한글</button>
+          <button type="button" class="lang" data-lang="en" lang="en">English</button>
+        </div>
+        <p class="folio" aria-hidden="true">· ⅰ ·</p>
+      </div>
+      <div class="page right">
+        <div class="marg" aria-hidden="true"></div>
+        <div class="page-body">
+          <div class="page-inner">
+            <h2 class="heading plain" id="toc-title"></h2>
+            <ol class="contents" id="contents"></ol>
+          </div>
+        </div>
+        <nav class="controls">
+          <button type="button" class="stamp" id="toc-prev"></button>
+          <span class="folio" aria-hidden="true">· ⅱ ·</span>
+          <span class="stamp-space" aria-hidden="true"></span>
+        </nav>
+      </div>
+    </section>
+
+    <!-- 편: 왼쪽 쪽 그림, 오른쪽 쪽 비법 순서표 -->
+    <section class="spread" id="play" hidden>
+      <div class="page left">
+        <div class="marg" aria-hidden="true"></div>
+        <div class="stage" id="stage" aria-hidden="true"></div>
+        <p class="folio" id="folio-left" aria-hidden="true"></p>
+      </div>
+      <div class="page right">
+        <div class="marg" aria-hidden="true"></div>
+        <div class="page-body">
+          <div class="page-inner">
+            <p class="kicker" id="kicker"></p>
+            <h2 class="heading"><span class="dropcap" id="cap"></span><span id="recipe"></span></h2>
+            <ol class="steps" id="steps"></ol>
+          </div>
+        </div>
+        <p class="sr-only" id="caption" aria-live="polite"></p>
+        <nav class="controls">
+          <button type="button" class="stamp" id="prev"></button>
+          <span class="folio" id="folio-right" aria-hidden="true"></span>
+          <button type="button" class="stamp stamp-main" id="next"></button>
+        </nav>
+      </div>
+    </section>
+
+    <div class="leaf" id="leaf" aria-hidden="true"></div>
+    <button type="button" class="ribbon" id="back" hidden><span class="home" aria-hidden="true"></span></button>
+    <nav class="tabs" id="tabs" hidden></nav>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

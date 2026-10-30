@@ -145,7 +145,7 @@ export function formatBytes(n) {
   return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-function writeOnce(db, analysis, source, { senderName = null, policy = 'separate', expect = null } = {}) {
+function writeOnce(db, analysis, source, { senderName = null, policy = 'separate', expect = null, overwriteId = null } = {}) {
   const tx = db.transaction(['apps', 'files'], 'readwrite');
   const apps = tx.objectStore('apps');
   const filesStore = tx.objectStore('files');
@@ -154,7 +154,16 @@ function writeOnce(db, analysis, source, { senderName = null, policy = 'separate
     const now = Date.now();
     const { files, ...meta } = analysis;
     // 같은 트랜잭션 안에서 목록을 읽어 판단한다 (다른 창이 동시에 추가해도 이름·대상이 어긋나지 않게)
-    const plan = planDuplicate(await request(apps.getAll()), meta.name, policy);
+    const all = await request(apps.getAll());
+    let plan;
+    if (overwriteId) {
+      // 정해 둔 앱을 덮어쓴다 (기본 앱 새 판). 그사이 지워졌으면 쓰지 않는다
+      const target = all.find((a) => a.id === overwriteId);
+      if (!target) throw new InstallError('changed', '덮어쓸 앱이 없습니다');
+      plan = { kind: 'overwrite', name: target.name, target };
+    } else {
+      plan = planDuplicate(all, meta.name, policy);
+    }
     // 확인 화면에서 보여준 결과(expect)와 달라졌으면(다른 창이 그사이 추가·삭제) 쓰지 않고 다시 확인받게 한다
     if (expect && (expect.kind !== plan.kind || (expect.target?.id ?? null) !== (plan.target?.id ?? null))) {
       throw new InstallError('changed', '그사이 앱 목록이 바뀌었습니다. 다시 추가해 주세요.');
@@ -210,9 +219,10 @@ function writeOnce(db, analysis, source, { senderName = null, policy = 'separate
 /**
  * @param {IDBDatabase} db
  * @param {Awaited<ReturnType<typeof analyze>>} analysis
- * @param {'folder' | 'zip' | 'qr'} source
- * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: ReturnType<typeof planDuplicate>}} [options]
- *   QR로 받은 앱의 보낸 사람, 같은 이름 처리, 확인 화면에서 보여준 계획(다르면 InstallError 'changed')
+ * @param {'folder' | 'zip' | 'qr' | 'builtin'} source
+ * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: ReturnType<typeof planDuplicate>, overwriteId?: string | null}} [options]
+ *   QR로 받은 앱의 보낸 사람, 같은 이름 처리, 확인 화면에서 보여준 계획(다르면 InstallError 'changed'),
+ *   이름과 상관없이 덮어쓸 앱 ID(없으면 InstallError 'changed')
  * @returns {Promise<object>} 기록한 apps 레코드
  */
 export async function install(db, analysis, source, options = {}) {

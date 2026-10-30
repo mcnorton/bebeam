@@ -1,9 +1,10 @@
-// 설정 화면 (W-16): 내 이름, 같은 이름의 앱을 추가할 때
+// 설정 화면 (W-16): 내 이름, 같은 이름의 앱을 추가할 때, (지웠으면) 비빔 비벼보기 다시 추가
 
 import { h, openDialog } from './dialogs.js';
 import { icon } from './icons.js';
 import { indianName, USER_NAME_MAX } from '../names.js';
 import { getUserName, getDuplicatePolicy, saveSettings, DUPLICATE } from '../settings.js';
+import { hasGuide, restoreGuide } from '../builtin.js';
 
 function radio(name, value, label, desc, checked) {
   const input = h('input', { type: 'radio', name, value, checked });
@@ -13,9 +14,31 @@ function radio(name, value, label, desc, checked) {
   ]);
 }
 
-/** @returns {Promise<boolean>} 저장했으면 true */
-export async function openSettings(db) {
-  const [userName, policy] = await Promise.all([getUserName(db), getDuplicatePolicy(db)]);
+/** [비빔 비벼보기 다시 추가]: 누르면 바로 설치하고 버튼을 끈다 (저장·취소와 상관없이) */
+function guideField(db, onGuide) {
+  const button = h('button', { type: 'button', class: 'btn', text: '비빔 비벼보기 다시 추가' });
+  const desc = h('p', { class: 'field-desc', text: '사용법을 보여 주는 기본 앱이에요.' });
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    try {
+      onGuide?.(await restoreGuide(db));
+      button.textContent = '추가했어요';
+    } catch (err) {
+      console.error(err);
+      button.disabled = false;
+      desc.textContent = '추가하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    }
+  });
+  return h('div', { class: 'field' }, [h('span', { class: 'field-label', text: '사용법' }), button, desc]);
+}
+
+/**
+ * @param {IDBDatabase} db
+ * @param {{onGuide?: (app: object) => void}} [options] 비빔 비벼보기를 다시 추가했을 때
+ * @returns {Promise<boolean>} 저장했으면 true
+ */
+export async function openSettings(db, { onGuide } = {}) {
+  const [userName, policy, guide] = await Promise.all([getUserName(db), getDuplicatePolicy(db), hasGuide(db)]);
 
   const input = h('input', {
     type: 'text', id: 'settings-name', class: 'text-input', maxlength: String(USER_NAME_MAX), autocomplete: 'off', enterkeyhint: 'done',
@@ -40,6 +63,7 @@ export async function openSettings(db) {
       radio('dup', DUPLICATE.OVERWRITE, '덮어쓰기', '가장 최근 앱을 새것으로 바꿔요. 점수·설정은 남아요', policy === DUPLICATE.OVERWRITE),
     ]),
   ];
+  if (!guide) body.push(guideField(db, onGuide));
 
   let picked = policy;
   const { value } = await openDialog({
