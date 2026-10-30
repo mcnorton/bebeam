@@ -10,6 +10,25 @@
 - 다 만든 뒤에는 **§9 점검표**를 하나씩 스스로 확인하세요.
 - 규칙을 지키지 못하는 기능을 요청받으면, 왜 안 되는지와 대안을 사용자에게 먼저 알려 주세요. 예: 외부 API 호출, 온라인 랭킹.
 
+### 바로 만들지 말고 먼저 물어보기
+사용자가 이 주소만 주었거나, 무엇을 만들지 설명이 부족하면 **개발을 시작하지 말고 먼저 친절하게 물어보세요.**
+- 한 번에 2–3개씩 나눠 묻습니다.
+- 사용자가 잘 모르겠다고 하면 예시나 선택지를 2–3개 보여 주고 고르게 합니다.
+
+묻는 항목:
+1. 앱 제목
+2. 목적: 누가, 언제, 왜 쓰는지
+3. 종류: 게임 / 수업자료 / 도구 / 기타
+4. 스토리라인과 흐름: 게임이면 세계관·주인공·목표·끝나는 조건, 도구면 사용 순서
+5. 핵심 특징 3–5가지
+6. 조작과 기기: 터치·키보드·기울이기, 폰 세로·가로·태블릿·PC
+7. 그래픽 스타일: 픽셀아트, 실사풍, 손그림, 플랫 일러스트, 3D 로우폴리, 미니멀 등, 색감과 분위기
+8. 소리: 효과음, 배경음악
+9. 저장할 것: 점수, 기록, 설정
+10. 꼭 넣을 것, 빼고 싶은 것
+
+답을 들을 때마다 짧게 정리해 보여 주고, 빠지거나 애매한 것은 더 물으세요. 충분히 정해지면 한 장짜리 **기획서**로 요약해 보여 주고, 사용자가 시작하라고 확인한 뒤에 개발합니다.
+
 ## 1. BeBeam이 무엇인가 (규칙의 이유)
 
 **비빔 BeBeam**(https://www.bebeam.net/)은 내가 만든 작은 웹앱을 폰·태블릿·PC에 담아 실행하고, 친구에게 **네트워크 없이** 보내는 플레이어입니다. 설치형 PWA이며, 게임·수업자료·도구 같은 앱을 담습니다.
@@ -41,6 +60,7 @@ my-app/
 ├── style.css
 ├── main.js
 ├── icon.png
+├── screenshot.webp ← 대표 스크린샷 (og:image, §5-1)
 └── assets/
     ├── sprite.webp
     └── jump.mp3
@@ -95,6 +115,12 @@ my-app/
   - 화면 전환은 한 페이지 안에서 JS로 요소를 바꾸는 방식이 가장 안전합니다.
 - 저장: **`localStorage`** (앱마다 5MB, 키와 값을 글자당 2바이트로 셈 = 약 260만 글자, 실행을 끝내도 남음)
   - `sessionStorage`는 실행을 끝내면 사라집니다.
+  - **키에는 앱 고유 접두사를 붙입니다.** 영문 소문자 앱 id와 `:`를 쓰고, 한 곳에서 정해 씁니다.
+    - 예: `const KEY = 'jump-rabbit:';` → `localStorage.setItem(KEY + 'best', score)`
+    - 이유: BeBeam 안에서는 앱마다 저장소가 따로라 섞이지 않습니다. 그러나 개발 중 `localhost`나 `username.github.io` 같은 공유 주소에서 열면 같은 주소의 다른 앱과 `score`·`settings` 같은 키가 섞여 덮어써집니다.
+  - `localStorage.clear()`는 쓰지 않습니다. 지울 때는 내 접두사가 붙은 키만 지웁니다.
+  - 여러 값은 한 키에 JSON으로 묶어 저장합니다. 예: `KEY + 'settings'`에 `JSON.stringify({ sound: true })`.
+  - 읽기와 쓰기는 `try/catch`로 감쌉니다. 저장소가 막힌 환경이나 용량 초과(`QuotaExceededError`)에서도 앱이 멈추지 않게 합니다.
 
 ### 안 되는 것 (조용히 실패하거나 오류가 납니다)
 | 안 됨 | 대신 |
@@ -128,7 +154,7 @@ my-app/
   <title>점프 토끼</title>                                   <!-- 앱 이름, 60자까지 -->
   <meta name="description" content="화면을 눌러 토끼를 점프시키는 게임">  <!-- 설명, 200자까지 -->
   <link rel="icon" href="icon.png">                          <!-- 목록 아이콘 (앱 안의 정사각형 PNG·SVG 파일. data:·외부 주소는 무시) -->
-  <meta property="og:image" content="cover.webp">            <!-- 실행 전 뷰어 배경 (선택) -->
+  <meta property="og:image" content="screenshot.webp">       <!-- 대표 스크린샷: 실행 전 뷰어 배경 (§5-1) -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -139,6 +165,25 @@ my-app/
 
 - `<title>`이 없으면 폴더 이름이 앱 이름이 됩니다.
 - 아이콘이 없으면 `favicon.ico`·`favicon.png`·`favicon.svg`·`icon.png` 순서로 찾습니다.
+
+### 5-1. 대표 스크린샷 (꼭 넣으세요)
+
+목록에서 앱을 고르면, 실행하기 전 뷰어 화면에 **`og:image`로 지정한 이미지가 배경으로 꽉 차게** 깔립니다. 그 위에 앱 이름과 [▶ 실행하기]·[앱 보내기] 버튼이 놓입니다. 이미지가 없으면 그냥 검은 화면이라, 대표 스크린샷 한 장이 앱의 첫인상을 정합니다.
+
+- **무엇을 찍나**: 앱이 실제로 돌아가는 **가장 대표적인 장면**입니다. 게임이면 플레이 중인 화면, 도구면 데이터가 채워진 화면입니다. 빈 시작 화면이나 로딩 화면은 피합니다.
+- **파일**
+  - 앱 폴더 맨 위에 `screenshot.webp`로 둡니다. `.png`·`.jpg`도 됩니다.
+  - `<meta property="og:image" content="screenshot.webp">`로 **앱 안의 파일을 상대경로로** 가리킵니다. 외부 주소의 이미지는 가져오지 않습니다.
+- **크기와 구도**
+  - 1200×630(가로형)을 권장합니다. 세로로 길게 쓰는 앱이면 720×1280도 됩니다.
+  - 뷰어 모양(폰 세로, PC 가로)에 맞춰 **가장자리가 잘리고 가운데가 보입니다**. 중요한 장면은 가운데에 두세요.
+  - 이미지는 어둡게(약 55%) 깔리고 가운데에 흰 글자·버튼이 올라갑니다. 너무 어두운 장면보다 색이 분명한 장면이 잘 보입니다.
+  - 이미지 안에 글자를 넣지 않아도 됩니다. 이름은 플레이어가 위에 씁니다.
+- **용량**: 전송 시간에 포함되므로 webp 품질 70–80, **200KB 이하**로 저장합니다.
+- **만드는 방법**
+  - **AI가 브라우저를 실행해 화면을 캡처할 수 있으면**, 직접 실행해 대표 장면을 찍어 `screenshot.webp`로 저장합니다.
+  - **캡처할 수 없으면**, 사용자에게 요청합니다. "앱을 열어 대표 화면을 캡처한 뒤 `screenshot.webp`(또는 `.png`)로 폴더 맨 위에 저장해 주세요"라고 안내하고, `og:image` 태그는 미리 넣어 둡니다. 파일이 아직 없어도 설치는 되고 배경만 검정으로 보입니다.
+  - 캡처 대신 앱의 그림체로 그린 표지(SVG·canvas로 만든 PNG)를 넣어도 됩니다.
 
 ## 6. 화면
 
@@ -192,7 +237,9 @@ my-app/
 - [ ] bare import·순환 import·변수로 만든 import 경로가 없다
 - [ ] `location.href`·`location.reload()` 이동, `<iframe>`, form action 제출, JS로 넣는 CSS `url()`이 없다
 - [ ] 저장은 `localStorage`만 쓴다 (indexedDB·쿠키 없음)
+- [ ] `localStorage` 키에 앱 접두사(`my-app:`)가 붙어 있고 `clear()`를 쓰지 않는다
 - [ ] `<title>`, `<meta name="description">`, `<link rel="icon">`이 있다
+- [ ] 대표 스크린샷 `screenshot.webp`(200KB 이하)가 폴더 맨 위에 있고 `<meta property="og:image" content="screenshot.webp">`가 가리킨다 (캡처할 수 없으면 사용자에게 요청했다)
 - [ ] 세로·가로, 폰 너비(360px)에서 깨지지 않고 터치로 조작된다
 - [ ] 오른쪽 위 모서리에 중요한 버튼이 없다
 - [ ] zip으로 압축하면 **2MB 이하**다 (목표 1MB)
@@ -210,6 +257,7 @@ my-app/
   <title>탭 카운터</title>
   <meta name="description" content="화면을 누른 횟수를 세고 최고 기록을 저장해요">
   <link rel="icon" href="icon.svg">
+  <meta property="og:image" content="screenshot.webp">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -229,15 +277,16 @@ body { margin: 0; min-height: 100dvh; display: grid; place-content: center; gap:
 
 `main.js`
 ```js
+const KEY = 'tap-counter:'; // 저장 키 접두사 (다른 앱과 섞이지 않게)
 const tap = document.getElementById('tap');
 const best = document.getElementById('best');
 let count = 0;
-best.textContent = localStorage.getItem('best') ?? 0;
+try { best.textContent = localStorage.getItem(KEY + 'best') ?? 0; } catch { best.textContent = 0; }
 tap.addEventListener('click', () => {
   tap.textContent = ++count;
   if (count > Number(best.textContent)) {
     best.textContent = count;
-    localStorage.setItem('best', count);
+    try { localStorage.setItem(KEY + 'best', count); } catch { /* 저장 못 해도 계속 */ }
   }
 });
 ```
@@ -248,3 +297,5 @@ tap.addEventListener('click', () => {
 ```
 
 SVG 안의 `xmlns="http://www.w3.org/2000/svg"`는 이름표일 뿐 외부 참조가 아니므로 괜찮습니다.
+
+`screenshot.webp`: 앱을 열고 몇 번 눌러 숫자가 올라간 화면을 캡처해 저장합니다(§5-1).

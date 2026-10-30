@@ -17,20 +17,24 @@ link.addEventListener('click', (e) => {
   else location.href = link.href;
 });
 
-// AI용 앱 제작 규칙 주소 [복사] (TASK T6.1). 복사를 못 하면 칸을 선택해 두어 직접 복사하게 한다
-const aiUrl = document.getElementById('ai-url');
+// AI용 바이브 코딩 프롬프트·규칙 주소 [복사] (TASK T6.1). 버튼의 data-copy가 복사할 칸이다.
+//   복사를 못 하면 칸을 선택해 두어 직접 복사하게 한다
+const COPIED = { 'ai-prompt': '프롬프트를 복사했어요. AI 대화창에 붙여 넣으세요', 'ai-url': '주소를 복사했어요' };
 const aiStatus = document.getElementById('ai-status');
 let aiTimer;
-aiUrl.addEventListener('focus', () => aiUrl.select());
-document.getElementById('ai-copy').addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(aiUrl.value);
-    aiStatus.textContent = '복사했어요';
-  } catch {
-    aiUrl.focus();
-    aiUrl.select();
-    aiStatus.textContent = '선택해 두었어요. 직접 복사해 주세요';
-  }
-  clearTimeout(aiTimer);
-  aiTimer = setTimeout(() => { aiStatus.textContent = ''; }, 2000);
-});
+for (const button of document.querySelectorAll('[data-copy]')) {
+  const field = document.getElementById(button.dataset.copy);
+  field.addEventListener('focus', () => field.select());
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(field.value);
+      aiStatus.textContent = COPIED[field.id];
+    } catch {
+      field.focus();
+      field.select();
+      aiStatus.textContent = '선택해 두었어요. 직접 복사해 주세요';
+    }
+    clearTimeout(aiTimer);
+    aiTimer = setTimeout(() => { aiStatus.textContent = ''; }, 2500);
+  });
+}

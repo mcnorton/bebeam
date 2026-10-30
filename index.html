@@ -70,6 +70,12 @@
     .scope { margin-top: 12px; color: var(--muted); font-size: .9rem; }
     .ai { margin-top: 24px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
     .ai-label { font-size: .95rem; }
+    .ai-prompt { display: block; box-sizing: border-box; width: 100%; height: 11em; margin: 8px 0 0; padding: 10px 12px; resize: vertical;
+                 border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent); border-radius: 10px; background: transparent; color: var(--fg);
+                 font: inherit; font-size: .85rem; line-height: 1.5; text-align: left; }
+    .ai-prompt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .ai-copy-prompt { min-width: 200px; margin-top: 10px; border-radius: 10px; justify-content: center; }
+    .ai-url-label { margin: 16px 0 0; color: var(--muted); font-size: .85rem; }
     .ai-copy { display: flex; max-width: 100%; margin: 8px auto 0; border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent); border-radius: 10px; overflow: hidden; }
     .ai-url { flex: 1; min-width: 0; padding: 0 10px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: .9rem; }
     .ai-url:focus-visible, .ai-button:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
@@ -101,11 +107,47 @@
     </ul>
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
     <section class="ai" aria-labelledby="ai-label">
-      <p class="ai-label" id="ai-label">AI에게 이 주소를 주고 앱을 만들어 달라고 하세요</p>
+      <p class="ai-label" id="ai-label">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
+      <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label">https://www.bebeam.net/README.md 를 먼저 읽고, 그 규칙을 지켜 BeBeam에서 실행할 웹앱을 만들어 줘.
+
+바로 만들지 말고, 먼저 나에게 아래 내용을 친절하고 자세하게 물어봐 줘.
+- 한 번에 2–3개씩 나눠서 물어봐 줘.
+- 내가 잘 모르겠다고 하면 예시나 선택지를 2–3개 보여 주고 고르게 해 줘.
+
+1. 앱 제목
+2. 목적: 누가, 언제, 왜 쓰는 앱인지 (예: 수업 시간에 반 친구들과 함께 푸는 퀴즈)
+3. 종류: 게임 / 수업자료 / 도구 / 기타
+4. 스토리라인과 흐름: 시작부터 끝까지 사용자가 겪는 장면
+   - 게임이면 세계관·주인공·목표·끝나는 조건
+   - 도구면 사용 순서
+5. 핵심 특징 3–5가지
+6. 조작과 기기: 터치, 키보드, 기울이기 등 / 주로 쓸 기기(폰 세로·가로, 태블릿, PC)
+7. 그래픽 스타일: 픽셀아트, 실사풍, 손그림, 플랫 일러스트, 3D 로우폴리, 미니멀 등 / 색감 / 분위기
+8. 소리: 효과음, 배경음악이 필요한지
+9. 저장할 것: 점수, 기록, 설정 등
+10. 꼭 넣고 싶은 것, 넣지 말았으면 하는 것
+
+답을 들을 때마다 내가 말한 내용을 짧게 정리해 보여 주고, 빠지거나 애매한 것은 더 물어봐 줘.
+모든 항목이 충분히 정해지면 한 장짜리 "기획서"로 요약해 보여 줘.
+내가 "좋아, 시작해"라고 하면 그때 개발을 시작해 줘.
+
+개발할 때는 README의 규칙을 꼭 지켜 줘.
+- 외부 통신 없음, 상대경로만, 저장은 localStorage만, zip 압축 후 2MB 이하(목표 1MB) 등
+- localStorage 키에는 앱 이름 접두사를 붙여 다른 앱과 섞이지 않게 해 줘 (예: my-app:score, clear()는 쓰지 않기)
+
+다 만들면 다음을 알려 줘.
+- README §9 점검표를 확인한 결과
+- 대표 스크린샷(screenshot.webp)을 준비하는 방법
+- 폴더째 zip으로 받는 방법</textarea>
+      <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
+        <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        프롬프트 복사
+      </button>
+      <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
       <div class="ai-copy">
-        <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-label">
-        <button class="ai-button" id="ai-copy" type="button">
-          <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+        <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
+        <button class="ai-button" type="button" data-copy="ai-url">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
           복사
         </button>
