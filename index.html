@@ -112,10 +112,10 @@
       <li>#수업시간표</li>
     </ul>
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
-    <!-- 사용법 「비빔 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
+    <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
     <section class="guide" aria-labelledby="guide-label">
       <p class="guide-label" id="guide-label">처음이라면, 눌러 보며 익혀요</p>
-      <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
+      <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
     </section>
     <section class="ai" aria-labelledby="ai-label">
       <p class="ai-label" id="ai-label">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
@@ -144,11 +144,14 @@
 
 개발할 때는 README의 규칙을 꼭 지켜 줘.
 - 외부 통신 없음, 상대경로만, 저장은 localStorage만, zip 압축 후 2MB 이하(목표 1MB) 등
+- 시작 파일은 반드시 폴더 맨 위의 index.html이야. 화면을 여러 html 파일로 나누면 모든 파일이 index.html에서 링크(&lt;a href&gt;)로 이어지게 하고, 각 화면에서 index.html로 돌아오는 링크도 넣어 줘
 - localStorage 키에는 앱 이름 접두사를 붙여 다른 앱과 섞이지 않게 해 줘 (예: my-app:score, clear()는 쓰지 않기)
+- 파비콘(정사각형 icon.png, SVG도 됨)과 대표 스크린샷(screenshot.webp)은 꼭 넣어 줘
+- 대표 스크린샷에는 앱 제목을 넣지 마. 플레이어가 제목을 그 위에 겹쳐 보여 줘. 실제 실행 화면 중 가장 멋진 장면으로 간단하게 구성해 줘
 
 다 만들면 다음을 알려 줘.
 - README §9 점검표를 확인한 결과
-- 대표 스크린샷(screenshot.webp)을 준비하는 방법
+- 대표 스크린샷을 직접 캡처하지 못했다면, 어떤 장면을 어떻게 캡처해 screenshot.webp로 저장하면 되는지
 - 폴더째 zip으로 받는 방법</textarea>
       <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
         <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->

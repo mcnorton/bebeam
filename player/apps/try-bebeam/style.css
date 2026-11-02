@@ -1,4 +1,4 @@
-/* 비빔 비벼보기: 픽셀아트 연금술사의 레시피북
+/* 비빔으로 비벼보기: 픽셀아트 연금술사의 레시피북
    책상(나무) 위에 책. 표지 → 차례 → 펼친 두 쪽(가로) / 한 쪽(세로).
    픽셀 한 칸 = --p. 그림(.stage 안)은 16px 기준 .25em, 책은 화면 기준 3px */
 
@@ -443,6 +443,15 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .role-tag.send { background: #9e2a1e; }
 .role-tag.recv { background: #1f6f6a; }
 .dist.v { flex-direction: column; }
+/* 3편 6장면: 두 폰 사이 QR 빛, 지운 연결 수단들 */
+.beam { width: .5em; height: 1.5em; background: repeating-linear-gradient(var(--teal-glow) 0 .25em, transparent .25em .5em); box-shadow: 0 0 0 .15em color-mix(in srgb, var(--teal-glow) 25%, transparent); animation: twinkle 1s steps(1) infinite; }
+.nope { gap: .9em; align-items: flex-start; }
+.nope-item { display: flex; align-items: center; gap: .6em; font-size: 1.05em; color: var(--ink-soft); white-space: nowrap; }
+.nope-ico { position: relative; display: grid; place-items: center; width: 2.2em; height: 2.2em; font-size: 1.5em; background: color-mix(in srgb, var(--paper-edge) 50%, transparent); box-shadow: inset 0 0 0 .15em var(--ink-soft); }
+/* 대각선 한 줄로 지운다 (아이콘이 보이게) */
+.nope-ico::after { content: ""; position: absolute; left: 50%; top: -.1em; bottom: -.1em; width: .18em; margin-left: -.09em; background: var(--scarlet); transform: rotate(45deg); }
+/* 3편 7장면 */
+.hourglass { font-size: 3em; animation: tilt 2s steps(2) infinite; }
 .dist.v::before, .dist.v::after { width: 0; height: 1.2em; border-top: 0; border-left: .25em dashed var(--ink-soft); }
 .pc { flex: none; display: flex; flex-direction: column; align-items: center; }
 .mirror { width: 20em; height: 12.5em; }
@@ -532,6 +541,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .dialog { top: 50%; transform: translateY(-50%); }
 /* 버튼 줄은 좁으면 줄을 바꿔 잘리지 않게 (영어 문구가 길다) */
 .dialog .row { flex-wrap: wrap; row-gap: .3em; }
+.dialog .ui { padding: 0 .5em; font-size: .68em; }
 .dialog h4, .sheet h4 { margin: 0 0 .2em; font-size: .8em; font-weight: normal; }
 .kv { display: flex; justify-content: space-between; gap: .6em; font-size: .65em; color: var(--muted); white-space: nowrap; }
 .kv b { font-weight: normal; color: var(--text); white-space: normal; text-align: right; }

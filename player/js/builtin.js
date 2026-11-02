@@ -1,6 +1,7 @@
-// 기본 앱 「비빔 비벼보기」 (player/apps/try-bebeam, 사용법 애니메이션)
+// 기본 앱 「비빔으로 비벼보기」 (player/apps/try-bebeam, 사용법 애니메이션)
 //   처음 실행 때 한 번 설치한다. 사용자가 지우면 다시 넣지 않고, 설정의 [다시 추가]로만 넣는다.
 //   플레이어 버전이 바뀌면 목록에 남아 있을 때만 새 판으로 덮어쓴다(저장 데이터 유지).
+//   사용자가 이름을 바꾸지 않았으면 새 판의 제목을 따른다(2.15: 비빔 비벼보기 → 비빔으로 비벼보기).
 //   meta 'guide' = { appId, version }: appId는 설치한 앱, version은 마지막으로 확인한 플레이어 버전
 //   앱 폴더는 플레이어 origin의 최상위 페이지로도 열리므로(같은 origin의 1차 코드), 앱의 innerHTML에는 고정 문자열만 넣는다
 
@@ -61,7 +62,7 @@ export async function ensureGuide(db) {
   if (current) {
     const analysis = await analyzeGuide();
     if (analysis.contentHash !== current.contentHash) {
-      app = await install(db, analysis, 'builtin', { overwriteId: current.id });
+      app = await install(db, analysis, 'builtin', { overwriteId: current.id, followName: true });
     }
   }
   await setMeta(db, KEY, { ...rec, version: VERSION });

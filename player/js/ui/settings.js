@@ -1,4 +1,4 @@
-// 설정 화면 (W-16): 내 이름, 같은 이름의 앱을 추가할 때, (지웠으면) 비빔 비벼보기 다시 추가
+// 설정 화면 (W-16): 내 이름, 같은 이름의 앱을 추가할 때, (지웠으면) 비빔으로 비벼보기 다시 추가
 
 import { h, openDialog } from './dialogs.js';
 import { icon } from './icons.js';
@@ -14,9 +14,9 @@ function radio(name, value, label, desc, checked) {
   ]);
 }
 
-/** [비빔 비벼보기 다시 추가]: 누르면 바로 설치하고 버튼을 끈다 (저장·취소와 상관없이) */
+/** [비빔으로 비벼보기 다시 추가]: 누르면 바로 설치하고 버튼을 끈다 (저장·취소와 상관없이) */
 function guideField(db, onGuide) {
-  const button = h('button', { type: 'button', class: 'btn', text: '비빔 비벼보기 다시 추가' });
+  const button = h('button', { type: 'button', class: 'btn', text: '비빔으로 비벼보기 다시 추가' });
   const desc = h('p', { class: 'field-desc', text: '사용법을 보여 주는 기본 앱이에요.' });
   button.addEventListener('click', async () => {
     button.disabled = true;
@@ -34,7 +34,7 @@ function guideField(db, onGuide) {
 
 /**
  * @param {IDBDatabase} db
- * @param {{onGuide?: (app: object) => void}} [options] 비빔 비벼보기를 다시 추가했을 때
+ * @param {{onGuide?: (app: object) => void}} [options] 비빔으로 비벼보기를 다시 추가했을 때
  * @returns {Promise<boolean>} 저장했으면 true
  */
 export async function openSettings(db, { onGuide } = {}) {

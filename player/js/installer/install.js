@@ -145,7 +145,7 @@ export function formatBytes(n) {
   return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-function writeOnce(db, analysis, source, { senderName = null, policy = 'separate', expect = null, overwriteId = null } = {}) {
+function writeOnce(db, analysis, source, { senderName = null, policy = 'separate', expect = null, overwriteId = null, followName = false } = {}) {
   const tx = db.transaction(['apps', 'files'], 'readwrite');
   const apps = tx.objectStore('apps');
   const filesStore = tx.objectStore('files');
@@ -189,6 +189,11 @@ function writeOnce(db, analysis, source, { senderName = null, policy = 'separate
       // 덮어쓰기: ID·이름·추가 시각·appStorage는 그대로, 파일과 앱 정보만 새것으로
       const id = plan.target.id;
       const app = { ...plan.target, ...content };
+      // 기본 앱 새 판(followName): 사용자가 이름을 바꾸지 않았으면 새 제목을 따른다
+      if (followName && plan.target.name === (plan.target.originalName ?? plan.target.name)) {
+        app.name = meta.name;
+        app.originalName = meta.name;
+      }
       filesStore.delete(appRange(id));
       for (const f of files) filesStore.add({ ...f, appId: id });
       apps.put(app);
@@ -220,9 +225,10 @@ function writeOnce(db, analysis, source, { senderName = null, policy = 'separate
  * @param {IDBDatabase} db
  * @param {Awaited<ReturnType<typeof analyze>>} analysis
  * @param {'folder' | 'zip' | 'qr' | 'builtin'} source
- * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: ReturnType<typeof planDuplicate>, overwriteId?: string | null}} [options]
+ * @param {{senderName?: string | null, policy?: 'separate' | 'overwrite', expect?: ReturnType<typeof planDuplicate>, overwriteId?: string | null, followName?: boolean}} [options]
  *   QR로 받은 앱의 보낸 사람, 같은 이름 처리, 확인 화면에서 보여준 계획(다르면 InstallError 'changed'),
- *   이름과 상관없이 덮어쓸 앱 ID(없으면 InstallError 'changed')
+ *   이름과 상관없이 덮어쓸 앱 ID(없으면 InstallError 'changed'),
+ *   덮어쓸 때 사용자가 이름을 바꾸지 않았으면 새 제목으로 바꿀지(기본 앱)
  * @returns {Promise<object>} 기록한 apps 레코드
  */
 export async function install(db, analysis, source, options = {}) {

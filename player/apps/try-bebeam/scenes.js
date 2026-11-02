@@ -115,6 +115,12 @@ export const SCENES = [
     (u) => duo(u, sending(u), phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div>`, 'short'), '<span class="dist v">15–30cm</span>'),
     (u) => duo(u, sending(u),
       `<div class="row" style="gap:.6em">${[0, 0.4, 0.8].map((d, i) => phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div><div class="bar-track" style="margin:.3em"><div class="bar-fill" style="--t:${3 + i}s;--d:${d}s"></div></div><div class="tiny muted" style="padding:0 .4em">${u.left} 0:1${2 - i}</div>`, 'sm short')).join('')}</div>`),
+    // 6: 두 폰 사이에는 QR 빛만 오가고, 와이파이·데이터·앱스토어는 지운다
+    (u) => `<div class="row">${duo(u, sending(u), phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div>`, 'short'), '<span class="beam"></span>')}
+      <div class="col nope">${[['📶', u.wifi], ['📡', u.data], ['🛒', u.store]].map(([ico, label], i) => `<div class="nope-item pop" style="--d:${0.3 + i * 0.3}s"><span class="nope-ico">${ico}</span><span>${label}</span></div>`).join('')}</div></div>`,
+    // 7: 진행 막대가 천천히 차고 모래시계
+    (u) => `<div class="row">${duo(u, '', phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div><div class="bar-track" style="margin:.3em"><div class="bar-fill" style="--t:8s"></div></div><div class="tiny muted" style="padding:0 .4em">${u.left} 0:58</div>`, 'short'))}
+      <div class="col"><span class="hourglass">⌛</span><span class="small">${u.perMB}</span></div></div>`,
     (u) => duo(u, '', phone(player(u, {
       bottom: false,
       extra: `<div class="dialog pop"><h4>${u.appInstall}</h4>
@@ -122,9 +128,9 @@ export const SCENES = [
         <div class="kv">${u.from}<b>${u.sender}</b></div>
         <div class="row" style="justify-content:flex-end;gap:.4em">${ui(u.cancel, { cls: 'line' })}${ui(u.startInstall, { hl: true, d: 1 })}</div></div>`,
     }))),
-    (u) => duo(u,
-      phone(`<div class="titlebar">📤 ${u.sending}</div><div class="center col">${qr()}<span class="tiny muted">${u.speed}</span><div class="seg"><span class="hl">${u.slow}${tap(1)}</span><span class="on">${u.normal}</span><span>${u.fast}</span></div></div>`, 'short'),
-      `<div class="tilt">${phone(`<div class="cam"><div class="cam-frame">${qr()}</div><div class="glare"></div></div>`, 'short')}</div>`),
+    // 9: 기울여 반사광을 피하고 카메라 틀에 QR을 맞춘다
+    (u) => duo(u, sending(u),
+      `<div class="tilt">${phone(`<div class="cam"><div class="cam-frame hl">${qr()}</div><div class="glare"></div></div>`, 'short')}</div>`),
   ],
   // 4편 AI로 앱 만들기
   [
