@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <rect width="64" height="64" fill="#181425"/>
+  <rect x="4" y="4" width="56" height="56" fill="#262b44"/>
+  <rect x="6" y="6" width="52" height="52" fill="#181425"/>
+  <!-- Blue die (top-left) -->
+  <rect x="10" y="10" width="20" height="20" fill="#1d2b53"/>
+  <rect x="12" y="12" width="16" height="16" fill="#29adff"/>
+  <rect x="12" y="12" width="16" height="2" fill="#83dbfc"/>
+  <rect x="15" y="15" width="3" height="3" fill="#fff1e8"/>
+  <rect x="22" y="22" width="3" height="3" fill="#fff1e8"/>
+  <!-- Yellow die (top-right) -->
+  <rect x="34" y="12" width="20" height="20" fill="#ab5236"/>
+  <rect x="36" y="14" width="16" height="16" fill="#ffec27"/>
+  <rect x="36" y="14" width="16" height="2" fill="#fff1e8"/>
+  <rect x="39" y="17" width="3" height="3" fill="#181425"/>
+  <rect x="43" y="21" width="3" height="3" fill="#181425"/>
+  <rect x="47" y="25" width="3" height="3" fill="#181425"/>
+  <!-- Red die (bottom-center, front) -->
+  <rect x="20" y="28" width="24" height="24" fill="#7e2553"/>
+  <rect x="22" y="30" width="20" height="20" fill="#ff004d"/>
+  <rect x="22" y="30" width="20" height="3" fill="#ff77a8"/>
+  <rect x="29" y="37" width="6" height="6" fill="#fff1e8"/>
+</svg>

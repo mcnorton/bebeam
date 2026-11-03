@@ -23,6 +23,9 @@ export const MIME = Object.freeze({
   woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf',
 });
 
+/** 이미 압축된 형식. zip으로 묶을 때 다시 압축하지 않는다 (시간만 들고 크기는 그대로. 전송·비빔재료) */
+export const STORED = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'mp3', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'mp4', 'webm', 'woff', 'woff2']);
+
 export class InstallError extends Error {
   /** @param {string} code @param {string} message @param {string} [detail] */
   constructor(code, message, detail) {

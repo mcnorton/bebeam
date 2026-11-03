@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "dd3d-dice",
+      "name": "DD3D",
+      "description": "DD3D - Disco Dice 3D: 3차원 픽셀 아트 주사위 앱",
+      "icon": "assets/samples/dd3d-dice/icon.svg",
+      "zip": "assets/samples/dd3d-dice.zip",
+      "size": 71864,
+      "files": 6,
+      "totalSize": 102178
+    },
+    {
+      "id": "digitalclock",
+      "name": "디지털 탁상시계",
+      "description": "카시오 스타일 정각 시보와 화면 켜짐 유지를 지원하는 레트로 7세그먼트 디지털 탁상시계",
+      "icon": "assets/samples/digitalclock/icon.svg",
+      "zip": "assets/samples/digitalclock.zip",
+      "size": 267884,
+      "files": 36,
+      "totalSize": 293221
+    }
+  ]
+}

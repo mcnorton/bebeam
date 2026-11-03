@@ -7,10 +7,7 @@ import { zipSync } from '../../vendor/fflate/fflate.js';
 import { loadForRun } from '../db.js';
 import { fromZip } from '../installer/source.js';
 import { analyze, install } from '../installer/install.js';
-import { extOf } from '../installer/validate.js';
-
-/** 이미 압축된 형식은 다시 압축하지 않는다 (시간만 들고 크기는 그대로) */
-const STORED = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'mp3', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'mp4', 'webm', 'woff', 'woff2']);
+import { extOf, STORED } from '../installer/validate.js';
 
 /** 전송 권장 크기 (압축 후, SPEC C-3). 넘으면 예상 시간을 경고한다 */
 export const TRANSFER_WARN = 2 * 1024 * 1024;

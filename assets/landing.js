@@ -38,3 +38,56 @@ for (const button of document.querySelectorAll('[data-copy]')) {
     aiTimer = setTimeout(() => { aiStatus.textContent = ''; }, 2500);
   });
 }
+
+// 비빔재료 (SPEC F-01 1): samples.json의 샘플 앱 목록과 [내려받기].
+//   나중에 백엔드가 같은 모양을 돌려줄 수 있으므로 값은 글자로만 넣고, 경로는 assets/samples/ 안의 것만 쓴다
+const SAMPLE_PREFIX = 'assets/samples/';
+// 글자로 거르고(%·공백·제어문자로 ..을 숨기지 못하게), URL로 풀어 같은 origin의 /assets/samples/ 안인지 한 번 더 본다
+function samplePath(p) {
+  if (typeof p !== 'string' || !p.startsWith(SAMPLE_PREFIX) || p.includes('..') || /[?#\\:%\s\u0000-\u001f]/.test(p)) return false;
+  const url = new URL(p, location.href);
+  return url.origin === location.origin && url.pathname.startsWith(new URL(SAMPLE_PREFIX, location.href).pathname);
+}
+const sampleSize = (n) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`);
+
+async function showSamples() {
+  const section = document.getElementById('samples');
+  const list = document.getElementById('sample-list');
+  const tpl = document.getElementById('sample-item');
+  try {
+    const res = await fetch(`${SAMPLE_PREFIX}samples.json`);
+    if (!res.ok) return;
+    const { items } = await res.json();
+    for (const it of Array.isArray(items) ? items : []) {
+      if (!samplePath(it?.zip) || !/\/[a-z0-9-]+\.zip$/.test(it.zip) || typeof it.name !== 'string') continue;
+      const li = tpl.content.firstElementChild.cloneNode(true);
+      const icon = li.querySelector('.sample-icon');
+      if (samplePath(it.icon)) icon.src = it.icon;
+      else icon.src = 'player/icons/icon-192.png';
+      li.querySelector('.sample-name').textContent = it.name.slice(0, 60);
+      li.querySelector('.sample-desc').textContent = String(it.description ?? '').slice(0, 200);
+      const a = li.querySelector('.sample-download');
+      a.href = it.zip;
+      a.download = it.zip.slice(it.zip.lastIndexOf('/') + 1);
+      const size = Number(it.size) > 0 ? ` · ${sampleSize(Number(it.size))}` : '';
+      li.querySelector('.sample-label').textContent = `내려받기${size}`;
+      a.setAttribute('aria-label', `${it.name.slice(0, 60)} 내려받기${size}`);
+      list.append(li);
+    }
+    section.hidden = list.children.length === 0;
+  } catch {
+    section.hidden = true;
+  }
+}
+showSamples();
+
+// 푸터 버전 (docs/SITES.md): player/version.js에서 번호만 읽는다(모듈이라 import하지 않음, update.js readVersion과 같은 규칙)
+fetch('player/version.js')
+  .then((res) => (res.ok ? res.text() : ''))
+  .then((text) => {
+    const v = /export\s+const\s+VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/.exec(text)?.[1];
+    if (!v) return;
+    document.getElementById('site-version').textContent = `v${v}`;
+    document.getElementById('site-version-wrap').hidden = false;
+  })
+  .catch(() => {});

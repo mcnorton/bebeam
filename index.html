@@ -50,10 +50,31 @@
     @font-face { font-family: "NeoDunggeunmo Pro"; src: url("player/vendor/neodgm-pro/NeoDunggeunmoPro-Regular.woff2") format("woff2"); font-display: swap; }
     :root { color-scheme: light dark; --bg: #fafaf7; --fg: #1d1d1b; --muted: #6b6b66; --accent: #2a6ae8; --accent-text: #fff; }
     @media (prefers-color-scheme: dark) { :root { --bg: #141413; --fg: #f0efea; --muted: #9a9993; --accent: #5b92ff; --accent-text: #0b1530; } }
-    body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+    body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--fg);
            font-family: "NeoDunggeunmo Pro", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
            font-synthesis: none; }
-    main { padding: 24px 16px; max-width: 480px; text-align: center; }
+    /* 영역: 헤더 → 콘텐츠1(레시피·비빔재료) → 콘텐츠2(AI) → 콘텐츠3(사용후기, 예정) → 푸터. docs/SITES.md */
+    .site-header, .content, .site-footer { box-sizing: border-box; margin: 0 auto; padding: 24px 16px; text-align: center; }
+    .site-header { max-width: 480px; }
+    .content { border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
+    .content-1 { max-width: 960px; display: grid; gap: 24px; align-items: start; }
+    /* 가로 화면은 레시피 | 비빔재료, 세로 화면은 레시피 아래 비빔재료 */
+    @media (orientation: landscape) and (min-width: 760px) { .content-1 { grid-template-columns: 3fr 2fr; } }
+    .content-2 { max-width: 560px; }
+    .content[hidden], .samples[hidden] { display: none; }
+    /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
+    .section-title { margin: 0 0 4px; font-size: 1.2rem; }
+    .section-title::before { content: "▸ "; color: var(--accent); }
+    .section-desc { margin: 0 0 12px; color: var(--muted); font-size: .9rem; }
+    .samples { text-align: left; }
+    .samples .section-title, .samples .section-desc { text-align: center; }
+    .sample-list { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .sample { display: grid; grid-template-columns: 56px 1fr; gap: 4px 14px; padding: 14px; border-radius: 14px;
+              border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
+    .sample-icon { grid-row: span 3; width: 56px; height: 56px; border-radius: 12px; object-fit: contain; }
+    .sample-name { margin: 0; font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+    .sample-desc { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
+    .sample-download { justify-self: start; margin-top: 6px; border-radius: 10px; text-decoration: none; }
     .logo { width: 96px; height: 96px; margin: 0 auto 16px; display: block; }
     h1 { font-size: 2rem; margin: 0 0 12px; }
     p { line-height: 1.6; margin: 0 0 8px; }
@@ -68,14 +89,10 @@
     .tags { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
     .tags li { padding: 2px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--muted); font-size: .9rem; }
     .scope { margin-top: 12px; color: var(--muted); font-size: .9rem; }
-    .guide { margin-top: 24px; }
-    .guide-label { font-size: .95rem; }
     .guide-frame { display: block; box-sizing: border-box; width: 100%; aspect-ratio: 4 / 5; max-height: 80dvh; margin-top: 8px;
                    border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 12px; background: var(--bg); }
     /* 폰 세로: 레시피북이 한 쪽(그림 위·글 아래)으로 바뀌므로 1:2로 길게 */
     @media (orientation: portrait) { .guide-frame { aspect-ratio: 1 / 2; max-height: none; } }
-    .ai { margin-top: 24px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
-    .ai-label { font-size: .95rem; }
     .ai-prompt { display: block; box-sizing: border-box; width: 100%; height: 6.5em; margin: 8px 0 0; padding: 10px 12px; resize: vertical;
                  border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent); border-radius: 10px; background: transparent; color: var(--fg);
                  font: inherit; font-size: .85rem; line-height: 1.5; text-align: left; }
@@ -88,11 +105,16 @@
     .ai-button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0;
                  background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 700; cursor: pointer; }
     .ai-button svg { width: 18px; height: 18px; }
+    .site-footer { max-width: 560px; padding-bottom: 40px; border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+                   color: var(--muted); font-size: .85rem; }
+    .site-footer p { margin: 0 0 2px; line-height: 1.6; }
+    .site-footer a { color: inherit; }
+    .site-version[hidden] { display: none; }
     .ai-status { min-height: 1.6em; margin-top: 6px; color: var(--muted); font-size: .85rem; }
   </style>
 </head>
 <body>
-  <main>
+  <header class="site-header">
     <img class="logo" src="player/icons/icon-192.png" alt="">
     <h1>비빔 BeBeam</h1>
     <p class="tagline">Beam으로 전송하는 Webapp Launcher</p>
@@ -112,30 +134,66 @@
       <li>#수업시간표</li>
     </ul>
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
-    <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
-    <section class="guide" aria-labelledby="guide-label">
-      <p class="guide-label" id="guide-label">처음이라면, 눌러 보며 익혀요</p>
-      <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
+  </header>
+  <main>
+    <section class="content content-1">
+      <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
+      <section class="guide" aria-labelledby="guide-label">
+        <h2 class="section-title" id="guide-label">비비는 법 레시피</h2>
+        <p class="section-desc">처음이라면, 눌러 보며 익혀요</p>
+        <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
+      </section>
+      <!-- 비빔재료: 샘플 앱 zip 목록. assets/samples/samples.json을 landing.js가 그린다 (scripts/samples.mjs가 만든다) -->
+      <section class="samples" id="samples" aria-labelledby="samples-label" hidden>
+        <h2 class="section-title" id="samples-label">비빔 재료</h2>
+        <p class="section-desc">내려받아 플레이어의 [＋ 나의 앱 추가]에 넣어 보세요</p>
+        <ul class="sample-list" id="sample-list"></ul>
+        <template id="sample-item">
+          <li class="sample">
+            <img class="sample-icon" alt="" width="56" height="56">
+            <p class="sample-name"></p>
+            <p class="sample-desc"></p>
+            <a class="ai-button sample-download">
+              <!-- lucide-static 1.56.0 download. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+              <span class="sample-label"></span>
+            </a>
+          </li>
+        </template>
+      </section>
     </section>
-    <section class="ai" aria-labelledby="ai-label">
-      <p class="ai-label" id="ai-label">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
-      <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
-      <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
-        <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        프롬프트 복사
-      </button>
-      <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
-      <div class="ai-copy">
-        <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
-        <button class="ai-button" type="button" data-copy="ai-url">
+    <section class="content content-2">
+      <section class="ai" aria-labelledby="ai-label">
+        <h2 class="section-title" id="ai-label">인공지능과 비비기 프롬프트</h2>
+        <p class="section-desc" id="ai-desc">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
+        <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
+        <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
+          <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-          복사
+          프롬프트 복사
         </button>
-      </div>
-      <p class="ai-status" id="ai-status" aria-live="polite"></p>
+        <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
+        <div class="ai-copy">
+          <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
+          <button class="ai-button" type="button" data-copy="ai-url">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            복사
+          </button>
+        </div>
+        <p class="ai-status" id="ai-status" aria-live="polite"></p>
+      </section>
+    </section>
+    <!-- 사용후기 (예정): 자리만 둔다 -->
+    <section class="content content-3" id="reviews" aria-labelledby="reviews-label" hidden>
+      <h2 class="section-title" id="reviews-label">사용후기</h2>
     </section>
   </main>
+  <footer class="site-footer">
+    <p>비빔 <a href="https://www.bebeam.net/">BeBeam.net</a><span class="site-version" id="site-version-wrap" hidden> (<span id="site-version"></span>)</span></p>
+    <p>바이브코딩 웹앱 런처</p>
+    <p>McNorton&amp;Education</p>
+    <p>Copyright 2026- by mcnorton</p>
+  </footer>
   <script src="assets/landing.js"></script>
 </body>
 </html>
