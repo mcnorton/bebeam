@@ -11,7 +11,7 @@ export const ZIP_LIMITS = Object.freeze({
   ratio: 100,
   /** 비율 검사는 이 크기를 넘은 뒤부터 한다 (작은 zip의 높은 압축률은 정상) */
   ratioFloor: 1024 * 1024,
-  /** 디렉터리·제외 대상을 포함한 원본 항목 수 */
+  /** zip: 디렉터리·제외 대상을 포함한 원본 항목 수. 폴더: 제외 대상을 뺀 항목 수 */
   entries: LIMITS.fileCount * 5,
   /** zip 파일 자체의 크기. 해제 전 데이터가 메모리에 머무를 수 있으므로 입력도 묶는다 */
   zipSize: LIMITS.totalSize * 2,
@@ -33,9 +33,17 @@ export function baseName(name) {
  * @returns {{name: string, entries: {path: string, size: number, blob: Blob}[]}}
  */
 export function fromFolder(fileList) {
-  const files = Array.from(fileList);
-  if (files.length > ZIP_LIMITS.entries) throw new InstallError('too-many-files', '폴더 안의 파일이 너무 많습니다');
-  const entries = files.map((f) => ({ path: f.webkitRelativePath || f.name, size: f.size, blob: f }));
+  const entries = Array.from(fileList, (f) => ({ path: f.webkitRelativePath || f.name, size: f.size, blob: f }));
+  // 제외 대상(.work/, node_modules 등)은 읽지 않으므로 세지 않는다. 거부 경로는 validateEntries가 오류로 만든다
+  const counted = entries.filter((e) => {
+    try {
+      const p = normalizePath(e.path);
+      return p !== null && !isAlwaysExcluded(p);
+    } catch {
+      return true;
+    }
+  });
+  if (counted.length > ZIP_LIMITS.entries) throw new InstallError('too-many-files', '폴더 안의 파일이 너무 많습니다');
   const first = entries[0]?.path ?? '';
   return { name: first.includes('/') ? first.slice(0, first.indexOf('/')) : '', entries };
 }
