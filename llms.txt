@@ -6,6 +6,6 @@ BeBeam용 앱을 만들 때는 먼저 아래 규칙 문서를 읽고 따른다.
 
 ## 문서
 
-- [앱 제작 규칙 (AI용)](https://www.bebeam.net/README.md): 폴더 구조, 허용 파일, 실행 환경, 대표 스크린샷, 용량과 전송 시간, 자가 점검표, 최소 예제
+- [앱 제작 규칙 (AI용)](https://www.bebeam.net/README.md): 폴더 구조, 허용 파일, 실행 환경, 대표 스크린샷, 용량과 전송 시간, 자가 점검표, 최소 예제, 기기별 조작(§6-1), 이미 만든 앱을 BeBeam용으로 바꾸는 규칙(§12)
 - [사용 설명](https://github.com/mcnorton/bebeam): 플레이어 설치, 앱 추가·실행·전송
 - [비빔재료 목록](https://www.bebeam.net/assets/samples/samples.json): 규칙대로 만든 샘플 앱 zip (BeBeam에 바로 넣을 수 있음)

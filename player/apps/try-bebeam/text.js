@@ -52,7 +52,7 @@ export const TEXT = {
         captions: [
           '보내는 친구가 [앱 보내기]를 눌러요',
           '화면의 QR코드가 계속 바뀌면서 전송해요',
-          '받는 친구는 [앱 받기]를 눌러요',
+          '받는 친구는 [나의 앱 추가] → [QR로 받기]',
           '카메라로 QR코드를 비춰요',
           '여러 친구가 한꺼번에 받을 수 있어요',
           '와이파이도, 데이터도, 앱스토어도 필요 없어요',
@@ -177,7 +177,7 @@ export const TEXT = {
         captions: [
           'The sending friend taps “Send app”',
           'The QR code keeps changing as it sends',
-          'The receiving friend taps “Receive app”',
+          'The receiving friend taps “Add my app” → “Receive by QR”',
           'Point the camera at the QR code',
           'Many friends can receive at once',
           'No Wi-Fi, no mobile data, no app store needed',

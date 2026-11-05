@@ -520,8 +520,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .titlebar { flex: none; display: flex; align-items: center; gap: .3em; padding: .3em .4em .2em; border-bottom: .14em solid var(--line); font-size: .7em; }
 .bottom { margin-top: auto; display: flex; gap: .3em; padding: .3em; }
 .bottom .ui { padding: 0 .3em; font-size: .62em; }
-.bottom .ui:first-child { flex: 2; }
-.bottom .ui:last-child { flex: 1; }
+.bottom .ui:only-child { flex: 1; }
 .item { display: flex; align-items: center; gap: .4em; padding: .35em .4em; font-size: .7em; }
 .item.on { background: var(--selected); }
 .item .dot3 { margin-left: auto; color: var(--muted); }

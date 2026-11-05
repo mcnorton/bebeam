@@ -19,11 +19,13 @@ link.addEventListener('click', (e) => {
 
 // AI용 바이브 코딩 프롬프트·규칙 주소 [복사] (TASK T6.1). 버튼의 data-copy가 복사할 칸이다.
 //   복사를 못 하면 칸을 선택해 두어 직접 복사하게 한다
-const COPIED = { 'ai-prompt': '프롬프트를 복사했어요. AI 대화창에 붙여 넣으세요', 'ai-url': '주소를 복사했어요' };
-const aiStatus = document.getElementById('ai-status');
-let aiTimer;
+//   안내는 버튼이 속한 칸(.ai)의 상태 줄에 쓴다
+const PROMPT_COPIED = '프롬프트를 복사했어요. AI 대화창에 붙여 넣으세요';
+const COPIED = { 'ai-prompt': PROMPT_COPIED, 'ai-convert-prompt': PROMPT_COPIED, 'ai-url': '주소를 복사했어요' };
+const statusTimers = new Map(); // 상태 줄마다 지우기 타이머 하나 (같은 칸의 두 버튼이 서로 일찍 지우지 않게)
 for (const button of document.querySelectorAll('[data-copy]')) {
   const field = document.getElementById(button.dataset.copy);
+  const aiStatus = button.closest('.ai').querySelector('.ai-status');
   field.addEventListener('focus', () => field.select());
   button.addEventListener('click', async () => {
     try {
@@ -34,8 +36,8 @@ for (const button of document.querySelectorAll('[data-copy]')) {
       field.select();
       aiStatus.textContent = '선택해 두었어요. 직접 복사해 주세요';
     }
-    clearTimeout(aiTimer);
-    aiTimer = setTimeout(() => { aiStatus.textContent = ''; }, 2500);
+    clearTimeout(statusTimers.get(aiStatus));
+    statusTimers.set(aiStatus, setTimeout(() => { aiStatus.textContent = ''; }, 2500));
   });
 }
 

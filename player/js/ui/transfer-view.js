@@ -139,7 +139,7 @@ class SendView extends Modal {
 
   constructor(o) {
     const canvas = h('canvas', { class: 'tx-qr', role: 'img', 'aria-label': '전송용 QR 코드', hidden: true });
-    // 보낼 준비: 받는 사람이 BeBeam을 열고 [앱 받기]까지 할 여유를 준다. 처음 쓰는 사람은 작은 QR로 사이트를 연다
+    // 보낼 준비: 받는 사람이 BeBeam을 열고 [QR로 받기]까지 할 여유를 준다. 처음 쓰는 사람은 작은 QR로 사이트를 연다
     const siteQr = h('canvas', { class: 'tx-prep-qr', role: 'img', 'aria-label': `${SITE_LABEL} QR 코드` });
     // 받는 법: 실제 화면의 버튼 모양(칩)과 아이콘으로 보여준다
     const chip = (cls, iconName, text) => h('span', { class: `tx-chip ${cls}` }, [...(iconName ? [icon(iconName)] : []), text]);
@@ -151,7 +151,7 @@ class SendView extends Modal {
         h('ol', { class: 'tx-prep-steps' }, [
           stepItem(icon('globe'), ' QR을 찍거나 주소 열기'),
           stepItem(chip('tx-chip-launch', 'play', 'BeBeam 실행'), ' 누르기'),
-          stepItem(chip('tx-chip-outline', 'scan-qr-code', '앱 받기'), ' 누르기'),
+          stepItem(chip('tx-chip-primary', 'plus', '나의 앱 추가'), ' → ', chip('tx-chip-outline', 'scan-qr-code', 'QR로 받기'), ' 누르기'),
           stepItem(icon('camera'), ' 카메라 ', chip('tx-chip-allow', '', '허용')),
         ]),
       ]),

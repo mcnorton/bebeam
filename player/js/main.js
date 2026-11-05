@@ -194,7 +194,7 @@ function showInstalled(app) {
   list.reveal(app.id);
 }
 
-/** [앱 받기]·시트의 [QR로 받기] (SPEC F-05): 받은 앱은 설치되고 선택된다 */
+/** [나의 앱 추가] 시트의 [QR로 받기] (SPEC F-05): 받은 앱은 설치되고 선택된다 */
 function receiveByQr() {
   if (!db || viewer.running) return;
   openTransfer({
@@ -250,7 +250,6 @@ async function start() {
     const app = await openAddSheet(db, { onQr: receiveByQr });
     if (app) showInstalled(app);
   });
-  $('receive-button').addEventListener('click', receiveByQr);
   $('settings-button').addEventListener('click', async () => {
     const saved = await openSettings(db, {
       onGuide: (app) => {

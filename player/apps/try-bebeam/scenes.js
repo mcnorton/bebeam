@@ -23,17 +23,23 @@ function duo(u, top, bottom, gap = '') {
 /** 3편: QR을 띄운 보내는 폰 */
 const sending = (u) => phone(`<div class="titlebar">📤 ${u.sending}</div><div class="center">${qr()}</div>`, 'short');
 
-/** 플레이어 목록 화면: 타이틀바, 앱 줄들, 아래 버튼 */
-function player(u, { items = [], bottom = true, hlAdd = false, hlReceive = false, extra = '' } = {}) {
+/** 플레이어 목록 화면: 타이틀바, 앱 줄들, 아래 [나의 앱 추가] */
+function player(u, { items = [], bottom = true, hlAdd = false, extra = '' } = {}) {
   const rows = items.map(
     (it) => `<div class="item${it.on ? ' on' : ''}"><span class="ico">${it.icon ?? '🐰'}</span>${it.name}${it.sub ? `<span class="tiny muted">${it.sub}</span>` : ''}<span class="dot3">⋯</span></div>`,
   ).join('');
   return `
     <div class="titlebar">${logo('sm')} BeBeam <span class="grow"></span>🌙 ⚙︎</div>
     ${rows || (extra ? '' : `<p class="center small muted">${u.empty}</p>`)}
-    ${bottom ? `<div class="bottom">${ui(u.add, { hl: hlAdd })}${ui(u.receive, { cls: 'line', hl: hlReceive })}</div>` : ''}
+    ${bottom ? `<div class="bottom">${ui(u.add, { hl: hlAdd })}</div>` : ''}
     ${extra}`;
 }
+
+/** [나의 앱 추가] 시트: 폴더·zip·QR로 받기 */
+const addSheet = (u, { hlQr = false } = {}) => `<div class="sheet slide-up"><h4>${u.add.replace('＋ ', '')}</h4>
+  <span class="ui line wide" style="position:relative">📁 ${u.addFolder}<span class="badge">${u.onPc}</span></span>
+  <span class="ui line wide" style="position:relative">🗜️ ${u.addZip}<span class="badge">${u.onPhone}</span></span>
+  ${ui(`📷 ${u.qr}`, { cls: 'line wide', hl: hlQr, d: 1 })}</div>`;
 
 /** 뷰어(앱을 고른 화면): 이름과 [실행하기]·[앱 보내기] */
 function viewer(u, { hlPlay = false, hlSend = false } = {}) {
@@ -78,13 +84,7 @@ export const SCENES = [
   // 2편 앱 추가·실행
   [
     (u) => phone(player(u, { hlAdd: true })),
-    (u) => phone(player(u, {
-      bottom: false,
-      extra: `<div class="sheet slide-up"><h4>${u.add.replace('＋ ', '')}</h4>
-        <span class="ui line wide" style="position:relative">📁 ${u.addFolder}<span class="badge">${u.onPc}</span></span>
-        <span class="ui line wide" style="position:relative">🗜️ ${u.addZip}<span class="badge">${u.onPhone}</span></span>
-        <span class="ui line wide">📷 ${u.qr}</span></div>`,
-    })),
+    (u) => phone(player(u, { bottom: false, extra: addSheet(u) })),
     (u) => `<div class="folder">
       <div>📁 jump-bunny/</div>
       <div class="file glow in" style="--d:.3s">📄 index.html ⭐</div>
@@ -111,7 +111,7 @@ export const SCENES = [
     (u) => duo(u, phone(viewer(u, { hlSend: true }), 'short'), phone(player(u, {}), 'short')),
     (u) => duo(u, phone(`<div class="titlebar">📤 ${u.sending}</div><div class="center col">${qr()}<span class="tiny muted">${u.appName}</span></div>`, 'short'), ''),
     (u) => duo(u, sending(u),
-      `<div class="row">${phone(player(u, { hlReceive: true }), 'short')}<span class="arrow">→</span>${phone(`<div class="cam"><div class="cam-frame"></div><span class="tiny" style="position:absolute;bottom:.6em;color:#fff">${u.fitQr}</span></div>`, 'short')}</div>`),
+      `<div class="row">${phone(player(u, { bottom: false, extra: addSheet(u, { hlQr: true }) }), 'short')}<span class="arrow">→</span>${phone(`<div class="cam"><div class="cam-frame"></div><span class="tiny" style="position:absolute;bottom:.6em;color:#fff">${u.fitQr}</span></div>`, 'short')}</div>`),
     (u) => duo(u, sending(u), phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div>`, 'short'), '<span class="dist v">15–30cm</span>'),
     (u) => duo(u, sending(u),
       `<div class="row" style="gap:.6em">${[0, 0.4, 0.8].map((d, i) => phone(`<div class="cam"><div class="cam-frame">${qr()}</div></div><div class="bar-track" style="margin:.3em"><div class="bar-fill" style="--t:${3 + i}s;--d:${d}s"></div></div><div class="tiny muted" style="padding:0 .4em">${u.left} 0:1${2 - i}</div>`, 'sm short')).join('')}</div>`),

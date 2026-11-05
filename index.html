@@ -61,6 +61,7 @@
     /* 가로 화면은 레시피 | 비빔재료, 세로 화면은 레시피 아래 비빔재료 */
     @media (orientation: landscape) and (min-width: 760px) { .content-1 { grid-template-columns: 3fr 2fr; } }
     .content-2 { max-width: 560px; }
+    .convert { margin-top: 24px; }
     .content[hidden], .samples[hidden] { display: none; }
     /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
     .section-title { margin: 0 0 4px; font-size: 1.2rem; }
@@ -124,6 +125,17 @@
       <li>서버에 올리고, 앱스토어 등록 없이 바로 비벼요.</li>
       <li>한 번에 여러 명에게 비빔을 쏘고 비벼요.</li>
     </ul>
+    <!-- 이미 만든 앱 변환 프롬프트 (README §12) -->
+    <section class="ai convert" aria-labelledby="convert-label">
+      <h2 class="section-title" id="convert-label">이미 만들어진 앱이 있나요?</h2>
+      <p class="section-desc" id="convert-desc">AI에게 이 프롬프트와 앱 폴더를 주면 비빔에서 실행되게 바꿔 줘요</p>
+      <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 실행되도록 점검하고 변환해 줘.</textarea>
+      <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        프롬프트 복사
+      </button>
+      <p class="ai-status" aria-live="polite"></p>
+    </section>
     <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
     <ul class="tags" aria-label="이런 앱을 비벼요">
       <li>#스낵게임</li>
@@ -180,7 +192,7 @@
             복사
           </button>
         </div>
-        <p class="ai-status" id="ai-status" aria-live="polite"></p>
+        <p class="ai-status" aria-live="polite"></p>
       </section>
     </section>
     <!-- 사용후기 (예정): 자리만 둔다 -->
