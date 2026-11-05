@@ -257,6 +257,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .entry:hover .entry-title, .entry:focus-visible .entry-title { color: var(--scarlet); }
 .entry-no { flex: none; width: 1.6em; color: var(--scarlet); }
 .entry-title { flex: 0 1 auto; min-width: 0; word-break: keep-all; }
+.entry-step { display: block; color: var(--ink-soft); font-size: .72em; }
 .entry-dots { flex: 1; min-width: 1em; height: var(--p); margin-top: .6em; background: linear-gradient(90deg, var(--ink-faint) 50%, transparent 50%) 0 0 / calc(var(--p) * 3) var(--p); }
 .entry-count { flex: none; color: var(--ink-soft); font-size: .8em; }
 .seal { flex: none; width: calc(var(--p) * 12 * 1.5); height: calc(var(--p) * 12 * 1.5); margin: calc(var(--p) * -2) 0; background: var(--art-seal) center / contain no-repeat; image-rendering: pixelated; transform: rotate(-8deg); }
@@ -434,7 +435,7 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 }
 .phone { width: 9.5em; height: 19em; }
 .phone.sm { width: 7.2em; height: 14.4em; font-size: .8em; }
-/* 3편: 위아래로 두 사람을 놓으므로 폰을 조금 낮게 */
+/* 4편: 위아래로 두 사람을 놓으므로 폰을 조금 낮게 */
 .phone.short { height: 14em; }
 .phone.sm.short { height: 12em; }
 .duo { gap: .9em; }
@@ -443,14 +444,14 @@ button:focus-visible { outline: var(--p) dashed var(--scarlet); outline-offset: 
 .role-tag.send { background: #9e2a1e; }
 .role-tag.recv { background: #1f6f6a; }
 .dist.v { flex-direction: column; }
-/* 3편 6장면: 두 폰 사이 QR 빛, 지운 연결 수단들 */
+/* 4편 6장면: 두 폰 사이 QR 빛, 지운 연결 수단들 */
 .beam { width: .5em; height: 1.5em; background: repeating-linear-gradient(var(--teal-glow) 0 .25em, transparent .25em .5em); box-shadow: 0 0 0 .15em color-mix(in srgb, var(--teal-glow) 25%, transparent); animation: twinkle 1s steps(1) infinite; }
 .nope { gap: .9em; align-items: flex-start; }
 .nope-item { display: flex; align-items: center; gap: .6em; font-size: 1.05em; color: var(--ink-soft); white-space: nowrap; }
 .nope-ico { position: relative; display: grid; place-items: center; width: 2.2em; height: 2.2em; font-size: 1.5em; background: color-mix(in srgb, var(--paper-edge) 50%, transparent); box-shadow: inset 0 0 0 .15em var(--ink-soft); }
 /* 대각선 한 줄로 지운다 (아이콘이 보이게) */
 .nope-ico::after { content: ""; position: absolute; left: 50%; top: -.1em; bottom: -.1em; width: .18em; margin-left: -.09em; background: var(--scarlet); transform: rotate(45deg); }
-/* 3편 7장면 */
+/* 4편 7장면 */
 .hourglass { font-size: 3em; animation: tilt 2s steps(2) infinite; }
 .dist.v::before, .dist.v::after { width: 0; height: 1.2em; border-top: 0; border-left: .25em dashed var(--ink-soft); }
 .pc { flex: none; display: flex; flex-direction: column; align-items: center; }

@@ -7,7 +7,7 @@ import { SCENES, qrCells } from './scenes.js';
 import { installArt } from './art.js';
 
 const KEY_LANG = 'try-bebeam:lang';
-const KEY_SEEN = 'try-bebeam:seen';
+const KEY_SEEN = 'try-bebeam:seen2'; // 2.20에서 편 순서가 바뀌어 새 키
 const KEY_OPENED = 'try-bebeam:opened';
 const $ = (id) => document.getElementById(id);
 
@@ -138,7 +138,10 @@ function renderToc() {
     const li = el('li');
     const b = el('button', 'entry');
     b.type = 'button';
-    b.append(el('span', 'entry-no', ROMAN[i]), el('span', 'entry-title', ch.recipe), el('span', 'entry-dots'), el('span', 'entry-count', s.scenes(ch.captions.length)));
+    // 요리 단계 이름(작게) 위에 비법 이름
+    const title = el('span', 'entry-title');
+    title.append(el('span', 'entry-step', ch.title), ch.recipe);
+    b.append(el('span', 'entry-no', ROMAN[i]), title, el('span', 'entry-dots'), el('span', 'entry-count', s.scenes(ch.captions.length)));
     if (seen.has(i)) {
       const mark = el('span', i === justSealed ? 'seal stamp-in' : 'seal');
       mark.setAttribute('role', 'img');
@@ -306,7 +309,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 installArt();
-// #cover, #toc, #편-장면(예: #3-5)으로 열면 그 쪽부터 (시안·대표 스크린샷용)
+// #cover, #toc, #편-장면(예: #4-5)으로 열면 그 쪽부터 (시안·대표 스크린샷용)
 const deep = /^#(?:(cover|toc)|(\d)-(\d))$/.exec(location.hash);
 if (deep?.[1]) view = deep[1];
 else if (deep && SCENES[deep[2] - 1]?.[deep[3] - 1]) {

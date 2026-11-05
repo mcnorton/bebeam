@@ -15,14 +15,26 @@ export const TEXT = {
       subtitle: '나와 친구들의 웹앱 놀이터',
       open: '펼치기',
       contents: '차례',
-      intro: '나와 친구들이 만든 웹앱을 폰에서 갖고 노는 곳, 비빔.\n[다음]을 누르면서 하나씩 따라와 봐요.',
+      intro: '나와 친구들이 만든 웹앱을 폰에서 갖고 노는 곳, 비빔.\n재료 손질부터 나눠 먹기까지, [다음]을 누르며 따라와 봐요.',
       toContents: '차례로',
       close: '레시피 북 덮기',
       step: '단계',
     },
     chapters: [
       {
-        title: '플레이어 설치',
+        title: '재료 손질',
+        recipe: 'AI와 함께 앱 재료를 만드는 법',
+        captions: [
+          '만들고 싶은 앱이 있으면 AI와 함께 만들어요',
+          '먼저 이 주소를 AI에게 알려 줘요',
+          'AI가 묻는 말에 차근차근 답해요',
+          'AI가 index.html이 든 폴더를 만들어 줘요',
+          '폴더를 zip으로 묶어 비빔에 넣어요',
+          '멋지게 만드는 AI 프롬프트로 시작해 봐요',
+        ],
+      },
+      {
+        title: '그릇 준비',
         recipe: '비빔을 폰에 설치하는 법',
         captions: [
           '비빔은 나와 친구들이 만든 웹앱 놀이터예요',
@@ -34,8 +46,8 @@ export const TEXT = {
         ],
       },
       {
-        title: '앱 추가·실행',
-        recipe: '앱을 추가하고 실행하는 법',
+        title: '넣고 비비기',
+        recipe: '앱을 넣고 실행하는 법',
         captions: [
           '[나의 앱 추가]를 눌러요',
           '컴퓨터에서는 폴더째, 폰에서는 zip 파일로 넣어요',
@@ -47,7 +59,7 @@ export const TEXT = {
         ],
       },
       {
-        title: 'QR로 주고받기',
+        title: '나눠 먹기',
         recipe: 'QR코드로 친구와 나누는 법',
         captions: [
           '보내는 친구가 [앱 보내기]를 눌러요',
@@ -59,18 +71,6 @@ export const TEXT = {
           '빠르진 않아요. 1MB짜리 앱이면 1분쯤 걸려요',
           '다 받으면 보낸 친구 이름을 확인하고 [설치 시작]',
           '폰을 기울여서 맞추거나, 초점을 잘 잡으면 빨라져요',
-        ],
-      },
-      {
-        title: 'AI로 앱 만들기',
-        recipe: 'AI와 함께 앱을 만드는 법',
-        captions: [
-          '만들고 싶은 앱이 있으면 AI와 함께 만들어요',
-          '먼저 이 주소를 AI에게 알려 줘요',
-          'AI가 묻는 말에 차근차근 답해요',
-          'AI가 index.html이 든 폴더를 만들어 줘요',
-          '폴더를 zip으로 묶어 비빔에 넣어요',
-          '멋지게 만드는 AI 프롬프트로 시작해 봐요',
         ],
       },
     ],
@@ -140,14 +140,26 @@ export const TEXT = {
       subtitle: 'A Web App Playground for You and Your Friends',
       open: 'Open',
       contents: 'Contents',
-      intro: 'BeBeam is where you play with web apps made by you and your friends.\nTap [Next] and follow along, one step at a time.',
+      intro: 'BeBeam is where you play with web apps made by you and your friends.\nFrom prepping the ingredients to sharing the dish, tap [Next] and follow along.',
       toContents: 'Contents',
       close: 'Close the Recipe Book',
       step: 'Step',
     },
     chapters: [
       {
-        title: 'Install the player',
+        title: 'Prep the ingredients',
+        recipe: 'How to Make App Ingredients with AI',
+        captions: [
+          'Have an app in mind? Make it together with AI',
+          'First, give AI this address',
+          'Answer the AI’s questions one by one',
+          'AI makes a folder with index.html in it',
+          'Zip the folder and add it to BeBeam',
+          'Start with a prompt that makes great apps',
+        ],
+      },
+      {
+        title: 'Set out the bowl',
         recipe: 'How to Install BeBeam on Your Phone',
         captions: [
           'BeBeam is a playground for web apps made by you and your friends',
@@ -159,7 +171,7 @@ export const TEXT = {
         ],
       },
       {
-        title: 'Add and run apps',
+        title: 'Mix it in',
         recipe: 'How to Add and Run an App',
         captions: [
           'Tap “Add my app”',
@@ -172,7 +184,7 @@ export const TEXT = {
         ],
       },
       {
-        title: 'Share by QR',
+        title: 'Share the dish',
         recipe: 'How to Share with Friends by QR Code',
         captions: [
           'The sending friend taps “Send app”',
@@ -184,18 +196,6 @@ export const TEXT = {
           'It’s not fast: about a minute for a 1 MB app',
           'When it’s done, check the sender’s name and tap Start install',
           'Tilt the phone or focus well, and it goes faster',
-        ],
-      },
-      {
-        title: 'Make apps with AI',
-        recipe: 'How to Make an App with AI',
-        captions: [
-          'Have an app in mind? Make it together with AI',
-          'First, give AI this address',
-          'Answer the AI’s questions one by one',
-          'AI makes a folder with index.html in it',
-          'Zip the folder and add it to BeBeam',
-          'Start with a prompt that makes great apps',
         ],
       },
     ],

@@ -53,16 +53,21 @@
     body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--fg);
            font-family: "NeoDunggeunmo Pro", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
            font-synthesis: none; }
-    /* 영역: 헤더 → 콘텐츠1(레시피·비빔재료) → 콘텐츠2(AI) → 콘텐츠3(사용후기, 예정) → 푸터. docs/SITES.md */
+    /* 영역: 헤더 → 재료 손질(변환 | 새로 만들기) → 레시피·비빔재료 → 출발([BeBeam 실행]) → 사용후기(예정) → 푸터. docs/SITES.md */
     .site-header, .content, .site-footer { box-sizing: border-box; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .site-header { max-width: 480px; }
     .content { border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
     .content-1 { max-width: 960px; display: grid; gap: 24px; align-items: start; }
     /* 가로 화면은 레시피 | 비빔재료, 세로 화면은 레시피 아래 비빔재료 */
     @media (orientation: landscape) and (min-width: 760px) { .content-1 { grid-template-columns: 3fr 2fr; } }
-    .content-2 { max-width: 560px; }
-    .convert, .start { margin-top: 24px; }
-    .start .launch { margin-top: 4px; }
+    .content-prep { max-width: 960px; }
+    /* 재료 손질의 두 갈래: 가로 화면은 좌우, 세로 화면은 위아래 */
+    .branches { display: grid; gap: 16px; align-items: start; margin-top: 16px; }
+    @media (orientation: landscape) and (min-width: 760px) { .branches { grid-template-columns: 1fr 1fr; } }
+    .branch { min-width: 0; padding: 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
+    .branch-title { margin: 0 0 4px; font-size: 1.05rem; }
+    .content-start { max-width: 560px; }
+    .content-start .launch { margin-top: 4px; }
     .content[hidden], .samples[hidden] { display: none; }
     /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
     .section-title { margin: 0 0 4px; font-size: 1.2rem; }
@@ -126,23 +131,6 @@
       <li>서버에 올리고, 앱스토어 등록 없이 바로 비벼요.</li>
       <li>한 번에 여러 명에게 비빔을 쏘고 비벼요.</li>
     </ul>
-    <!-- 이미 만든 앱 변환 프롬프트 (README §12) -->
-    <section class="ai convert" aria-labelledby="convert-label">
-      <h2 class="section-title" id="convert-label">이미 만들어진 앱이 있나요?</h2>
-      <p class="section-desc" id="convert-desc">AI에게 이 프롬프트와 앱 폴더를 주면 비빔에서 실행되게 바꿔 줘요</p>
-      <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 실행되도록 점검하고 변환해 줘.</textarea>
-      <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-        프롬프트 복사
-      </button>
-      <p class="ai-status" aria-live="polite"></p>
-    </section>
-    <!-- 출발: 챕터 제목 + [BeBeam 실행] -->
-    <section class="start" aria-labelledby="start-label">
-      <h2 class="section-title" id="start-label">이제 준비가 되셨나요?</h2>
-      <p class="section-desc">함께 비비러 출발!</p>
-      <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
-    </section>
     <ul class="tags" aria-label="이런 앱을 비벼요">
       <li>#스낵게임</li>
       <li>#작업시뮬레이터</li>
@@ -154,6 +142,42 @@
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
   </header>
   <main>
+    <!-- 재료 손질: 이미 만든 앱 변환(README §12) | AI로 새로 만들기. 가로 화면은 좌우 두 갈래, 세로 화면은 위아래 -->
+    <section class="content content-prep" aria-labelledby="prep-label">
+      <h2 class="section-title" id="prep-label">먼저, 재료를 손질해 볼까요?</h2>
+      <p class="section-desc">가진 재료에 맞는 길을 하나 골라요</p>
+      <div class="branches">
+        <section class="ai branch convert" aria-labelledby="convert-label">
+          <h3 class="branch-title" id="convert-label">이미 만든 앱이 있다면</h3>
+          <p class="section-desc" id="convert-desc">AI에게 이 프롬프트와 앱 폴더를 주면 비빔에서 실행되게 바꿔 줘요</p>
+          <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 실행되도록 점검하고 변환해 줘.</textarea>
+          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
+            <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            프롬프트 복사
+          </button>
+          <p class="ai-status" aria-live="polite"></p>
+        </section>
+        <section class="ai branch create" aria-labelledby="ai-label">
+          <h3 class="branch-title" id="ai-label">새로 만든다면</h3>
+          <p class="section-desc" id="ai-desc">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
+          <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
+          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            프롬프트 복사
+          </button>
+          <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
+          <div class="ai-copy">
+            <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
+            <button class="ai-button" type="button" data-copy="ai-url">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              복사
+            </button>
+          </div>
+          <p class="ai-status" aria-live="polite"></p>
+        </section>
+      </div>
+    </section>
     <section class="content content-1">
       <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
       <section class="guide" aria-labelledby="guide-label">
@@ -180,26 +204,11 @@
         </template>
       </section>
     </section>
-    <section class="content content-2">
-      <section class="ai" aria-labelledby="ai-label">
-        <h2 class="section-title" id="ai-label">인공지능과 비비기 프롬프트</h2>
-        <p class="section-desc" id="ai-desc">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
-        <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
-        <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
-          <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-          프롬프트 복사
-        </button>
-        <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
-        <div class="ai-copy">
-          <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
-          <button class="ai-button" type="button" data-copy="ai-url">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            복사
-          </button>
-        </div>
-        <p class="ai-status" aria-live="polite"></p>
-      </section>
+    <!-- 출발: 챕터 제목 + [BeBeam 실행] -->
+    <section class="content content-start" aria-labelledby="start-label">
+      <h2 class="section-title" id="start-label">이제 준비가 되셨나요?</h2>
+      <p class="section-desc">함께 비비러 출발!</p>
+      <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
     </section>
     <!-- 사용후기 (예정): 자리만 둔다 -->
     <section class="content content-3" id="reviews" aria-labelledby="reviews-label" hidden>
