@@ -41,6 +41,31 @@ for (const button of document.querySelectorAll('[data-copy]')) {
   });
 }
 
+// Ⅰ 재료 손질 갈림길 (docs/SITES.md): 고른 길(A/B/C)만 펼치고 비비의 말을 바꾼다. 고른 길은 기억한다.
+//   HTML은 세 길이 모두 열린 채로 오므로, JS가 없으면 다 보인다. 글은 HTML의 data-line(고정 문자열)만 쓴다
+const KEY_PATH = 'bebeam-landing:path';
+const choices = [...document.querySelectorAll('.choice')];
+const chefLine = document.getElementById('chef-line');
+const firstLine = chefLine.textContent;
+function choose(button, { scroll = false } = {}) {
+  for (const b of choices) {
+    const on = b === button;
+    b.setAttribute('aria-expanded', String(on));
+    document.getElementById(b.getAttribute('aria-controls')).hidden = !on;
+  }
+  chefLine.textContent = button ? button.dataset.line : firstLine;
+  if (!button) return;
+  try { localStorage.setItem(KEY_PATH, button.dataset.path); } catch {}
+  if (scroll) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(button.getAttribute('aria-controls')).scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+  }
+}
+let savedPath = null;
+try { savedPath = localStorage.getItem(KEY_PATH); } catch {}
+choose(choices.find((b) => b.dataset.path === savedPath) ?? null);
+for (const b of choices) b.addEventListener('click', () => choose(b, { scroll: true }));
+
 // 비빔재료 (SPEC F-01 1): samples.json의 샘플 앱 목록과 [내려받기].
 //   나중에 백엔드가 같은 모양을 돌려줄 수 있으므로 값은 글자로만 넣고, 경로는 assets/samples/ 안의 것만 쓴다
 const SAMPLE_PREFIX = 'assets/samples/';
@@ -80,6 +105,8 @@ async function showSamples() {
   } catch {
     section.hidden = true;
   }
+  // 재료를 못 불러오면 C 길에 안내를 보인다
+  document.getElementById('samples-empty').hidden = !section.hidden;
 }
 showSamples();
 

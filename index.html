@@ -53,28 +53,61 @@
     body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--fg);
            font-family: "NeoDunggeunmo Pro", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
            font-synthesis: none; }
-    /* 영역: 헤더 → 재료 손질(변환 | 새로 만들기) → 레시피·비빔재료 → 출발([BeBeam 실행]) → 사용후기(예정) → 푸터. docs/SITES.md */
+    /* 영역: 헤더 → 요리 순서도(비비 · Ⅰ 재료 손질 갈림길 · Ⅱ 그릇 준비 · Ⅲ 넣고 비비기 · Ⅳ 나눠 먹기) → 레시피북 → 사용후기(예정) → 푸터. docs/SITES.md */
     .site-header, .content, .site-footer { box-sizing: border-box; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .site-header { max-width: 480px; }
     .content { border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
-    .content-1 { max-width: 960px; display: grid; gap: 24px; align-items: start; }
-    /* 가로 화면은 레시피 | 비빔재료, 세로 화면은 레시피 아래 비빔재료 */
-    @media (orientation: landscape) and (min-width: 760px) { .content-1 { grid-template-columns: 3fr 2fr; } }
-    .content-prep { max-width: 960px; }
-    /* 재료 손질의 두 갈래: 가로 화면은 좌우, 세로 화면은 위아래 */
-    .branches { display: grid; gap: 16px; align-items: start; margin-top: 16px; }
-    @media (orientation: landscape) and (min-width: 760px) { .branches { grid-template-columns: 1fr 1fr; } }
-    .branch { min-width: 0; padding: 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
-    .branch-title { margin: 0 0 4px; font-size: 1.05rem; }
-    .content-start { max-width: 560px; }
-    .content-start .launch { margin-top: 4px; }
-    .content[hidden], .samples[hidden] { display: none; }
+    .guide { max-width: 960px; }
+    .content[hidden], .samples[hidden], .path[hidden], #samples-empty[hidden] { display: none; }
+    /* 순서도 */
+    .flow { --line: color-mix(in srgb, var(--muted) 70%, transparent); box-sizing: border-box; max-width: 640px; margin: 0 auto; padding: 24px 16px 32px;
+            border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
+    .link { position: relative; width: 0; height: 36px; margin: 0 auto; border-left: 3px dashed var(--line); }
+    .link::after { content: ""; position: absolute; left: -9px; bottom: -2px; border: 7.5px solid transparent; border-top: 9px solid var(--line); border-bottom: 0; }
+    .step { padding: 18px 16px; border: 2px solid color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 16px; text-align: center; }
+    .step-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; font-size: 1.3rem; }
+    .step-no { display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-size: .85em; }
+    .step-desc { margin: 0 0 4px; line-height: 1.9; word-break: keep-all; }
+    .step-note { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.9; word-break: keep-all; }
+    .step .launch { margin: 16px 0 12px; }
+    /* 실제 버튼 이름을 버튼 모양 칩으로 */
+    .chip { display: inline-block; padding: 0 8px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--muted) 60%, transparent); line-height: 1.6;
+            white-space: nowrap; font-size: .92em; }
+    .chip-primary { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+    /* 요리사 비비와 말풍선 */
+    .chef-say { display: flex; align-items: flex-end; gap: 12px; max-width: 520px; margin: 0 auto; text-align: left; }
+    .chef { flex: none; width: 96px; height: auto; image-rendering: pixelated; }
+    .step .chef { width: 72px; }
+    .bubble { position: relative; flex: 1; min-width: 0; margin-bottom: 14px; padding: 12px 14px; border: 2px solid var(--fg); border-radius: 14px; background: var(--bg); }
+    .bubble::before { content: ""; position: absolute; left: -8px; bottom: 16px; width: 12px; height: 12px; background: var(--bg);
+                      border-left: 2px solid var(--fg); border-bottom: 2px solid var(--fg); transform: rotate(45deg); }
+    .bubble p { margin: 0; line-height: 1.6; word-break: keep-all; }
+    /* Ⅰ 갈림길: 넓으면 세 길이 한 줄(위에서 가지가 갈라짐), 좁으면 위아래(왼쪽 세로선에서 가지) */
+    .choices { position: relative; display: grid; gap: 10px; margin: 28px 0 0; padding-left: 22px; }
+    .choices::before { content: ""; position: absolute; left: 6px; top: -16px; bottom: 26px; border-left: 3px dashed var(--line); }
+    .choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px; border: 2px solid color-mix(in srgb, var(--fg) 35%, transparent);
+              border-radius: 12px; background: var(--bg); color: var(--fg); font: inherit; font-size: 1.05rem; text-align: left; word-break: keep-all; cursor: pointer; }
+    .choice::before { content: ""; position: absolute; left: -18px; top: 50%; width: 16px; border-top: 3px dashed var(--line); }
+    .choice:hover { border-color: var(--accent); }
+    .choice:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .choice[aria-expanded="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+    .choice-key { flex: none; display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 6px; background: var(--fg); color: var(--bg); font-size: .9em; }
+    .choice[aria-expanded="true"] .choice-key { background: var(--accent); color: var(--accent-text); }
+    @media (min-width: 600px) {
+      .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-left: 0; }
+      .choices::before { left: calc(100% / 6); right: calc(100% / 6); top: -14px; bottom: auto; border-left: 0; border-top: 3px dashed var(--line); }
+      .choices::after { content: ""; position: absolute; left: 50%; top: -28px; height: 14px; border-left: 3px dashed var(--line); }
+      .choice { flex-direction: column; justify-content: center; text-align: center; }
+      .choice::before { left: 50%; top: -14px; width: 0; height: 14px; border-top: 0; border-left: 3px dashed var(--line); }
+    }
+    .path { margin-top: 16px; padding: 16px; border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); border-radius: 14px; }
+    .path-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 4px; font-size: 1.05rem; }
     /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
     .section-title { margin: 0 0 4px; font-size: 1.2rem; }
     .section-title::before { content: "▸ "; color: var(--accent); }
     .section-desc { margin: 0 0 12px; color: var(--muted); font-size: .9rem; }
     .samples { text-align: left; }
-    .samples .section-title, .samples .section-desc { text-align: center; }
+    .samples .section-desc { text-align: center; }
     .sample-list { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
     .sample { display: grid; grid-template-columns: 56px 1fr; gap: 4px 14px; padding: 14px; border-radius: 14px;
               border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
@@ -89,6 +122,15 @@
               margin: 24px 0; padding: 0 24px; border-radius: 14px; background: var(--accent); color: var(--accent-text);
               font-size: 1.1rem; font-weight: 700; text-decoration: none; }
     .launch:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+    /* 노랑/검정 사선 테이프 테두리가 0.5초마다 깜빡인다 (플레이어 [전송 시작]과 같은 방식: 마스크로 바깥 고리만) */
+    .launch { position: relative; }
+    .launch::before { content: ""; position: absolute; inset: -6px; padding: 6px; border-radius: 20px; pointer-events: none;
+                      background: repeating-linear-gradient(-45deg, #facc15 0 8px, #18181b 8px 16px);
+                      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+                      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+                      animation: tape-blink 1s steps(1, end) infinite; }
+    @keyframes tape-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .launch::before { animation: none; } }
     .tagline { color: var(--muted); margin-bottom: 20px; }
     .points { margin: 0 auto; padding: 0; list-style: none; text-align: left; display: inline-block; }
     .points li { line-height: 1.6; margin: 0 0 6px; padding-left: 1.2em; text-indent: -1.2em; }
@@ -142,15 +184,38 @@
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
   </header>
   <main>
-    <!-- 재료 손질: 이미 만든 앱 변환(README §12) | AI로 새로 만들기. 가로 화면은 좌우 두 갈래, 세로 화면은 위아래 -->
-    <section class="content content-prep" aria-labelledby="prep-label">
-      <h2 class="section-title" id="prep-label">먼저, 재료를 손질해 볼까요?</h2>
-      <p class="section-desc">가진 재료에 맞는 길을 하나 골라요</p>
-      <div class="branches">
-        <section class="ai branch convert" aria-labelledby="convert-label">
-          <h3 class="branch-title" id="convert-label">이미 만든 앱이 있다면</h3>
-          <p class="section-desc" id="convert-desc">AI에게 이 프롬프트와 앱 폴더를 주면 비빔에서 실행되게 바꿔 줘요</p>
-          <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 실행되도록 점검하고 변환해 줘.</textarea>
+    <!-- 요리 순서도 (docs/SITES.md): 요리사 비비가 말풍선으로 안내하고, 블록을 연결선으로 잇는다.
+         Ⅰ 재료 손질은 갈림길(A 확인·다듬기 / B 새로 만들기 / C 맛보기). 고른 길만 펼친다(landing.js). JS가 없으면 셋 다 보인다 -->
+    <div class="flow">
+      <div class="chef-say">
+        <img class="chef" src="assets/chef/bibi-hello.svg" alt="요리사 비비" width="96" height="116">
+        <div class="bubble"><p>안녕하세요! 저는 요리사 <b>비비</b>예요.<br>같이 앱을 비벼 볼까요? 차례대로 따라오세요.</p></div>
+      </div>
+      <div class="link" aria-hidden="true"></div>
+
+      <section class="step" aria-labelledby="step1-label">
+        <h2 class="step-head" id="step1-label"><span class="step-no" aria-hidden="true">Ⅰ</span> 재료 손질</h2>
+        <p class="step-desc">비빔의 재료는 <b>웹앱</b>이에요. 어떤 재료로 시작할지 골라요.</p>
+        <div class="chef-say">
+          <img class="chef" src="assets/chef/bibi-ask.svg" alt="" width="72" height="87">
+          <div class="bubble"><p id="chef-line" aria-live="polite">어떤 재료를 가져왔나요? 하나를 골라 보세요.</p></div>
+        </div>
+        <div class="choices" role="group" aria-label="재료 고르기">
+          <button class="choice" type="button" data-path="a" aria-expanded="true" aria-controls="path-a"
+                  data-line="좋아요! 아래 프롬프트를 복사해서 앱 폴더와 함께 AI에게 주세요. AI가 비빔에서 잘 돌아가는지 확인하고, 필요한 곳만 다듬어 줘요. 원래 앱은 그대로예요.">
+            <span class="choice-key" aria-hidden="true">A</span> 내가 만든 앱이 있어요</button>
+          <button class="choice" type="button" data-path="b" aria-expanded="true" aria-controls="path-b"
+                  data-line="멋져요! 아래 프롬프트를 AI 대화창에 붙여 넣어요. AI가 묻는 말에 차근차근 답하면 앱을 만들어 줘요.">
+            <span class="choice-key" aria-hidden="true">B</span> AI랑 새로 만들래요</button>
+          <button class="choice" type="button" data-path="c" aria-expanded="true" aria-controls="path-c"
+                  data-line="먼저 맛부터 볼까요? 비빔 재료를 하나 내려받아 두세요. 다음 단계에서 넣어 볼 거예요.">
+            <span class="choice-key" aria-hidden="true">C</span> 먼저 맛만 볼래요</button>
+        </div>
+
+        <section class="ai path" id="path-a" aria-labelledby="convert-label">
+          <h3 class="path-title" id="convert-label"><span class="choice-key" aria-hidden="true">A</span> 비빔에서 잘 돌아가는지 확인하고 다듬기</h3>
+          <p class="section-desc" id="convert-desc">AI가 앱을 살펴보고, 비빔에서 돌아가는 데 꼭 필요한 곳만 다듬어 줘요</p>
+          <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 잘 실행되는지 확인하고, 필요한 곳만 다듬어 줘.</textarea>
           <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
             <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -158,8 +223,8 @@
           </button>
           <p class="ai-status" aria-live="polite"></p>
         </section>
-        <section class="ai branch create" aria-labelledby="ai-label">
-          <h3 class="branch-title" id="ai-label">새로 만든다면</h3>
+        <section class="ai path" id="path-b" aria-labelledby="ai-label">
+          <h3 class="path-title" id="ai-label"><span class="choice-key" aria-hidden="true">B</span> AI와 새 앱 만들기</h3>
           <p class="section-desc" id="ai-desc">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
           <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
           <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
@@ -176,39 +241,61 @@
           </div>
           <p class="ai-status" aria-live="polite"></p>
         </section>
+        <!-- 비빔재료: 샘플 앱 zip 목록. assets/samples/samples.json을 landing.js가 그린다 (scripts/samples.mjs가 만든다) -->
+        <div class="path" id="path-c">
+          <section class="samples" id="samples" aria-labelledby="samples-label" hidden>
+            <h3 class="path-title" id="samples-label"><span class="choice-key" aria-hidden="true">C</span> 비빔 재료 내려받기</h3>
+            <p class="section-desc">하나를 내려받아 두었다가 Ⅲ에서 [＋ 나의 앱 추가]로 넣어요</p>
+            <ul class="sample-list" id="sample-list"></ul>
+            <template id="sample-item">
+              <li class="sample">
+                <img class="sample-icon" alt="" width="56" height="56">
+                <p class="sample-name"></p>
+                <p class="sample-desc"></p>
+                <a class="ai-button sample-download">
+                  <!-- lucide-static 1.56.0 download. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                  <span class="sample-label"></span>
+                </a>
+              </li>
+            </template>
+          </section>
+          <p class="section-desc" id="samples-empty" hidden>지금은 재료를 불러오지 못했어요. 잠시 뒤에 다시 와 주세요.</p>
+        </div>
+      </section>
+      <div class="link" aria-hidden="true"></div>
+
+      <section class="step" aria-labelledby="step2-label">
+        <h2 class="step-head" id="step2-label"><span class="step-no" aria-hidden="true">Ⅱ</span> 그릇 준비</h2>
+        <p class="step-desc">비빔 그릇, <b>BeBeam</b>을 열어요. 설치해 두면 인터넷이 없어도 열려요.</p>
+        <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+        <p class="step-note">아이폰·아이패드는 <span class="chip">공유</span> → <span class="chip">홈 화면에 추가</span>로 설치해요</p>
+      </section>
+      <div class="link" aria-hidden="true"></div>
+
+      <section class="step" aria-labelledby="step3-label">
+        <h2 class="step-head" id="step3-label"><span class="step-no" aria-hidden="true">Ⅲ</span> 넣고 비비기</h2>
+        <p class="step-desc">BeBeam에서 <span class="chip chip-primary">＋ 나의 앱 추가</span>를 누르고, 만든 폴더나 내려받은 zip을 넣어요. 그다음 <span class="chip">▷ 실행하기</span>!</p>
+      </section>
+      <div class="link" aria-hidden="true"></div>
+
+      <section class="step" aria-labelledby="step4-label">
+        <h2 class="step-head" id="step4-label"><span class="step-no" aria-hidden="true">Ⅳ</span> 나눠 먹기</h2>
+        <p class="step-desc"><span class="chip">앱 보내기</span>를 누르면 QR이 나와요. 친구는 <span class="chip chip-primary">＋ 나의 앱 추가</span> → <span class="chip">QR로 받기</span>로 카메라를 비춰요. 와이파이가 없어도 돼요.</p>
+      </section>
+      <div class="link" aria-hidden="true"></div>
+
+      <div class="chef-say">
+        <img class="chef" src="assets/chef/bibi-cheer.svg" alt="요리사 비비" width="96" height="116">
+        <div class="bubble"><p>다 됐어요! 이제 친구랑 함께 비벼요.</p></div>
       </div>
-    </section>
-    <section class="content content-1">
-      <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
-      <section class="guide" aria-labelledby="guide-label">
-        <h2 class="section-title" id="guide-label">비비는 법 레시피</h2>
-        <p class="section-desc">처음이라면, 눌러 보며 익혀요</p>
-        <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
-      </section>
-      <!-- 비빔재료: 샘플 앱 zip 목록. assets/samples/samples.json을 landing.js가 그린다 (scripts/samples.mjs가 만든다) -->
-      <section class="samples" id="samples" aria-labelledby="samples-label" hidden>
-        <h2 class="section-title" id="samples-label">비빔 재료</h2>
-        <p class="section-desc">내려받아 플레이어의 [＋ 나의 앱 추가]에 넣어 보세요</p>
-        <ul class="sample-list" id="sample-list"></ul>
-        <template id="sample-item">
-          <li class="sample">
-            <img class="sample-icon" alt="" width="56" height="56">
-            <p class="sample-name"></p>
-            <p class="sample-desc"></p>
-            <a class="ai-button sample-download">
-              <!-- lucide-static 1.56.0 download. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
-              <span class="sample-label"></span>
-            </a>
-          </li>
-        </template>
-      </section>
-    </section>
-    <!-- 출발: 챕터 제목 + [BeBeam 실행] -->
-    <section class="content content-start" aria-labelledby="start-label">
-      <h2 class="section-title" id="start-label">이제 준비가 되셨나요?</h2>
-      <p class="section-desc">함께 비비러 출발!</p>
-      <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+    </div>
+
+    <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
+    <section class="content guide" aria-labelledby="guide-label">
+      <h2 class="section-title" id="guide-label">더 자세히 보고 싶다면</h2>
+      <p class="section-desc">비비는 법 레시피북을 눌러 보며 익혀요</p>
+      <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
     </section>
     <!-- 사용후기 (예정): 자리만 둔다 -->
     <section class="content content-3" id="reviews" aria-labelledby="reviews-label" hidden>
