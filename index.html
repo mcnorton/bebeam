@@ -61,7 +61,8 @@
     /* 가로 화면은 레시피 | 비빔재료, 세로 화면은 레시피 아래 비빔재료 */
     @media (orientation: landscape) and (min-width: 760px) { .content-1 { grid-template-columns: 3fr 2fr; } }
     .content-2 { max-width: 560px; }
-    .convert { margin-top: 24px; }
+    .convert, .start { margin-top: 24px; }
+    .start .launch { margin-top: 4px; }
     .content[hidden], .samples[hidden] { display: none; }
     /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
     .section-title { margin: 0 0 4px; font-size: 1.2rem; }
@@ -136,7 +137,12 @@
       </button>
       <p class="ai-status" aria-live="polite"></p>
     </section>
-    <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+    <!-- 출발: 챕터 제목 + [BeBeam 실행] -->
+    <section class="start" aria-labelledby="start-label">
+      <h2 class="section-title" id="start-label">이제 준비가 되셨나요?</h2>
+      <p class="section-desc">함께 비비러 출발!</p>
+      <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+    </section>
     <ul class="tags" aria-label="이런 앱을 비벼요">
       <li>#스낵게임</li>
       <li>#작업시뮬레이터</li>
