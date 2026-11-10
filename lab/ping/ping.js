@@ -10,7 +10,7 @@ import { VERSION } from '../../player/version.js';
 
 const $ = (id) => document.getElementById(id);
 const GATHER_MS = 2000;
-const PING_MS = 5000; // 이 안에 응답이 없으면 "닿지 않음"
+const PING_MS = 3000; // 이 안에 응답이 없으면 "닿지 않음" (T2 실측 첫 응답 최대 819ms, T8 기준 3초)
 const POLL_MS = 100;
 const STORE_KEY = 'bebeam.lab.ping';
 const now = () => performance.now();
@@ -119,14 +119,15 @@ async function runHost(channel) {
   channel.show(b45encode(bytes));
   $('hostDetail').textContent = `내 후보: ${cands.join(', ')} · 이 화면을 켜 둔 채 B가 찍게 하세요`;
   record({ role: 'host', result: 'shown', candidates: cands });
+  // 기기 수는 셀 수 없다: 한 기기가 주소 종류(IPv4·IPv6)마다 연결 쌍을 따로 만든다. 확인 요청 수만 보인다.
   let last = 0;
   for (;;) {
     const s = await pairStats(pc);
     if (s.pairsIn !== last) {
       last = s.pairsIn;
-      $('hostStat').textContent = `● 핑 보낸 기기(추정) ${s.pairsIn}대`;
+      $('hostStat').textContent = '● 핑 받음';
       $('hostStat').className = 'big ok';
-      record({ role: 'host', result: 'pinged', pingers: s.pairsIn, recv: s.reqIn, sent: s.respOut, candidates: cands });
+      record({ role: 'host', result: 'pinged', pairs: s.pairsIn, recv: s.reqIn, sent: s.respOut, candidates: cands });
     }
     $('hostDetail').textContent = `받은 확인 요청 ${s.reqIn} · 보낸 응답 ${s.respOut} · 내 후보: ${cands.join(', ')}`;
     await sleep(500);
@@ -136,6 +137,7 @@ async function runHost(channel) {
 // ───────── B: 찍어서 핑 ─────────
 async function runPinger(channel) {
   $('pingerView').hidden = false;
+  $('video').hidden = $('signal').value !== 'qr'; // 탭 모드는 카메라를 쓰지 않는다
   $('again').hidden = true;
   $('pingStat').className = 'big';
   $('pingStat').textContent = $('signal').value === 'qr' ? 'A의 초대 QR을 비춰 주세요' : 'A 탭의 초대 코드를 기다리는 중';
