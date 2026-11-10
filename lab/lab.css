@@ -1,0 +1,36 @@
+/* 실기기 기술 테스트 페이지 공통 (docs/FRIENDS.md §7). 제품 화면이 아니라 측정용이다 */
+:root {
+  color-scheme: light dark;
+  --bg: #fafaf7; --fg: #1d1d1b; --muted: #6b6b66; --line: #d9d8d0; --card: #fff;
+  --accent: #1f6feb; --ok: #1a7f37; --bad: #c62828;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111; --fg: #eee; --muted: #9a9a94; --line: #333; --card: #1b1b1b; --accent: #4f9cff; --ok: #3ccf7a; --bad: #ff6464; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); }
+main { max-width: 720px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.4rem; margin: 8px 0; }
+h1 small, h2 small { font-size: .6em; color: var(--muted); font-weight: normal; }
+h2 { font-size: 1.05rem; margin-top: 24px; }
+p, li { line-height: 1.55; }
+.hint, .env { color: var(--muted); font-size: .9rem; }
+button, select, input { font: inherit; }
+button { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); min-height: 44px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0; }
+fieldset label { display: inline-block; margin-right: 16px; padding: 6px 0; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.grid label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
+.grid .wide { grid-column: 1 / -1; }
+.grid select, .grid input { padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--fg); min-height: 40px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.square { width: min(100%, 50vh); aspect-ratio: 1; display: block; margin: 8px auto; border-radius: 8px; background: #fff; object-fit: cover; }
+video.square { background: #000; }
+.cap { text-align: center; font-size: .85rem; color: var(--muted); }
+.big { font-size: 1.3rem; text-align: center; margin: 12px 0; font-weight: 600; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+pre { white-space: pre-wrap; word-break: break-all; font-size: .75rem; background: var(--card); border: 1px solid var(--line); padding: 8px; border-radius: 6px; max-height: 40vh; overflow: auto; }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }

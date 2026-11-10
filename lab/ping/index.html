@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <!-- zxing 디코더 워커가 wasm을 쓴다 (BarcodeDetector가 없는 브라우저) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:">
+  <title>BeBeam 실험실 · 핑</title>
+  <link rel="stylesheet" href="../lab.css">
+</head>
+<body>
+  <main>
+    <h1>핑 측정 <small>T2 · T7 · T8 · <span id="ver"></span></small></h1>
+    <p class="hint">A가 초대 QR을 띄우고 B가 찍습니다. B는 <strong>답을 보내지 않고</strong> 확인 패킷(핑)만 보내, A가 응답하는지 봅니다.
+      응답이 오면 같은 내부망에서 서로 닿는다는 뜻입니다. (docs/FRIENDS.md §5.3)</p>
+
+    <section id="setup">
+      <fieldset>
+        <legend>역할</legend>
+        <label><input type="radio" name="role" value="host" checked> A · 초대 띄우기</label>
+        <label><input type="radio" name="role" value="pinger"> B · 찍어서 핑</label>
+      </fieldset>
+      <div class="grid">
+        <label>코드 전달
+          <select id="signal">
+            <option value="qr" selected>QR (카메라)</option>
+            <option value="tabs">같은 브라우저 탭 (PC 확인용)</option>
+          </select>
+        </label>
+        <label>A 후보 수집
+          <select id="camera">
+            <option value="off" selected>카메라 끄고 (주소가 mDNS로 숨겨질 수 있음)</option>
+            <option value="on">카메라 켜고 (실제 내부 IP)</option>
+          </select>
+        </label>
+        <label class="wide">메모 (기기·브라우저·망)
+          <input id="memo" maxlength="200" placeholder="예: iPad 9 Safari 홈 화면, 학교 학생 Wi-Fi">
+        </label>
+      </div>
+      <div class="row"><button id="start" class="primary">시작</button></div>
+    </section>
+
+    <section id="hostView" hidden>
+      <canvas id="qr" class="square"></canvas>
+      <p class="cap" id="qrCap"></p>
+      <p class="big" id="hostStat">핑을 기다리는 중</p>
+      <p class="cap" id="hostDetail"></p>
+    </section>
+
+    <section id="pingerView" hidden>
+      <video id="video" class="square" muted playsinline></video>
+      <p class="big" id="pingStat">A의 초대 QR을 비춰 주세요</p>
+      <p class="cap" id="pingDetail"></p>
+      <div class="row"><button id="again" hidden>다시 찍기</button></div>
+    </section>
+
+    <h2>기록 <small><span id="count">0</span>건 · 이 기기에만 저장</small></h2>
+    <div class="row">
+      <button id="copy">JSON 복사</button>
+      <button id="clear">기록 지우기</button>
+    </div>
+    <pre id="log"></pre>
+    <p class="env" id="env"></p>
+  </main>
+  <script type="module" src="ping.js"></script>
+</body>
+</html>
