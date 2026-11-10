@@ -34,3 +34,5 @@ video.square { background: #000; }
 .ok { color: var(--ok); } .bad { color: var(--bad); }
 pre { white-space: pre-wrap; word-break: break-all; font-size: .75rem; background: var(--card); border: 1px solid var(--line); padding: 8px; border-radius: 6px; max-height: 40vh; overflow: auto; }
 @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+.switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.switch input { width: 22px; height: 22px; }

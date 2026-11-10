@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:">
+  <title>BeBeam 실험실 · 연결 유지</title>
+  <link rel="stylesheet" href="../lab.css">
+</head>
+<body>
+  <main>
+    <h1>연결 유지 <small>T5 · <span id="ver"></span></small></h1>
+    <p class="hint">두 번 훑기로 연결한 뒤(A 초대 → B가 찍기 → B 답 → A가 찍기), 1초마다 신호를 주고받아 연결이 얼마나 유지되는지,
+      무엇 때문에 끊기는지 기록합니다. 기록은 이 기기에 남아 내일 다시 열어도 볼 수 있습니다. (docs/FRIENDS.md §7)</p>
+
+    <section id="setup">
+      <fieldset>
+        <legend>역할</legend>
+        <label><input type="radio" name="role" value="a" checked> A · 초대 띄우기</label>
+        <label><input type="radio" name="role" value="b"> B · 초대 찍기</label>
+      </fieldset>
+      <div class="grid">
+        <label>코드 전달
+          <select id="signal">
+            <option value="qr" selected>QR (카메라)</option>
+            <option value="tabs">같은 브라우저 탭 (PC 확인용)</option>
+          </select>
+        </label>
+        <label>메모 (기기·브라우저·망)
+          <input id="memo" maxlength="200" placeholder="예: iPad 9 Safari 홈 화면, 집 Wi-Fi">
+        </label>
+      </div>
+      <div class="row"><button id="start" class="primary">시작</button></div>
+    </section>
+
+    <section id="pair" hidden>
+      <canvas id="qr" class="square" hidden></canvas>
+      <video id="video" class="square" muted playsinline hidden></video>
+      <p class="big" id="pairStat"></p>
+    </section>
+
+    <section id="live" hidden>
+      <p class="big" id="liveStat"></p>
+      <p class="cap" id="liveDetail"></p>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="wake"> 화면 꺼짐 방지</label>
+      </div>
+    </section>
+
+    <h2>기록 <small><span id="count">0</span>건 · 이 기기에만 저장</small></h2>
+    <div class="row">
+      <button id="copy">JSON 복사</button>
+      <button id="clear">기록 지우기</button>
+    </div>
+    <pre id="log"></pre>
+    <p class="env" id="env"></p>
+  </main>
+  <script type="module" src="link.js"></script>
+</body>
+</html>
