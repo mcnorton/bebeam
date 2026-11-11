@@ -1,0 +1,304 @@
+/* 랜딩 머리의 5장면 쇼 (docs/SITES.md "쇼"). 실제 비빔 화면을 단순화한 모형.
+   - assets/show.js가 .is-live를 붙이면 한 장면씩 돌아가며(.is-on) 움직인다.
+   - JS가 없거나 동작 줄이기면 .is-live가 없어 모든 장면이 위아래로 정지 그림(마지막 모습)으로 보인다.
+   - 움직임은 .is-live .is-on 안에서만 붙으므로, 기본 스타일 = 정지 그림 = 마지막 모습이다. */
+.hero { box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 16px 24px; text-align: center; }
+.hero > :not(.show) { max-width: 760px; margin-left: auto; margin-right: auto; }
+.show { max-width: 760px; }
+.show { margin: 0 auto; }
+.stage { display: grid; gap: 12px; }
+.scene { position: relative; box-sizing: border-box; aspect-ratio: 16 / 10; margin: 0; padding: 4% 4% 0; overflow: hidden;
+         display: flex; flex-direction: column; border: 2px solid color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 16px;
+         background: color-mix(in srgb, var(--accent) 5%, var(--bg)); font-size: clamp(9px, 1.9vw, 14px); line-height: 1.35; text-align: left; }
+.scene-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 4%; }
+.scene .caption { margin: 0; padding: .7em 0 .9em; text-align: center; font-size: 1.25em; font-weight: 700; word-break: keep-all; }
+/* "나만의" 강조 (2026-11-11) */
+.caption .mine { font-style: normal; color: var(--g); }
+.show { --g: #15803d; --g-line: #16a34a; }
+@media (prefers-color-scheme: dark) { .show { --g: #4ade80; --g-line: #22c55e; } }
+/* 장면 제목: 크고 눈에 띄는 초록 + 픽셀아트 번호 배지 (2026-11-11) */
+.scene-no { position: absolute; left: 3%; top: 2.5%; z-index: 1; display: flex; align-items: center; gap: .35em; margin: 0;
+            color: var(--g); font-size: 1.55em; font-weight: 700; line-height: 1.1; }
+.scene-no .num { width: 1.35em; height: 1.35em; image-rendering: pixelated; }
+.scene { padding-top: 11%; }
+
+/* 공통 모형 */
+.pc { width: 46%; aspect-ratio: 4 / 3; border: .25em solid var(--fg); border-radius: .7em; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+.pc-bar { display: flex; gap: .3em; padding: .35em .5em; border-bottom: .15em solid color-mix(in srgb, var(--muted) 40%, transparent); }
+.pc-bar i { width: .55em; height: .55em; border-radius: 50%; background: color-mix(in srgb, var(--muted) 60%, transparent); }
+.phone { box-sizing: border-box; width: 25%; aspect-ratio: 9 / 16; padding: .5em .45em; border: .25em solid var(--fg); border-radius: 1.2em;
+         background: var(--bg); display: flex; flex-direction: column; gap: .35em; overflow: hidden; position: relative; }
+.phone-title { margin: 0; font-size: .85em; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn { display: block; margin: 0; padding: .3em .2em; border-radius: .45em; border: .12em solid var(--fg); text-align: center; font-size: .8em; white-space: nowrap; overflow: hidden; }
+.btn-fill { background: var(--fg); color: var(--bg); }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.phone .hint { margin: 0; color: var(--muted); font-size: .7em; text-align: center; word-break: keep-all; }
+
+/* ① 문제 */
+.pc-bar { align-items: center; }
+.pc-title { margin-left: .5em; color: var(--muted); font-size: .75em; white-space: nowrap; overflow: hidden; }
+.editor { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.15fr 1fr; }
+.code { margin: 0; padding: .5em .6em; overflow: hidden; background: #1e1e2e; color: #cdd6f4; text-align: left;
+        font: .72em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+.c-tag { color: #89b4fa; } .c-kw { color: #cba6f7; }
+.preview { display: flex; flex-direction: column; gap: .25em; padding: .4em; border-left: .15em solid color-mix(in srgb, var(--muted) 40%, transparent); }
+.preview-bar { margin: 0; color: var(--muted); font-size: .7em; }
+.preview .game { flex: 1; aspect-ratio: auto; min-height: 0; }
+.preview-ok { margin: 0; font-size: .75em; font-weight: 700; color: var(--g); text-align: center; }
+.made { display: flex; flex-direction: column; align-items: center; gap: .5em; width: 48%; }
+.made .monitor { width: 100%; }
+/* 기기 표시 (2026-11-11): PC 창은 모니터 틀(테두리·받침대) 안에, 위에 "PC". ②의 폰 위에는 "스마트폰" */
+.dev-label { margin: 0 0 .25em; padding: .05em .7em; border-radius: .4em; background: var(--fg); color: var(--bg); font-size: .8em; font-weight: 700; line-height: 1.5; }
+.monitor { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.bezel { box-sizing: border-box; width: 100%; padding: .4em; border-radius: .7em; background: #3a3a3a; }
+.bezel > .pc { width: 100%; height: auto; border-width: .15em; }
+.stand { position: relative; width: 14%; height: .55em; background: #3a3a3a; }
+.stand::after { content: ""; position: absolute; left: 50%; top: 100%; width: 260%; height: .3em; border-radius: .2em; background: #3a3a3a; transform: translateX(-50%); }
+.screen { display: flex; align-items: center; justify-content: center; gap: .3em; padding: .4em .3em; border-radius: .3em; background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
+.device { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 24%; }
+.device .phone { width: 100%; }
+/* ① 말풍선: 다 만들었고 폰으로 가지고 다니고 싶다 */
+.say { position: relative; margin: 0; padding: .45em .8em; border: .15em solid var(--fg); border-radius: .8em; background: var(--bg); font-size: .9em; font-weight: 700; word-break: keep-all; text-align: center; }
+.say::after { content: ""; position: absolute; left: 50%; bottom: -.5em; width: .7em; height: .7em; background: var(--bg); border-right: .15em solid var(--fg); border-bottom: .15em solid var(--fg); transform: translateX(-50%) rotate(45deg); }
+.worry { position: relative; width: 46%; text-align: center; }
+.worry-q { margin: 0 0 .6em; font-size: 1.5em; font-weight: 700; }
+.walls { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: .5em; font-size: 1.25em; }
+.walls li { display: inline-flex; align-items: center; gap: .3em; padding: .35em .7em; border-radius: .45em; border: .14em dashed color-mix(in srgb, var(--fg) 55%, transparent);
+            background: var(--bg); font-size: .95em; }
+.walls li:nth-child(odd) { transform: rotate(-2deg); } .walls li:nth-child(even) { transform: rotate(1.5deg); }
+.w-ico { font-size: 1.2em; }
+.walls .url { max-width: 100%; font: .75em/1.35 ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; text-align: left; color: var(--muted); }
+/* 머리를 어지럽히는 물음표들 */
+.qm { position: absolute; color: #ef4444; font-weight: 700; line-height: 1; pointer-events: none; }
+.q1 { left: -8%; top: -26%; font-size: 3.4em; transform: rotate(-12deg); }
+.q2 { right: -4%; top: -22%; font-size: 2.6em; transform: rotate(14deg); }
+.q3 { left: 2%; bottom: -26%; font-size: 2.4em; transform: rotate(8deg); }
+.q4 { right: 4%; bottom: -30%; font-size: 3em; transform: rotate(-10deg); }
+.q5 { left: 44%; top: -32%; font-size: 2em; }
+.q6 { right: -10%; top: 36%; font-size: 2.2em; transform: rotate(20deg); }
+
+/* ② 비빔에 담기 */
+.apps { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.apps li { display: flex; align-items: center; gap: .35em; padding: .25em; border-radius: .4em; border: .1em solid color-mix(in srgb, var(--muted) 40%, transparent); font-size: .78em; white-space: nowrap; overflow: hidden; }
+.apps .ico { flex: none; width: 1.6em; height: 1.6em; display: grid; place-items: center; border-radius: .35em; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.phone .add { margin-top: auto; }
+/* BeBeam Player: 초록 테두리 + 제목 막대 (어디서 실행되는지 보이게) */
+.player-frame { border-color: var(--g-line); padding-top: 0; }
+.player-bar { flex: none; margin: 0 -.45em .1em; padding: .25em .4em; background: var(--g-line); color: #052e16; font-size: .78em; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ② PC의 앱을 폰의 비빔에 담는다 (2026-11-11): PC 폴더 → 📦 → 폰 BeBeam Player 목록에 새 앱 → 폰에서 실행 */
+/* ② 현실 흐름 (2026-11-11): PC 앱 창 →(＋ 나의 앱 추가)→ PC의 BeBeam 창 →(QR·앱 보내기, 강조)→ 폰 BeBeam(위 실행 / 아래 목록) */
+.pc-mon { width: 58%; }
+.screen .dev-win { width: 30%; height: auto; aspect-ratio: 3 / 3.4; }
+.screen .bb-win { width: 46%; height: auto; aspect-ratio: 3 / 3.4; border-color: var(--g-line); padding: 0 .45em .45em; gap: .3em; }
+.step-arrow { margin: 0; display: flex; flex-direction: column; align-items: center; color: var(--g); font-weight: 700; }
+.step-arrow span { font-size: 1.8em; line-height: 1; }
+.step-arrow small { font-size: .7em; white-space: nowrap; }
+.send { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: .3em; padding: .35em; border-radius: .5em;
+        background: color-mix(in srgb, var(--g-line) 18%, transparent); box-shadow: 0 0 0 .15em var(--g-line); }
+.send .qr { width: 55%; }
+.send-btn { padding: .2em .6em; border-radius: .4em; background: var(--g-line); color: #052e16; font-size: .8em; font-weight: 700; white-space: nowrap; }
+.run-phone .play { display: flex; flex-direction: column; gap: .25em; padding-bottom: .35em; border-bottom: .12em dashed color-mix(in srgb, var(--muted) 50%, transparent); }
+.run-phone .play .game { aspect-ratio: 4 / 3; }
+.goal { margin: 0; padding: .2em; border-radius: .4em; background: var(--g-line); color: #052e16; font-size: .8em; font-weight: 700; text-align: center; }
+.run-phone { box-shadow: 0 0 0 .25em color-mix(in srgb, var(--g-line) 35%, transparent), 0 0 1.2em color-mix(in srgb, var(--g-line) 45%, transparent); }
+@keyframes glow { from { box-shadow: 0 0 0 .15em var(--g-line); } to { box-shadow: 0 0 0 .35em var(--g-line), 0 0 1em var(--g-line); } }
+.files { flex: 1; padding: .5em .6em; text-align: left; }
+.files p { margin: 0 0 .25em; font-size: .85em; white-space: nowrap; }
+.files .file { margin-left: 1em; padding: .05em .35em; display: table; border-radius: .3em; background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.apps .new { border-color: var(--g-line); background: color-mix(in srgb, var(--g-line) 14%, transparent); }
+.run-phone .game { flex: 1; aspect-ratio: auto; }
+.offline { margin: 0; font-size: .8em; font-weight: 700; text-align: center; color: var(--g); }
+
+/* ③ QR로 나눠 주기 */
+.qr { position: relative; width: 100%; aspect-ratio: 1; border-radius: .3em; overflow: hidden; background: #fff; }
+.qr img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.beam { margin: 0; font-size: 1.6em; color: var(--accent); letter-spacing: -.2em; }
+.receivers { display: flex; gap: 3%; width: 58%; justify-content: center; }
+.receivers .phone { width: 32%; }
+.cam { width: 100%; aspect-ratio: 1; border-radius: .3em; background: #1d1d1b; position: relative; }
+.cam::before, .cam::after { content: ""; position: absolute; inset: 18%; border: .12em solid #7fd3ff; border-radius: .2em; }
+.cam::after { inset: 30%; border-color: transparent; background: repeating-linear-gradient(90deg, #555 0 2px, transparent 2px 5px); opacity: .6; }
+.bar { height: .55em; border-radius: .3em; background: color-mix(in srgb, var(--muted) 30%, transparent); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: var(--accent); }
+.recv-name { margin: 0; font-size: .7em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.done { margin: 0; font-size: .75em; font-weight: 700; color: var(--accent); text-align: center; }
+.brand { position: absolute; inset: 0; display: none; place-items: center; text-align: center; background: color-mix(in srgb, var(--bg) 92%, transparent); }
+.brand p { margin: 0; font-size: 1.5em; font-weight: 700; word-break: keep-all; }
+.brand small { display: block; margin-top: .3em; font-size: .7em; color: var(--muted); font-weight: 400; }
+
+/* ④ 함께 즐기기: ③과 같은 자리에 왼쪽은 나(보내던 폰), 오른쪽은 친구들. 모두 같은 게임을 한다 */
+.phone.me .phone-title { color: var(--accent); }
+.scene-4 .phone { aspect-ratio: 9 / 13; }
+.game { position: relative; aspect-ratio: 1; border-radius: .4em; background: #10301a; overflow: hidden; }
+.game .snake, .game .apple { position: absolute; top: 36%; font-size: 1.9em; line-height: 1; }
+.game .snake { left: 35%; }
+.game .apple { right: 12%; }
+.score { margin: 0; font-size: 1em; font-weight: 700; text-align: center; }
+
+/* ⑤ 무엇이든 */
+.uses { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3%; width: 94%; font-size: 1.2em; }
+.uses > li { display: flex; flex-direction: column; align-items: center; gap: .3em; padding: 0 .6em .8em; aspect-ratio: 9 / 13; border: .2em solid var(--fg); border-radius: .9em; background: var(--bg); text-align: center; word-break: keep-all; }
+.use-vis { width: 100%; height: 5.6em; margin: auto 0 .2em; }
+/* ⑤ 사례도 비빔에서 돌아가는 화면: 세로로 긴 BeBeam Player 창 (2026-11-11) */
+.uses > li.player-frame { border-color: var(--g-line); overflow: hidden; }
+.uses .player-bar { align-self: stretch; margin: 0 -.6em .3em; }
+.uses > li b { margin-top: auto; }
+.uses > li small { margin-bottom: .2em; }
+.orbit .axis { fill: none; stroke: var(--muted); stroke-width: .8; }
+.orbit .path { fill: none; stroke: var(--g-line); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.orbit .planet { fill: #3b82f6; }
+.orbit .ship { fill: #f97316; }
+.orbit text { fill: var(--muted); font-size: 6px; }
+.ox { display: flex; flex-direction: column; justify-content: center; gap: .3em; }
+.ox-q { margin: 0; font-size: .72em; line-height: 1.3; }
+.ox-btns { margin: 0; display: flex; gap: .4em; justify-content: center; }
+.ox-btns span { width: 2.3em; height: 2.3em; display: grid; place-items: center; border-radius: .3em; font-size: 1.1em; font-weight: 700; color: #fff; }
+.ox-btns .o { background: #16a34a; } .ox-btns .x { background: #dc2626; }
+.plan { display: grid; grid-template-columns: 1fr 1fr; gap: .3em; align-items: center; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal i { aspect-ratio: 1; border-radius: 1px; background: color-mix(in srgb, var(--muted) 30%, transparent); }
+.cal .on { background: var(--g-line); } .cal .today { background: var(--accent); }
+.todo { margin: 0; padding: 0; list-style: none; text-align: left; font-size: .55em; line-height: 1.6; white-space: nowrap; }
+.talk { display: flex; flex-direction: column; justify-content: center; gap: .15em; }
+.wave { width: 100%; height: 2em; }
+.wave.alien rect { fill: var(--g-line); } .wave.me rect { fill: var(--accent); }
+.talk-mid { margin: 0; font-size: .7em; color: var(--muted); }
+.uses b { font-size: .9em; }
+.uses small { color: var(--muted); font-size: .75em; }
+
+/* 컨트롤: 움직일 때만 */
+.show-controls { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+.dot { width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.dot::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--fg); }
+.dot[aria-current="true"]::before { background: var(--fg); }
+.dot:focus-visible, .pause:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.pause { min-height: 44px; padding: 0 14px; border: 2px solid color-mix(in srgb, var(--fg) 40%, transparent); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; cursor: pointer; }
+
+/* 넓은 화면(데스크톱): 쇼를 넓게 1:2 비율로 (2026-11-11). 모형은 높이에 맞춘다 */
+@media (min-width: 900px) {
+  .hero .show { max-width: 1120px; }
+  .scene { aspect-ratio: 2 / 1; padding: 6.5% 3% 0; font-size: clamp(13px, 1.4vw, 19px); }
+  .scene-no { left: 2%; top: 3%; }
+  .scene-body { gap: 3%; }
+  .pc { width: auto; height: 86%; }
+  .worry { width: 44%; }
+  .made { width: 34%; }
+  .q3 { bottom: -14%; } .q4 { bottom: -16%; }
+  .phone { width: auto; height: 92%; }
+  .pc-mon { width: 54%; }
+  .scene-2 .device { width: 10em; }
+  .scene-2 .device .phone { height: auto; }
+  .receivers { width: auto; height: 80%; gap: 1.2em; }
+  .receivers .phone { width: auto; height: 100%; }
+  .scene-4 .phone { flex-shrink: 0; }
+  .scene-4 .phone.me { height: 78%; }
+  .scene-4 .friends { height: 72%; }
+  .uses { width: 84%; }
+  .uses > li { aspect-ratio: 9 / 15; }
+  .use-vis { height: 7.5em; }
+  .todo { font-size: .7em; }
+}
+
+/* 좁은 화면: 장면을 세로로 길게, 안의 배치는 위아래 */
+@media (max-width: 560px) {
+  .scene { aspect-ratio: 2 / 3; font-size: clamp(10px, 3.4vw, 15px); padding-top: 13%; }
+  .qm { font-size: 2.3em !important; }
+  .q1 { left: -2%; top: -10%; } .q2 { right: 0; top: -8%; } .q3 { left: 6%; bottom: -10%; } .q4 { right: 8%; bottom: -10%; } .q6 { right: -4%; }
+  .scene-body { flex-direction: column; gap: 3%; }
+  .pc { width: 86%; }
+  .worry { width: 94%; }
+  .walls { font-size: 1em; gap: .3em; }
+  .worry-q { font-size: 1.25em; margin-bottom: .4em; }
+  .made { width: 70%; flex-shrink: 0; gap: .45em; }
+  .made .monitor { width: 80%; }
+  .dev-label { font-size: .7em; }
+  .say { font-size: .72em; padding: .35em .6em; }
+  .scene-1 .worry { flex-shrink: 0; }
+  .scene-2 .scene-body, .scene-3 .scene-body, .scene-4 .scene-body { flex-direction: row; }
+  .scene-2 .scene-body { flex-wrap: wrap; align-content: center; row-gap: 3%; }
+  .scene-2 .scene-body { column-gap: 2%; }
+  .dev-win .files p { font-size: .68em; }
+  .pc-mon { width: 82%; }
+  .send .qr { width: 40%; }
+  .send { gap: .2em; padding: .25em; }
+  .screen .dev-win { width: 30%; }
+  .add-arrow { width: 15%; }
+  .screen .bb-win { width: 46%; aspect-ratio: 3 / 4.1; }
+  .beam-arrow { width: 20%; }
+  .scene-2 .device { width: 27%; }
+  .scene-2 .phone { aspect-ratio: 9 / 17; }
+  .step-arrow small { font-size: .55em; white-space: normal; text-align: center; word-break: keep-all; }
+  .run-phone .offline, .run-phone .goal { font-size: .62em; white-space: nowrap; }
+  .scene-3 .scene-body > .phone, .scene-4 .scene-body > .phone { width: 34%; }
+  .receivers { width: 52%; }
+  .receivers .phone { width: 48%; }
+  .receivers .phone:nth-child(3) { display: none; }
+  .beam { display: none; }
+  .game { --slither-end: 34%; }
+  .game .snake, .game .apple { font-size: 1.35em; }
+  .game .snake { left: 8%; }
+  .game .apple { right: 8%; }
+  .uses { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6em; width: 86%; font-size: 1em; }
+  .uses > li { aspect-ratio: 9 / 12; padding: 0 .5em .6em; }
+  .uses .player-bar { margin: 0 -.5em .2em; }
+}
+
+/* 움직이는 쇼 (assets/show.js) */
+.show.is-live .stage { display: block; position: relative; }
+.show.is-live .scene { position: absolute; inset: 0; visibility: hidden; opacity: 0; transition: opacity .4s; }
+.show.is-live .scene:first-child { position: relative; }
+.show.is-live .scene.is-on { visibility: visible; opacity: 1; }
+.show.is-live .show-controls { display: flex; }
+.show.is-live.is-paused .scene * { animation-play-state: paused !important; }
+.show.is-live .brand { display: grid; opacity: 0; pointer-events: none; }
+@keyframes pop { from { opacity: 0; transform: translateY(.6em) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes drop-in { from { opacity: 0; transform: translateY(-1.2em); } to { opacity: 1; transform: none; } }
+@keyframes press { 0%, 100% { transform: none; } 50% { transform: scale(.92); } }
+@keyframes fill { from { width: 0; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slither { from { left: 4%; } to { left: var(--slither-end, 52%); } }
+.is-live .is-on .a1 { animation: pop .5s .3s both; }
+.is-live .is-on .a2 { animation: pop .5s 1.3s both; }
+.is-live .is-on .a3 { animation: pop .5s 2.4s both; }
+.is-live .is-on .a4 { animation: pop .4s 3.0s both; }
+.is-live .is-on .a5 { animation: pop .4s 3.3s both; }
+.is-live .is-on .a6 { animation: pop .4s 3.6s both; }
+.is-live .is-on .a7 { animation: pop .4s 3.9s both; }
+.is-live .is-on .a8 { animation: pop .4s 4.2s both; }
+.is-live .is-on .cap { animation: fade-in .5s .2s both; }
+.is-live .is-on .qm { animation: pop .3s both; }
+.is-live .is-on .q1 { animation-delay: 4.5s; } .is-live .is-on .q2 { animation-delay: 4.7s; } .is-live .is-on .q3 { animation-delay: 4.9s; }
+.is-live .is-on .q4 { animation-delay: 5.1s; } .is-live .is-on .q5 { animation-delay: 5.3s; } .is-live .is-on .q6 { animation-delay: 5.5s; }
+@keyframes wave { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+.is-live .is-on .wave rect { transform-box: fill-box; transform-origin: center; animation: wave .45s ease-in-out infinite alternate; }
+.is-live .is-on .wave rect:nth-child(3n) { animation-delay: .15s; } .is-live .is-on .wave rect:nth-child(3n+1) { animation-delay: .3s; }
+/* ② ＋ 추가 → PC 비빔 목록에 → QR·앱 보내기 반짝 → 폰 아래 목록에 들어옴 → 위에서 실행 → 폰에서 실행! → 오프라인 */
+.is-live .is-on .add-arrow { animation: pop .4s .4s both; }
+.is-live .is-on .bb-win .apps .new { animation: drop-in .5s 1.0s both; }
+.is-live .is-on .send { animation: pop .4s 1.8s both, glow .5s 2.2s 4 alternate; }
+.is-live .is-on .beam-arrow { animation: pop .4s 2.8s both; }
+.is-live .is-on .run-phone .apps .new { animation: drop-in .5s 3.4s both; }
+.is-live .is-on .run-phone .play .game { animation: pop .45s 4.3s both; }
+.is-live .is-on .goal { animation: pop .5s 4.9s both; }
+.is-live .is-on .offline { animation: pop .5s 5.7s both; }
+/* ③ QR은 가만히 있고(2026-11-11), 받는 막대가 동시에 찬다 */
+.is-live .is-on .receivers .phone:nth-child(1) .bar i { animation: fill 3.2s .6s linear both; }
+.is-live .is-on .receivers .phone:nth-child(2) .bar i { animation: fill 3.8s .8s linear both; }
+.is-live .is-on .receivers .phone:nth-child(3) .bar i { animation: fill 3.5s 1.0s linear both; }
+.is-live .is-on .done { animation: pop .4s 5.0s both; }
+.is-live .is-on .brand { animation: fade-in .5s 10.2s both; } /* 사례 화면을 충분히 본 뒤 (2026-11-11: 3초 더) */
+/* ④ 나와 친구들 폰에서 같은 게임이 각자 움직이고, 얼굴이 뜬다 */
+.is-live .is-on .game .snake { animation: slither 2.2s .4s ease-in-out infinite alternate both; }
+.is-live .is-on .friends .phone:nth-child(1) .snake { animation-duration: 1.7s; }
+.is-live .is-on .friends .phone:nth-child(2) .snake { animation-duration: 2.6s; }
+.is-live .is-on .friends .phone:nth-child(3) .snake { animation-duration: 1.9s; }
+.is-live .is-on .face { display: inline-block; animation: pop .4s 1.2s both; }
+.is-live .is-on .friends .phone:nth-child(2) .face { animation-delay: 1.8s; }
+.is-live .is-on .friends .phone:nth-child(3) .face { animation-delay: 2.4s; }
+/* ⑤ 활용 카드가 차례로 뜨고 이름 카드로 끝 */
+.is-live .is-on .uses > li { animation: pop .45s both; }
+.is-live .is-on .uses > li:nth-child(1) { animation-delay: .3s; }
+.is-live .is-on .uses > li:nth-child(2) { animation-delay: 1.0s; }
+.is-live .is-on .uses > li:nth-child(3) { animation-delay: 1.7s; }
+.is-live .is-on .uses > li:nth-child(4) { animation-delay: 2.4s; }

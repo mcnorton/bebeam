@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>비빔 BeBeam - Beam으로 전송하는 Webapp Launcher</title>
-  <meta name="description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처. AI용 앱 제작 규칙: https://www.bebeam.net/README.md">
+  <title>비빔 BeBeam - Beam으로 전송하는 Web App Player</title>
+  <meta name="description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 플레이어. AI용 앱 제작 규칙: https://www.bebeam.net/README.md">
   <link rel="canonical" href="https://www.bebeam.net/">
   <!-- AI 도구가 랜딩만 받아도 앱 제작 규칙을 찾게 한다 (TASK T6.1) -->
   <link rel="alternate" type="text/markdown" href="https://www.bebeam.net/README.md" title="BeBeam 앱 제작 규칙 (AI용)">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="비빔 BeBeam">
-  <meta property="og:title" content="비빔 BeBeam - Beam으로 전송하는 Webapp Launcher">
-  <meta property="og:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처">
+  <meta property="og:title" content="비빔 BeBeam - Beam으로 전송하는 Web App Player">
+  <meta property="og:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 플레이어">
   <meta property="og:url" content="https://www.bebeam.net/">
   <meta property="og:locale" content="ko_KR">
   <meta property="og:image" content="https://www.bebeam.net/assets/og.png">
@@ -21,10 +21,11 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:alt" content="비빔 BeBeam 앱 아이콘">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="비빔 BeBeam - Beam으로 전송하는 Webapp Launcher">
-  <meta name="twitter:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처">
+  <meta name="twitter:title" content="비빔 BeBeam - Beam으로 전송하는 Web App Player">
+  <meta name="twitter:description" content="내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 플레이어">
   <meta name="twitter:image" content="https://www.bebeam.net/assets/og.png">
   <meta name="twitter:image:alt" content="비빔 BeBeam 앱 아이콘">
+  <link rel="stylesheet" href="assets/show.css">
   <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="player/icons/favicon.ico" sizes="16x16 32x32 48x48">
@@ -37,7 +38,7 @@
     "name": "비빔 BeBeam",
     "alternateName": ["BeBeam", "비빔"],
     "url": "https://www.bebeam.net/",
-    "description": "내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 런처",
+    "description": "내가 만든 웹앱을 스마트폰에서 비벼요. 와이파이 없이 친구에게 전송하고, 앱스토어 등록 없이 바로 실행하는 웹앱 플레이어",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",
     "browserRequirements": "Requires JavaScript",
@@ -135,6 +136,18 @@
     .points { margin: 0 auto; padding: 0; list-style: none; text-align: left; display: inline-block; }
     .points li { line-height: 1.6; margin: 0 0 6px; padding-left: 1.2em; text-indent: -1.2em; }
     .points li::before { content: "▸ "; color: var(--accent); }
+    /* 쇼 아래: 실행 버튼 + 만들기 링크, 카드 3개 (docs/SITES.md) */
+    .hero-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 20px; margin: 8px 0 8px; }
+    .cta-make { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: var(--accent); font-weight: 700; text-decoration: none; }
+    .cta-make:hover { text-decoration: underline; }
+    .cta-make:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+    .cards-title { margin: 20px 0 12px; font-size: 1.2rem; }
+    .cards { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; text-align: left; }
+    @media (min-width: 640px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .card { padding: 14px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent); }
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card p { margin: 0; font-size: .92rem; line-height: 1.7; word-break: keep-all; }
+    .card .tags { justify-content: flex-start; margin-top: 10px; }
     .tags { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
     .tags li { padding: 2px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--muted); font-size: .9rem; }
     .scope { margin-top: 12px; color: var(--muted); font-size: .9rem; }
@@ -166,23 +179,227 @@
   <header class="site-header">
     <img class="logo" src="player/icons/icon-192.png" alt="">
     <h1>비빔 BeBeam</h1>
-    <p class="tagline">Beam으로 전송하는 Webapp Launcher</p>
+    <p class="tagline">Beam으로 전송하는 Web App Player</p>
     <ul class="points">
       <li>내가 만든 웹앱을 스마트폰에서 비벼요.</li>
       <li>와이파이 없이 친구에게 전송하고 함께 비벼요.</li>
-      <li>서버에 올리고, 앱스토어 등록 없이 바로 비벼요.</li>
+      <li>서버 없이, 앱스토어 없이 바로 비벼요.</li>
       <li>한 번에 여러 명에게 비빔을 쏘고 비벼요.</li>
-    </ul>
-    <ul class="tags" aria-label="이런 앱을 비벼요">
-      <li>#스낵게임</li>
-      <li>#작업시뮬레이터</li>
-      <li>#업무용데이터베이스</li>
-      <li>#습관관리</li>
-      <li>#용돈기입장</li>
-      <li>#수업시간표</li>
     </ul>
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
   </header>
+  <!-- 한눈에 보는 5장면 쇼 (docs/SITES.md "쇼"): 실제 비빔 화면을 단순화한 모형. assets/show.js가 돌린다.
+       JS가 없거나 동작 줄이기면 세 장면이 위아래로 정지 그림(마지막 모습)으로 보인다. 자막은 화면 글자다 -->
+  <section class="hero" aria-label="비빔 한눈에 보기">
+    <div class="show" id="show">
+      <div class="stage">
+        <figure class="scene scene-1">
+          <h3 class="scene-no"><img class="num" src="assets/show/num-1.svg" alt="1단계"> 폰에서 어떻게 실행하지?</h3>
+          <div class="scene-body" aria-hidden="true">
+            <div class="made">
+            <p class="say a2">드디어 PC에서 다 만들었다! 스마트폰으로 가지고 다니고 싶어.</p>
+            <div class="monitor a1">
+              <p class="dev-label">PC</p>
+              <div class="bezel">
+            <div class="pc">
+              <div class="pc-bar"><i></i><i></i><i></i><span class="pc-title">내 게임 — index.html</span></div>
+              <div class="editor">
+                <pre class="code"><span class="c-tag">&lt;canvas</span> id="game"<span class="c-tag">&gt;</span>
+<span class="c-kw">function</span> loop() {
+  move(snake);
+  <span class="c-kw">if</span> (eat(apple))
+    score++;
+  draw();
+}</pre>
+                <div class="preview">
+                  <p class="preview-bar">▶ 실행 결과</p>
+                  <div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div>
+                  <p class="preview-ok">잘 돌아가요!</p>
+                </div>
+              </div>
+            </div>
+              </div>
+              <span class="stand"></span>
+            </div>
+            </div>
+            <div class="worry">
+              <p class="worry-q a3">스마트폰에서 실행하려면…?</p>
+              <ul class="walls">
+                <li class="a4"><span class="w-ico">☁️</span>서버 올리기?</li>
+                <li class="a5 url">https://my-snake-x7k2.cloud-host.app/u/48291/index.html?v=3&amp;share=a8f…</li>
+                <li class="a6"><span class="w-ico">🏪</span>앱스토어 심사?</li>
+                <li class="a7"><span class="w-ico">🪪</span>개발자 등록?</li>
+                <li class="a8"><span class="w-ico">📶</span>인터넷 연결이 끊어지면?</li>
+              </ul>
+              <span class="qm q1">?</span><span class="qm q2">?</span><span class="qm q3">?</span><span class="qm q4">?</span><span class="qm q5">?</span><span class="qm q6">?</span>
+            </div>
+          </div>
+          <figcaption class="caption cap">내가 만든 <em class="mine">나만의 앱</em>, 폰에서 실행하려니 막막하죠?</figcaption>
+        </figure>
+        <figure class="scene scene-2">
+          <h3 class="scene-no"><img class="num" src="assets/show/num-2.svg" alt="2단계"> 비빔에 담기</h3>
+          <div class="scene-body" aria-hidden="true">
+            <div class="monitor pc-mon">
+              <p class="dev-label">PC</p>
+              <div class="bezel"><div class="screen">
+            <div class="pc dev-win">
+              <div class="pc-bar"><i></i><i></i><i></i><span class="pc-title">내 게임</span></div>
+              <div class="files">
+                <p class="folder">📁 내 게임</p>
+                <p class="file">index.html</p>
+                <p class="file">game.js</p>
+                <p class="file">style.css</p>
+              </div>
+            </div>
+            <p class="step-arrow add-arrow"><span>⇢</span><small>＋ 나의 앱 추가</small></p>
+            <div class="pc player-frame bb-win">
+              <p class="player-bar">BeBeam Player</p>
+              <ul class="apps">
+                <li><span class="ico">🧮</span>구구단 퀴즈</li>
+                <li class="new"><span class="ico">🐍</span>스네이크</li>
+              </ul>
+              <div class="send"><span class="qr"><img src="assets/show/qr.svg" alt=""></span><span class="send-btn">📤 앱 보내기</span></div>
+            </div>
+              </div></div>
+              <span class="stand"></span>
+            </div>
+            <p class="step-arrow beam-arrow"><span>⇢</span><small>QR로 폰에</small></p>
+            <div class="device">
+              <p class="dev-label">스마트폰</p>
+            <div class="phone player-frame run-phone">
+              <p class="player-bar">BeBeam Player</p>
+              <div class="play">
+                <div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div>
+                <p class="goal">✅ 폰에서 실행!</p>
+              </div>
+              <ul class="apps">
+                <li><span class="ico">🧮</span>구구단 퀴즈</li>
+                <li class="new"><span class="ico">🐍</span>스네이크</li>
+              </ul>
+              <p class="offline">✈️ 오프라인에서도</p>
+            </div>
+            </div>
+          </div>
+          <figcaption class="caption cap">PC에서 만든 앱을 폰의 비빔에 담아요. 설치한 다음에는 오프라인에서도</figcaption>
+        </figure>
+        <figure class="scene scene-3">
+          <h3 class="scene-no"><img class="num" src="assets/show/num-3.svg" alt="3단계"> 네트워크 연결 없이 QR로 전송</h3>
+          <div class="scene-body" aria-hidden="true">
+            <div class="phone player-frame">
+              <p class="player-bar">BeBeam Player</p>
+              <p class="phone-title">‘스네이크’ 보내는 중</p>
+              <div class="qr"><img src="assets/show/qr.svg" alt=""></div>
+              <p class="btn">전송 끝</p>
+              <p class="hint">여러 명이 함께 받을 수 있어요</p>
+            </div>
+            <p class="beam">⇢⇢</p>
+            <div class="receivers">
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><div class="cam"></div><p class="recv-name">📥 ‘스네이크’</p><div class="bar"><i></i></div><p class="done">✅ 설치 완료</p></div>
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><div class="cam"></div><p class="recv-name">📥 ‘스네이크’</p><div class="bar"><i></i></div><p class="done">✅ 설치 완료</p></div>
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><div class="cam"></div><p class="recv-name">📥 ‘스네이크’</p><div class="bar"><i></i></div><p class="done">✅ 설치 완료</p></div>
+            </div>
+          </div>
+          <figcaption class="caption cap">비빔을 설치한 친구들에게 보내기? QR을 비추면 끝. Beam~</figcaption>
+        </figure>
+        <figure class="scene scene-4">
+          <h3 class="scene-no"><img class="num" src="assets/show/num-4.svg" alt="4단계"> 함께 즐기기</h3>
+          <div class="scene-body" aria-hidden="true">
+            <div class="phone player-frame me">
+              <p class="player-bar">BeBeam Player</p>
+              <p class="phone-title">나 <span class="face">😄</span></p>
+              <div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div>
+              <p class="score">점수 12</p>
+            </div>
+            <p class="beam">＆</p>
+            <div class="receivers friends">
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><p class="phone-title">민준 <span class="face">😆</span></p><div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div><p class="score">점수 9</p></div>
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><p class="phone-title">서연 <span class="face">😮</span></p><div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div><p class="score">점수 15</p></div>
+              <div class="phone player-frame"><p class="player-bar">BeBeam Player</p><p class="phone-title">지호 <span class="face">🤩</span></p><div class="game"><span class="snake">🐍</span><span class="apple">🍎</span></div><p class="score">점수 7</p></div>
+            </div>
+          </div>
+          <figcaption class="caption cap">내가 만든 앱, 이제 친구도 함께 즐겨요</figcaption>
+        </figure>
+        <figure class="scene scene-5">
+          <h3 class="scene-no"><img class="num" src="assets/show/num-5.svg" alt="5단계"> 무엇이든 만들었다면, 비빔에서 비벼요</h3>
+          <div class="scene-body" aria-hidden="true">
+            <ul class="uses">
+              <li class="player-frame">
+                <p class="player-bar">BeBeam Player</p>
+                <svg class="use-vis orbit" viewBox="0 0 100 64" aria-hidden="true">
+                  <path class="axis" d="M6 58 H96 M6 58 V4"/>
+                  <ellipse class="path" cx="52" cy="32" rx="38" ry="20"/>
+                  <circle class="planet" cx="52" cy="32" r="9"/>
+                  <circle class="ship" cx="90" cy="32" r="3"/>
+                  <text x="9" y="10">고도 km</text>
+                </svg>
+                <b>로켓 궤도 계산</b><small>업무용 시뮬레이터</small>
+              </li>
+              <li class="player-frame">
+                <p class="player-bar">BeBeam Player</p>
+                <div class="use-vis ox"><p class="ox-q">Q3. 물은 100℃에서 끓는다</p><p class="ox-btns"><span class="o">O</span><span class="x">X</span></p></div>
+                <b>수업 퀴즈</b><small>학생용 수업 자료</small>
+              </li>
+              <li class="player-frame">
+                <p class="player-bar">BeBeam Player</p>
+                <div class="use-vis plan">
+                  <div class="cal"><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i class="today"></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i></div>
+                  <ul class="todo"><li>☑ 요가 07:00</li><li>☐ 헬스 19:00</li></ul>
+                </div>
+                <b>헬스·요가 기록</b><small>나만의 일정 관리</small>
+              </li>
+              <li class="player-frame">
+                <p class="player-bar">BeBeam Player</p>
+                <div class="use-vis talk">
+                  <svg class="wave alien" viewBox="0 0 64 16" aria-hidden="true"><rect x="2" y="6" width="3" height="4"/><rect x="7" y="3" width="3" height="10"/><rect x="12" y="1" width="3" height="14"/><rect x="17" y="5" width="3" height="6"/><rect x="22" y="2" width="3" height="12"/><rect x="27" y="6" width="3" height="4"/><rect x="32" y="0" width="3" height="16"/><rect x="37" y="4" width="3" height="8"/><rect x="42" y="2" width="3" height="12"/><rect x="47" y="6" width="3" height="4"/><rect x="52" y="3" width="3" height="10"/><rect x="57" y="6" width="3" height="4"/></svg>
+                  <p class="talk-mid">👽 ⇅ 번역 ⇅ 나</p>
+                  <svg class="wave me" viewBox="0 0 64 16" aria-hidden="true"><rect x="2" y="7" width="3" height="2"/><rect x="7" y="5" width="3" height="6"/><rect x="12" y="3" width="3" height="10"/><rect x="17" y="6" width="3" height="4"/><rect x="22" y="4" width="3" height="8"/><rect x="27" y="2" width="3" height="12"/><rect x="32" y="5" width="3" height="6"/><rect x="37" y="7" width="3" height="2"/><rect x="42" y="4" width="3" height="8"/><rect x="47" y="6" width="3" height="4"/><rect x="52" y="5" width="3" height="6"/><rect x="57" y="7" width="3" height="2"/></svg>
+                </div>
+                <b>외계인과 대화</b>
+              </li>
+            </ul>
+          </div>
+          <figcaption class="caption cap">일·공부·생활·재미, 상상하는 <em class="mine">나만의 웹앱</em>이면 무엇이든</figcaption>
+          <div class="brand" aria-hidden="true"><p>비빔 BeBeam<small>Beam으로 전송하는 Web App Player</small></p></div>
+        </figure>
+      </div>
+      <div class="show-controls">
+        <button class="dot" type="button" aria-label="장면 1: 폰에서 어떻게 실행하지?"></button>
+        <button class="dot" type="button" aria-label="장면 2: 비빔에 담기"></button>
+        <button class="dot" type="button" aria-label="장면 3: 네트워크 연결 없이 QR로 전송"></button>
+        <button class="dot" type="button" aria-label="장면 4: 함께 즐기기"></button>
+        <button class="dot" type="button" aria-label="장면 5: 무엇이든 만들었다면, 비빔에서 비벼요"></button>
+        <button class="pause" type="button" aria-pressed="false">⏸ 멈춤</button>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a class="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
+      <a class="cta-make" href="#step1-label">AI로 앱 만들기 →</a>
+    </div>
+
+    <h2 class="cards-title">무엇이든 비빔에 담아요</h2>
+    <ul class="cards">
+      <li class="card">
+        <h3><span aria-hidden="true">🛡️</span> 안전하게</h3>
+        <p>앱마다 따로 떨어진 샌드박스에서 실행해요. 앱끼리 데이터가 섞이지 않고, 앱이 밖으로 데이터를 보내지 못해요.</p>
+      </li>
+      <li class="card">
+        <h3><span aria-hidden="true">⬇️</span> 간편 설치</h3>
+        <p>PC·Android는 <span class="chip">설치</span> 버튼 하나. iPhone·iPad·Mac은 <span class="chip">홈 화면(Dock)에 추가</span>하면 끝.</p>
+      </li>
+      <li class="card">
+        <h3><span aria-hidden="true">✨</span> 무엇이든</h3>
+        <ul class="tags" aria-label="이런 앱을 비벼요">
+          <li>#스낵게임</li>
+          <li>#작업시뮬레이터</li>
+          <li>#업무용데이터베이스</li>
+          <li>#습관관리</li>
+          <li>#용돈기입장</li>
+          <li>#수업시간표</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
   <main>
     <!-- 요리 순서도 (docs/SITES.md): 요리사 비비가 말풍선으로 안내하고, 블록을 연결선으로 잇는다.
          Ⅰ 재료 손질은 갈림길(A 확인·다듬기 / B 새로 만들기 / C 맛보기). 고른 길만 펼친다(landing.js). JS가 없으면 셋 다 보인다 -->
@@ -304,10 +521,11 @@
   </main>
   <footer class="site-footer">
     <p>비빔 <a href="https://www.bebeam.net/">BeBeam.net</a><span class="site-version" id="site-version-wrap" hidden> (<span id="site-version"></span>)</span></p>
-    <p>바이브코딩 웹앱 런처</p>
+    <p>바이브코딩 웹앱 플레이어</p>
     <p>McNorton&amp;Education</p>
     <p>Copyright 2026- by mcnorton</p>
   </footer>
   <script src="assets/landing.js"></script>
+  <script src="assets/show.js"></script>
 </body>
 </html>
