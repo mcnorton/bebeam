@@ -165,5 +165,7 @@
 /* 멈춤 지점에서 잠깐 잠근다(관성 끊기). 스크롤 막대가 사라져 화면이 밀리지 않게 자리를 둔다 */
 html.reveal-mode { scrollbar-gutter: stable; }
 html.reveal-mode.reveal-hold { overflow: hidden; }
+/* 터치로 멈출 때는 body를 그 자리에 고정해 관성 스크롤을 끊는다(되돌리기 싸움으로 떨지 않게). top은 reveal.js가 넣는다 */
+html.reveal-pin body { position: fixed; left: 0; right: 0; }
 /* 펼치기 전에는 안의 움직임을 멈춰 두었다가 펼칠 때 재생 */
 .reveal-mode .rv:not(.is-on) * { animation-play-state: paused !important; }

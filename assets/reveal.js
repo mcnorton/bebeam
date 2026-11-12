@@ -20,6 +20,7 @@ if (blocks.length > 1 && 'IntersectionObserver' in window && !matchMedia('(prefe
   let held = 0; // 잠근 시각 (0이면 안 잠김)
   let heldY = 0; // 멈춘 위치
   let touching = false;
+  let touched = false; // 터치로 스크롤하는 기기
   // 문서 위에서부터의 위치. 펼치는 중인 블록의 이동(transform)에 흔들리지 않게 offsetTop으로 잰다
   const topOf = (el) => {
     let y = 0;
@@ -70,6 +71,11 @@ if (blocks.length > 1 && 'IntersectionObserver' in window && !matchMedia('(prefe
   function hold() {
     held = performance.now();
     root.classList.add('reveal-hold');
+    // 터치 관성은 overflow hidden으로 안 끊겨서 되돌리면 떤다 → body를 멈춘 자리에 고정
+    if (touched) {
+      document.body.style.top = `${-heldY}px`;
+      root.classList.add('reveal-pin');
+    }
     setTimeout(tryRelease, HOLD_MS);
   }
 
@@ -84,12 +90,18 @@ if (blocks.length > 1 && 'IntersectionObserver' in window && !matchMedia('(prefe
   function unhold() {
     held = 0;
     root.classList.remove('reveal-hold');
+    if (root.classList.contains('reveal-pin')) {
+      root.classList.remove('reveal-pin');
+      document.body.style.top = '';
+      scrollTo(0, heldY);
+      lastY = heldY;
+    }
   }
 
   // 손가락을 대고 있는 동안은 풀지 않는다(손을 떼면 풀 차례가 온다)
   addEventListener('touchstart', () => {
     if (held && performance.now() - held >= HOLD_MS) unhold(); // 멈춘 뒤 새로 미는 손가락은 바로 내려간다
-    touching = true;
+    touching = touched = true;
   }, { passive: true });
   addEventListener('touchend', () => { touching = false; }, { passive: true });
   addEventListener('touchcancel', () => { touching = false; }, { passive: true });
@@ -97,12 +109,14 @@ if (blocks.length > 1 && 'IntersectionObserver' in window && !matchMedia('(prefe
   // 맨 아래 블록(푸터 등)은 화면 위 80%까지 올라오지 못할 수 있으므로 페이지 끝에 닿으면 모두 펼친다
   function onScroll() {
     // 잠근 동안 손가락으로 끌고 있으면(overflow hidden이어도 이어지는 터치 스크롤) 멈춘 자리에 붙든다. 손을 떼면 관성은 잠금이 끊는다
+    if (root.classList.contains('reveal-pin')) return; // 고정 중에는 scrollY가 0이 되므로 무시
     if (held && Math.abs(scrollY - heldY) > 1) {
       scrollTo(0, heldY);
       lastY = heldY;
       return;
     }
     stopAt();
+    if (held) return; // 방금 멈췄다(고정이면 scrollY·높이가 달라져 아래 검사가 틀린다)
     lastY = scrollY;
     if (scrollY + innerHeight >= root.scrollHeight - 2) reveal(blocks.length - 1);
   }
