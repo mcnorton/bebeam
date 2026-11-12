@@ -3,7 +3,7 @@
 //   새 버전은 waiting으로 두고, 화면이 사용자 승인 뒤 'skip-waiting' 메시지를 보낸다.
 
 // @stamp-begin (scripts/sw-stamp.mjs가 쓴다. 직접 고치지 않는다)
-const VERSION = '891c2da554a1';
+const VERSION = '1efa677d3667';
 const SHELL = [
   './',
   'apps/try-bebeam/art.js',

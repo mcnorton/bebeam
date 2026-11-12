@@ -12,6 +12,16 @@
       "totalSize": 102178
     },
     {
+      "id": "goldenbell",
+      "name": "Golden Bell Board",
+      "description": "퀴즈대회용 태블릿 화이트보드. 펜·형광펜으로 답을 적고 지울 수 있어요.",
+      "icon": "assets/samples/goldenbell/icon.svg",
+      "zip": "assets/samples/goldenbell.zip",
+      "size": 21931,
+      "files": 8,
+      "totalSize": 44567
+    },
+    {
       "id": "digitalclock",
       "name": "디지털 탁상시계",
       "description": "카시오 스타일 정각 시보와 화면 켜짐 유지를 지원하는 레트로 7세그먼트 디지털 탁상시계",
