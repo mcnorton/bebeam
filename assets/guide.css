@@ -83,18 +83,31 @@
   .branch > .ab-card::before { left: 50%; top: -21px; width: 0; height: 18px; border-top: 0; border-left: 3px solid var(--accent); transform: translateX(-1.5px); }
 }
 
-/* 6단계: PC와 폰이 번갈아 가는 순서 */
+/* 6단계: PC(왼쪽)와 스마트폰(오른쪽)이 짝 ①–② · ③–④ · ⑤–⑥. 좁으면 짝 안에서 위아래 */
 .move { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
-.mv { position: relative; margin: 0 0 44px; padding: 14px 16px; border: 3px solid var(--pc); border-radius: 16px; }
+.pair { position: relative; display: grid; gap: 10px; margin: 0 0 44px; }
+.pair:last-child { margin-bottom: 0; }
+.pair:not(:last-child)::after { content: "▼"; position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%); color: var(--muted); font-size: 1.5rem; }
+@media (min-width: 600px) { .pair { grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr); gap: 0; } }
+.mv { min-width: 0; padding: 14px 16px; border: 3px solid var(--pc); border-radius: 16px; }
 .mv-phone { border-color: var(--phone); }
-.mv:last-child { margin-bottom: 0; }
-.mv:not(:last-child)::after { content: "▼"; position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%); color: var(--muted); font-size: 1.5rem; }
 .mv-no { margin-right: 6px; font-size: 1.7rem; font-weight: 700; vertical-align: middle; }
 .mv-dev { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; background: var(--pc); color: var(--accent-text); font-weight: 700; vertical-align: middle; }
 .mv-phone .mv-dev { background: var(--phone); color: #05230f; }
 .mv-dev .os { width: 1.05em; height: 1.05em; padding: 1px; border-radius: 4px; background: #fff; }
 .mv p { margin: 8px 0 0; line-height: 1.8; word-break: keep-all; }
-@media (min-width: 760px) { .mv-pc { margin-right: 16%; } .mv-phone { margin-left: 16%; } }
+.mv .shot-pair .shot { flex-basis: 120px; }
+/* 짝 사이: 전송(③–④)은 PC → 폰으로 흐르며 반짝이는 화살표, 나머지(①–②, ⑤–⑥)는 선. 좁으면 세로로 */
+.pair-link { display: flex; align-items: center; justify-content: center; }
+.pair-link.line::before { content: ""; width: 100%; border-top: 3px solid var(--line2); }
+@media (max-width: 599px) { .pair-link.line { height: 20px; } .pair-link.line::before { width: 0; height: 100%; border-top: 0; border-left: 3px solid var(--line2); } }
+.pair-link.beam { gap: 1px; color: var(--accent); font-size: 1.55rem; font-weight: 700; }
+@media (max-width: 599px) { .pair-link.beam { transform: rotate(90deg); height: 64px; } }
+.pair-link.beam span { opacity: .2; text-shadow: 0 0 8px var(--accent); animation: beam-flow 1.2s ease-in-out infinite; }
+.pair-link.beam span:nth-child(2) { animation-delay: .2s; }
+.pair-link.beam span:nth-child(3) { animation-delay: .4s; }
+@keyframes beam-flow { 30% { opacity: 1; } 60% { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .pair-link.beam span { animation: none; opacity: 1; } }
 
 /* 브라우저·OS 그림 (실제 모양을 단순화) */
 .pic { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; margin: 6px 0 4px; font-size: .9rem; }
@@ -141,3 +154,16 @@
 .a-key { background: var(--phone); color: #05230f; }
 .qa-a { display: flex; align-items: flex-start; gap: 12px; padding: 0 16px 16px; }
 .qa-a p { margin: 4px 0 0; line-height: 1.8; word-break: keep-all; }
+
+/* 슬라이드 펼치기 (assets/reveal.js, docs/SITES.md): html.reveal-mode인 동안만. JS 없음·동작 줄이기면 모두 보인다 */
+.reveal-mode .rv { transition: opacity .7s ease, transform .7s ease; }
+/* 아직 안 펼친 블록: 흐린 미리보기 (화면 위 80%에 들어오면 펼친다) */
+.reveal-mode .rv:not(.is-on) { opacity: .3; transform: translateY(14px); }
+/* 화면 아래 20%를 바탕색 그라데이션으로 살짝 가린다 */
+.reveal-mode body::after { content: ""; position: fixed; inset: auto 0 0; height: 20vh; z-index: 5; pointer-events: none;
+                           background: linear-gradient(color-mix(in srgb, var(--bg) 0%, transparent), var(--bg) 85%); }
+/* 멈춤 지점에서 잠깐 잠근다(관성 끊기). 스크롤 막대가 사라져 화면이 밀리지 않게 자리를 둔다 */
+html.reveal-mode { scrollbar-gutter: stable; }
+html.reveal-mode.reveal-hold { overflow: hidden; }
+/* 펼치기 전에는 안의 움직임을 멈춰 두었다가 펼칠 때 재생 */
+.reveal-mode .rv:not(.is-on) * { animation-play-state: paused !important; }

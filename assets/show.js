@@ -94,6 +94,11 @@ if (show) {
   }
   document.addEventListener('visibilitychange', updateAway);
 
+  // 슬라이드 펼치기(assets/reveal.js)로 쇼 블록이 펼쳐지는 순간 ①장면부터 다시
+  show.addEventListener('rv:on', () => {
+    if (show.classList.contains('is-live')) go(0);
+  });
+
   if (!reduce.matches) start();
   reduce.addEventListener?.('change', (e) => (e.matches ? stop() : start()));
 }
