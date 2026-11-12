@@ -7,7 +7,7 @@ import { openMenu } from './ui/menu.js';
 import { openAddSheet } from './ui/add-sheet.js';
 import { confirmDialog, renameDialog, alertDialog, objectParticle, h } from './ui/dialogs.js';
 import { registerServiceWorker, applyUpdate } from './update.js';
-import { setupInstallPrompt, libraryAction, offerOpenApp, openInstalledApp, OFFER_WAIT_MS, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate, onDisplayModeChange } from './ui/install-prompt.js';
+import { setupInstallPrompt, requestPersistence, isStandalone, isIos, isMacSafari, installGate, showInstallGate } from './ui/install-prompt.js';
 import { Viewer } from './ui/viewer.js';
 import { openTransfer, ROLE } from './ui/transfer-view.js';
 import { VERSION } from '../version.js';
@@ -42,50 +42,23 @@ function notice(message, { sticky = false, action = null } = {}) {
   }
 }
 
-// iOS·macOS Safari는 브라우저 탭과 설치한 웹앱의 저장소가 따로다: 탭에서는 셸을 시작하지 않고 설치만 안내한다
-const gate = installGate({ ios: isIos(navigator), macSafari: isMacSafari(navigator), standalone: isStandalone() });
-if (gate) showInstallGate(gate);
-
 fillIcons();
 setupThemeButton($('theme-button'));
 const store = new Store();
-// beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
 $('version').textContent = `v${VERSION}`;
-const installPrompt = setupInstallPrompt({ banner: $('install-banner') });
-// 목록 아래: 설치 전 [비빔 앱 설치하기], 설치한 앱을 컴퓨터 브라우저 탭에서 열면 [앱으로 열기], 앱 창이면 사이트 링크 (W-03)
-let justInstalled = false; // 이 탭에서 방금 설치함 (탭은 그대로 브라우저 모드다)
-function currentLibraryAction() {
-  return libraryAction({
-    installed: justInstalled || isStandalone(),
-    promptSupported: 'onbeforeinstallprompt' in globalThis,
-    offered: installPrompt.offered,
-    android: /Android/.test(navigator.userAgent),
-  });
-}
-function showInstalledLink() {
-  const action = currentLibraryAction();
-  $('install-help').hidden = action !== 'install';
-  $('open-app').hidden = action !== 'open';
-  $('site-link').hidden = action === 'install';
-}
-showInstalledLink();
-/** 앱 창이 열린 동안 탭의 [새로고침]: 목록을 다시 읽는다 (같은 DB를 함께 쓴다) */
-async function refreshApps() {
-  if (db) store.setApps(await listApps(db));
-}
-$('open-app').addEventListener('click', (e) => {
-  e.preventDefault();
-  openInstalledApp({ onRefresh: refreshApps });
+// beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 듣는다
+const installPrompt = setupInstallPrompt();
+// 브라우저마다 저장소가 따로다: 설치한 앱 창이 아니면 셸 대신 설치만 안내한다 (W-03, 2026-11-12 모든 브라우저)
+const gate = installGate({
+  ios: isIos(navigator),
+  macSafari: isMacSafari(navigator),
+  standalone: isStandalone(),
+  promptSupported: 'onbeforeinstallprompt' in globalThis,
+  android: /Android/.test(navigator.userAgent),
 });
+if (gate) showInstallGate(gate, installPrompt);
 // protocol_handlers로 열린 앱 창의 주소(?launch=…)는 지운다
 if (new URLSearchParams(location.search).has('launch')) history.replaceState(null, '', location.pathname);
-onDisplayModeChange(showInstalledLink);
-installPrompt.onOffered(showInstalledLink);
-$('install-help').addEventListener('click', () => installPrompt.install());
-installPrompt.onInstalled(() => {
-  justInstalled = true;
-  showInstalledLink();
-});
 
 /** 새 버전 토스트 (SPEC F-01 6). 앱 실행·전송 중에는 홈으로 돌아올 때까지 미룬다 */
 let updatePending = false;
@@ -236,10 +209,6 @@ async function start() {
   requestPersistence(db);
   // 앱 창이면 브라우저 탭이 '앱이 열려 있나' 물을 때 대답한다
   if (isStandalone()) answerAsApp();
-  // 설치 이벤트를 기다려 본 뒤에도 [앱으로 열기]면 가운데 대화창으로도 권한다
-  setTimeout(() => {
-    if (currentLibraryAction() === 'open' && store.state.screen === 'home') offerOpenApp({ onRefresh: refreshApps });
-  }, OFFER_WAIT_MS);
   // 설치하면 Chrome이 저장소 유지를 허용하므로 한 번 더 요청한다
   installPrompt.onInstalled(() => requestPersistence(db, { force: true }));
   // 내 이름이 없으면 처음 한 번 인디언식 이름을 지어 둔다

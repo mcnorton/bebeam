@@ -7,7 +7,7 @@ import { SCENES, qrCells } from './scenes.js';
 import { installArt } from './art.js';
 
 const KEY_LANG = 'try-bebeam:lang';
-const KEY_SEEN = 'try-bebeam:seen2'; // 2.20에서 편 순서가 바뀌어 새 키
+const KEY_SEEN = 'try-bebeam:seen3'; // 2.26에서 편 순서가 바뀌어 새 키 (설치 → 실행 → 옮기기 → AI)
 const KEY_OPENED = 'try-bebeam:opened';
 const $ = (id) => document.getElementById(id);
 

@@ -26,6 +26,7 @@
   <meta name="twitter:image" content="https://www.bebeam.net/assets/og.png">
   <meta name="twitter:image:alt" content="비빔 BeBeam 앱 아이콘">
   <link rel="stylesheet" href="assets/show.css">
+  <link rel="stylesheet" href="assets/guide.css">
   <meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="player/icons/favicon.ico" sizes="16x16 32x32 48x48">
@@ -54,59 +55,16 @@
     body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--fg);
            font-family: "NeoDunggeunmo Pro", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
            font-synthesis: none; }
-    /* 영역: 헤더 → 요리 순서도(비비 · Ⅰ 재료 손질 갈림길 · Ⅱ 그릇 준비 · Ⅲ 넣고 비비기 · Ⅳ 나눠 먹기) → 레시피북 → 사용후기(예정) → 푸터. docs/SITES.md */
+    /* 영역: 헤더(Hero) → 쇼 → 특징 카드 → 따라 하기 6단계 → AI 코딩 → 자주 묻는 질문 → 푸터. docs/SITES.md. 따라 하기 이하 모양은 assets/guide.css */
     .site-header, .content, .site-footer { box-sizing: border-box; margin: 0 auto; padding: 24px 16px; text-align: center; }
-    .site-header { max-width: 480px; }
+    .site-header { max-width: 560px; }
     .content { border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
-    .guide { max-width: 960px; }
-    .content[hidden], .samples[hidden], .path[hidden], #samples-empty[hidden] { display: none; }
-    /* 순서도 */
-    .flow { --line: color-mix(in srgb, var(--muted) 70%, transparent); box-sizing: border-box; max-width: 640px; margin: 0 auto; padding: 24px 16px 32px;
-            border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); }
-    .link { position: relative; width: 0; height: 36px; margin: 0 auto; border-left: 3px dashed var(--line); }
-    .link::after { content: ""; position: absolute; left: -9px; bottom: -2px; border: 7.5px solid transparent; border-top: 9px solid var(--line); border-bottom: 0; }
-    .step { padding: 18px 16px; border: 2px solid color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 16px; text-align: center; }
-    .step-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; font-size: 1.3rem; }
-    .step-no { display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-size: .85em; }
-    .step-desc { margin: 0 0 4px; line-height: 1.9; word-break: keep-all; }
-    .step-note { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.9; word-break: keep-all; }
-    .step .launch { margin: 16px 0 12px; }
+    .content[hidden], .samples[hidden], #samples-empty[hidden] { display: none; }
     /* 실제 버튼 이름을 버튼 모양 칩으로 */
     .chip { display: inline-block; padding: 0 8px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--muted) 60%, transparent); line-height: 1.6;
             white-space: nowrap; font-size: .92em; }
     .chip-primary { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-    /* 요리사 비비와 말풍선 */
-    .chef-say { display: flex; align-items: flex-end; gap: 12px; max-width: 520px; margin: 0 auto; text-align: left; }
-    .chef { flex: none; width: 96px; height: auto; image-rendering: pixelated; }
-    .step .chef { width: 72px; }
-    .bubble { position: relative; flex: 1; min-width: 0; margin-bottom: 14px; padding: 12px 14px; border: 2px solid var(--fg); border-radius: 14px; background: var(--bg); }
-    .bubble::before { content: ""; position: absolute; left: -8px; bottom: 16px; width: 12px; height: 12px; background: var(--bg);
-                      border-left: 2px solid var(--fg); border-bottom: 2px solid var(--fg); transform: rotate(45deg); }
-    .bubble p { margin: 0; line-height: 1.6; word-break: keep-all; }
-    /* Ⅰ 갈림길: 넓으면 세 길이 한 줄(위에서 가지가 갈라짐), 좁으면 위아래(왼쪽 세로선에서 가지) */
-    .choices { position: relative; display: grid; gap: 10px; margin: 28px 0 0; padding-left: 22px; }
-    .choices::before { content: ""; position: absolute; left: 6px; top: -16px; bottom: 26px; border-left: 3px dashed var(--line); }
-    .choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px; border: 2px solid color-mix(in srgb, var(--fg) 35%, transparent);
-              border-radius: 12px; background: var(--bg); color: var(--fg); font: inherit; font-size: 1.05rem; text-align: left; word-break: keep-all; cursor: pointer; }
-    .choice::before { content: ""; position: absolute; left: -18px; top: 50%; width: 16px; border-top: 3px dashed var(--line); }
-    .choice:hover { border-color: var(--accent); }
-    .choice:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-    .choice[aria-expanded="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
-    .choice-key { flex: none; display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 6px; background: var(--fg); color: var(--bg); font-size: .9em; }
-    .choice[aria-expanded="true"] .choice-key { background: var(--accent); color: var(--accent-text); }
-    @media (min-width: 600px) {
-      .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-left: 0; }
-      .choices::before { left: calc(100% / 6); right: calc(100% / 6); top: -14px; bottom: auto; border-left: 0; border-top: 3px dashed var(--line); }
-      .choices::after { content: ""; position: absolute; left: 50%; top: -28px; height: 14px; border-left: 3px dashed var(--line); }
-      .choice { flex-direction: column; justify-content: center; text-align: center; }
-      .choice::before { left: 50%; top: -14px; width: 0; height: 14px; border-top: 0; border-left: 3px dashed var(--line); }
-    }
-    .path { margin-top: 16px; padding: 16px; border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); border-radius: 14px; }
-    .path-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 4px; font-size: 1.05rem; }
-    /* 챕터 제목: 강조된 부제목 + 설명 한 줄 */
     .section-title { margin: 0 0 4px; font-size: 1.2rem; }
-    .section-title::before { content: "▸ "; color: var(--accent); }
-    .section-desc { margin: 0 0 12px; color: var(--muted); font-size: .9rem; }
     .samples { text-align: left; }
     .samples .section-desc { text-align: center; }
     .sample-list { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
@@ -132,15 +90,26 @@
                       animation: tape-blink 1s steps(1, end) infinite; }
     @keyframes tape-blink { 0% { opacity: 1; } 50% { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .launch::before { animation: none; } }
-    .tagline { color: var(--muted); margin-bottom: 20px; }
-    .points { margin: 0 auto; padding: 0; list-style: none; text-align: left; display: inline-block; }
-    .points li { line-height: 1.6; margin: 0 0 6px; padding-left: 1.2em; text-indent: -1.2em; }
-    .points li::before { content: "▸ "; color: var(--accent); }
-    /* 쇼 아래: 실행 버튼 + 만들기 링크, 카드 3개 (docs/SITES.md) */
-    .hero-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 20px; margin: 8px 0 8px; }
-    .cta-make { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: var(--accent); font-weight: 700; text-decoration: none; }
-    .cta-make:hover { text-decoration: underline; }
-    .cta-make:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+    .tagline { color: var(--muted); margin-bottom: 16px; }
+    /* Hero: 이건 뭐다 한 문장 */
+    .lead { margin: 4px 0 22px; font-size: clamp(1.2rem, 5vw, 1.85rem); font-weight: 700; line-height: 1.5; word-break: keep-all; }
+    /* 설마 세 줄: 차례로 나타나고(0.4·1.0·1.6초) 취소선·✗(2.4·2.8·3.2초) → 반전(3.8초). 한 번만 */
+    .surely { margin: 0 0 20px; }
+    .surely-intro { margin: 0 0 6px; color: var(--muted); }
+    .surely-list { display: inline-block; margin: 0; padding: 0; list-style: none; text-align: left; }
+    .surely-list li { margin: 0 0 6px; line-height: 1.6; word-break: keep-all; animation: surely-in .4s ease-out both; }
+    .surely-list li::after { content: " ✗"; color: var(--hl, #e11d48); font-weight: 700; animation: surely-x .2s both; }
+    .surely-q { background: linear-gradient(var(--hl, #e11d48), var(--hl, #e11d48)) no-repeat 0 55% / 100% 2px; animation: surely-strike .35s ease-in both; }
+    .surely-list li:nth-child(1) { animation-delay: .4s; } .surely-list li:nth-child(1) .surely-q, .surely-list li:nth-child(1)::after { animation-delay: 2.4s; }
+    .surely-list li:nth-child(2) { animation-delay: 1s; } .surely-list li:nth-child(2) .surely-q, .surely-list li:nth-child(2)::after { animation-delay: 2.8s; }
+    .surely-list li:nth-child(3) { animation-delay: 1.6s; } .surely-list li:nth-child(3) .surely-q, .surely-list li:nth-child(3)::after { animation-delay: 3.2s; }
+    .surely-answer { margin: 8px 0 0; color: var(--accent); font-size: 1.15rem; font-weight: 700; animation: surely-in .5s 3.8s ease-out both; }
+    @keyframes surely-in { from { opacity: 0; transform: translateY(6px); } }
+    @keyframes surely-strike { from { background-size: 0 2px; } }
+    @keyframes surely-x { from { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .surely-list li, .surely-list li::after, .surely-q, .surely-answer { animation: none; } }
+    .define { margin: 0 0 4px; font-weight: 700; word-break: keep-all; }
+    /* 쇼 아래 카드 3개 (docs/SITES.md) */
     .cards-title { margin: 20px 0 12px; font-size: 1.2rem; }
     .cards { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; text-align: left; }
     @media (min-width: 640px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -151,10 +120,6 @@
     .tags { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
     .tags li { padding: 2px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--muted); font-size: .9rem; }
     .scope { margin-top: 12px; color: var(--muted); font-size: .9rem; }
-    .guide-frame { display: block; box-sizing: border-box; width: 100%; aspect-ratio: 4 / 5; max-height: 80dvh; margin-top: 8px;
-                   border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 12px; background: var(--bg); }
-    /* 폰 세로: 레시피북이 한 쪽(그림 위·글 아래)으로 바뀌므로 1:2로 길게 */
-    @media (orientation: portrait) { .guide-frame { aspect-ratio: 1 / 2; max-height: none; } }
     .ai-prompt { display: block; box-sizing: border-box; width: 100%; height: 6.5em; margin: 8px 0 0; padding: 10px 12px; resize: vertical;
                  border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent); border-radius: 10px; background: transparent; color: var(--fg);
                  font: inherit; font-size: .85rem; line-height: 1.5; text-align: left; }
@@ -180,12 +145,18 @@
     <img class="logo" src="player/icons/icon-192.png" alt="">
     <h1>비빔 BeBeam</h1>
     <p class="tagline">Beam으로 전송하는 Web App Player</p>
-    <ul class="points">
-      <li>내가 만든 웹앱을 스마트폰에서 비벼요.</li>
-      <li>와이파이 없이 친구에게 전송하고 함께 비벼요.</li>
-      <li>서버 없이, 앱스토어 없이 바로 비벼요.</li>
-      <li>한 번에 여러 명에게 비빔을 쏘고 비벼요.</li>
-    </ul>
+    <!-- Hero (2026-11-12): 선언 → 설마 세 줄 → 줄마다 취소선·✗ → 반전. 한 번만 움직인다(CSS). 동작 줄이기면 처음부터 마지막 모습 -->
+    <p class="lead">나만의 웹게임과 우리 회사 웹앱.<br>직접 만들어 노는 게 요즘 노는 법.<br>들고 다니며 친구에게 뿌리는 플렉스.</p>
+    <div class="surely">
+      <p class="surely-intro">비빔이 있는데,</p>
+      <ul class="surely-list">
+        <li><span class="surely-q">설마, 아직도 노트북째로 들고 다녀요?</span></li>
+        <li><span class="surely-q">설마, 웹 서버 만들고 주소까지 알려 주고요?</span></li>
+        <li><span class="surely-q">설마, 인터넷 없으면 놀지도 못해요?</span></li>
+      </ul>
+      <p class="surely-answer">→ 비빔이면 다 필요 없어요.</p>
+    </div>
+    <p class="define">PC에서 만든 웹앱을 스마트폰에서 실행하는 플레이어</p>
     <p class="scope">index.html + JavaScript, CSS로 만든 모든 앱</p>
   </header>
   <!-- 한눈에 보는 5장면 쇼 (docs/SITES.md "쇼"): 실제 비빔 화면을 단순화한 모형. assets/show.js가 돌린다.
@@ -372,11 +343,6 @@
       </div>
     </div>
 
-    <div class="hero-cta">
-      <a class="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
-      <a class="cta-make" href="#step1-label">AI로 앱 만들기 →</a>
-    </div>
-
     <h2 class="cards-title">무엇이든 비빔에 담아요</h2>
     <ul class="cards">
       <li class="card">
@@ -401,119 +367,229 @@
     </ul>
   </section>
   <main>
-    <!-- 요리 순서도 (docs/SITES.md): 요리사 비비가 말풍선으로 안내하고, 블록을 연결선으로 잇는다.
-         Ⅰ 재료 손질은 갈림길(A 확인·다듬기 / B 새로 만들기 / C 맛보기). 고른 길만 펼친다(landing.js). JS가 없으면 셋 다 보인다 -->
-    <div class="flow">
-      <div class="chef-say">
-        <img class="chef" src="assets/chef/bibi-hello.svg" alt="요리사 비비" width="96" height="116">
-        <div class="bubble"><p>안녕하세요! 저는 요리사 <b>비비</b>예요.<br>같이 앱을 비벼 볼까요? 차례대로 따라오세요.</p></div>
-      </div>
-      <div class="link" aria-hidden="true"></div>
+    <!-- 따라 하기 (docs/SITES.md): 처음 온 사람이 위에서 아래로 따라 하는 6단계. 단계마다 번호·제목·목표·화면·다음 화살표.
+         화면은 실제 플레이어 캡처(scripts/capture-guide.mjs)와 브라우저·OS를 단순화한 그림. 강조 테두리는 CSS로 얹는다 -->
+    <section class="part howto" aria-labelledby="howto-label">
+      <p class="part-no">PART 1</p>
+      <h2 class="part-title" id="howto-label">처음이라면 차례대로 따라 하세요</h2>
+      <p class="part-desc">샘플 앱 하나를 PC에 넣고 스마트폰까지 옮겨 봐요.<br>해 본 적 있다면 필요한 단계만 골라 보세요.</p>
 
-      <section class="step" aria-labelledby="step1-label">
-        <h2 class="step-head" id="step1-label"><span class="step-no" aria-hidden="true">Ⅰ</span> 재료 손질</h2>
-        <p class="step-desc">비빔의 재료는 <b>웹앱</b>이에요. 어떤 재료로 시작할지 골라요.</p>
-        <div class="chef-say">
-          <img class="chef" src="assets/chef/bibi-ask.svg" alt="" width="72" height="87">
-          <div class="bubble"><p id="chef-line" aria-live="polite">어떤 재료를 가져왔나요? 하나를 골라 보세요.</p></div>
-        </div>
-        <div class="choices" role="group" aria-label="재료 고르기">
-          <button class="choice" type="button" data-path="a" aria-expanded="true" aria-controls="path-a"
-                  data-line="좋아요! 아래 프롬프트를 복사해서 앱 폴더와 함께 AI에게 주세요. AI가 비빔에서 잘 돌아가는지 확인하고, 필요한 곳만 다듬어 줘요. 원래 앱은 그대로예요.">
-            <span class="choice-key" aria-hidden="true">A</span> 내가 만든 앱이 있어요</button>
-          <button class="choice" type="button" data-path="b" aria-expanded="true" aria-controls="path-b"
-                  data-line="멋져요! 아래 프롬프트를 AI 대화창에 붙여 넣어요. AI가 묻는 말에 차근차근 답하면 앱을 만들어 줘요.">
-            <span class="choice-key" aria-hidden="true">B</span> AI랑 새로 만들래요</button>
-          <button class="choice" type="button" data-path="c" aria-expanded="true" aria-controls="path-c"
-                  data-line="먼저 맛부터 볼까요? 비빔 재료를 하나 내려받아 두세요. 다음 단계에서 넣어 볼 거예요.">
-            <span class="choice-key" aria-hidden="true">C</span> 먼저 맛만 볼래요</button>
-        </div>
+      <section class="gstep" id="step-1" aria-labelledby="step1-label">
+        <h3 class="gstep-head" id="step1-label"><span class="gstep-no">1</span> 웹앱 샘플 내려받기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> 연습할 앱 파일(.zip) 하나를 PC에 받아요</p>
+        <!-- 샘플 목록: assets/samples/samples.json을 landing.js가 그린다 (scripts/samples.mjs가 만든다) -->
+        <section class="samples" id="samples" aria-label="웹앱 샘플" hidden>
+          <p class="gstep-text">마음에 드는 앱의 <span class="chip chip-primary">내려받기</span>를 누르세요.</p>
+          <ul class="sample-list" id="sample-list"></ul>
+          <template id="sample-item">
+            <li class="sample">
+              <img class="sample-icon" alt="" width="56" height="56">
+              <p class="sample-name"></p>
+              <p class="sample-desc"></p>
+              <a class="ai-button sample-download">
+                <!-- lucide-static 1.56.0 download. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                <span class="sample-label"></span>
+              </a>
+            </li>
+          </template>
+        </section>
+        <p class="gstep-text" id="samples-empty" hidden>지금은 샘플을 불러오지 못했어요. 잠시 뒤에 다시 와 주세요.</p>
+      </section>
+      <div class="next" aria-hidden="true"></div>
 
-        <section class="ai path" id="path-a" aria-labelledby="convert-label">
-          <h3 class="path-title" id="convert-label"><span class="choice-key" aria-hidden="true">A</span> 비빔에서 잘 돌아가는지 확인하고 다듬기</h3>
-          <p class="section-desc" id="convert-desc">AI가 앱을 살펴보고, 비빔에서 돌아가는 데 꼭 필요한 곳만 다듬어 줘요</p>
-          <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 잘 실행되는지 확인하고, 필요한 곳만 다듬어 줘.</textarea>
-          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
+      <section class="gstep" id="step-2" aria-labelledby="step2-label">
+        <h3 class="gstep-head" id="step2-label"><span class="gstep-no">2</span> 받은 zip 파일 찾기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> 받은 파일이 어디 있는지 알아 두어요</p>
+        <div class="pic pic-download" role="img" aria-label="브라우저 오른쪽 위의 다운로드 표시를 누르면 digitalclock.zip이 보이고, 파일은 다운로드 폴더에 들어 있어요">
+          <div class="mock-win">
+            <div class="mock-bar"><span class="mock-dots"></span><span class="mock-url">www.bebeam.net</span><span class="mock-icon hl">⬇</span></div>
+            <div class="mock-pop"><b>최근 다운로드</b><span>🗜️ digitalclock.zip</span><small>완료 · 폴더 열기</small></div>
+          </div>
+          <span class="pic-arrow">→</span>
+          <div class="mock-win mock-folder">
+            <div class="mock-bar"><span class="mock-dots"></span><span class="mock-url">📁 다운로드</span></div>
+            <ul class="mock-files"><li class="hl">🗜️ digitalclock.zip</li><li>📄 보고서.pdf</li><li>🖼️ 사진.png</li></ul>
+          </div>
+        </div>
+        <p class="gstep-text">브라우저 오른쪽 위의 <span class="chip">⬇</span> 표시를 누르면 방금 받은 파일이 보여요. 파일은 보통 <b>다운로드</b> 폴더에 있어요.<br><b>압축은 풀지 말고</b> 그대로 두세요. 비빔은 zip을 바로 넣을 수 있어요.</p>
+      </section>
+      <div class="next" aria-hidden="true"></div>
+
+      <section class="gstep" id="step-3" aria-labelledby="step3-label">
+        <h3 class="gstep-head" id="step3-label"><span class="gstep-no">3</span> 앱 넣는 버튼 알아 두기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> 앱을 넣는 버튼이 어디 있는지 미리 봐 두어요</p>
+        <figure class="shot shot-pc">
+          <img src="assets/guide/pc-player.webp" alt="PC의 비빔 화면. 왼쪽에 앱 목록이 있고 왼쪽 아래에 나의 앱 추가 버튼이 있어요" width="1280" height="800" loading="lazy">
+          <span class="hl-box blink" style="left:.4%;top:92.5%;width:24.2%;height:6.5%"><span class="hl-tag">여기!</span></span>
+        </figure>
+        <p class="gstep-text">비빔을 열면 왼쪽 아래에 <span class="chip chip-primary">＋ 나의 앱 추가</span>가 있어요. 2단계의 zip 파일을 이 버튼으로 넣어요.<br>폰에서는 화면 맨 아래에 있어요.</p>
+      </section>
+      <div class="next" aria-hidden="true"></div>
+
+      <section class="gstep" id="step-4" aria-labelledby="step4-label">
+        <h3 class="gstep-head" id="step4-label"><span class="gstep-no">4</span> 내 기기에 설치하기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> 내 기기에 맞는 설치 방법을 하나 골라요</p>
+        <p class="gstep-text">비빔은 <b>설치해야 쓸 수 있어요.</b> 기기에 따라 방법이 달라요.<br>여기서는 방법만 보고, 설치는 5단계 버튼으로 시작해요.</p>
+        <div class="ab branch">
+          <section class="ab-card" aria-labelledby="install-a">
+            <h4 class="ab-q" id="install-a"><span class="ab-key">A</span> <span class="os-name"><img class="os" src="assets/guide/os-windows.svg" alt="" width="24" height="24"> Windows</span> <span class="os-name"><img class="os" src="assets/guide/os-android.svg" alt="" width="24" height="24"> Android</span></h4>
+            <div class="pic" role="img" aria-label="Chrome 주소창 오른쪽의 설치 아이콘과, 비빔 화면의 설치 버튼">
+              <div class="mock-win">
+                <div class="mock-bar"><span class="mock-dots"></span><span class="mock-url">www.bebeam.net/player/</span><span class="mock-icon hl">⊕</span></div>
+                <div class="mock-gate"><img src="player/icons/icon-192.png" alt="" width="40" height="40"><b>설치해야 쓸 수 있어요</b><span class="mock-btn hl">설치</span></div>
+              </div>
+            </div>
+            <ol class="ab-steps">
+              <li><b>Chrome</b>이나 <b>Edge</b>로 비빔을 열어요.</li>
+              <li><span class="chip chip-primary">설치</span>를 눌러요. 주소창 오른쪽의 설치 아이콘을 눌러도 돼요.</li>
+            </ol>
+          </section>
+          <section class="ab-card" aria-labelledby="install-b">
+            <h4 class="ab-q" id="install-b"><span class="ab-key">B</span> <span class="os-name"><img class="os" src="assets/guide/os-apple.svg" alt="" width="24" height="24"> iPhone·iPad·Mac</span></h4>
+            <div class="pic pic-pair" role="img" aria-label="iPhone Safari의 공유 메뉴에서 홈 화면에 추가, Mac Safari의 파일 메뉴에서 Dock에 추가">
+              <div class="mock-sheet"><small>iPhone·iPad</small><span>복사</span><span class="hl">홈 화면에 추가 ⊞</span><span>북마크 추가</span></div>
+              <div class="mock-sheet"><small>Mac</small><span>새로운 윈도우</span><span class="hl">Dock에 추가…</span><span>닫기</span></div>
+            </div>
+            <ol class="ab-steps">
+              <li><b>Safari</b>로 비빔을 열어요.</li>
+              <li>iPhone·iPad는 <span class="chip">공유 ⇧</span> → <span class="chip">홈 화면에 추가</span></li>
+              <li>Mac은 <span class="chip">파일</span> 메뉴 → <span class="chip">Dock에 추가</span></li>
+            </ol>
+          </section>
+        </div>
+      </section>
+      <div class="next" aria-hidden="true"></div>
+
+      <section class="gstep" id="step-5" aria-labelledby="step5-label">
+        <h3 class="gstep-head" id="step5-label"><span class="gstep-no">5</span> 비빔 설치하고 아이콘으로 열기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> 바탕화면(홈 화면)의 비빔 아이콘으로 비빔을 열어요</p>
+        <a class="launch" id="launch" href="./player/" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> 비빔 설치하러 가기</a>
+        <div class="pic pic-icons" role="img" aria-label="설치하면 PC 바탕화면과 스마트폰 홈 화면에 BeBeam 아이콘이 생겨요">
+          <div class="mock-desk"><span class="desk-icon">📁<small>내 문서</small></span><span class="desk-icon hl"><img src="player/icons/icon-192.png" alt="" width="44" height="44"><small>BeBeam</small></span></div>
+        </div>
+        <ol class="flow-steps">
+          <li>위 버튼을 눌러 4단계 방법으로 설치해요.</li>
+          <li>설치가 끝나면 <b>바탕화면(홈 화면)의 BeBeam 아이콘</b>으로 열어요. 다음부터도 이 아이콘으로 열어요.</li>
+          <li><span class="chip chip-primary">＋ 나의 앱 추가</span> → <span class="chip">zip 파일 추가</span>로 2단계의 zip을 넣고 <span class="chip">설치</span>를 눌러요.</li>
+          <li>목록에서 앱을 고르고 <span class="chip">▷ 실행하기</span>를 누르면 끝!</li>
+        </ol>
+      </section>
+      <div class="next" aria-hidden="true"></div>
+
+      <section class="gstep" id="step-6" aria-labelledby="step6-label">
+        <h3 class="gstep-head" id="step6-label"><span class="gstep-no">6</span> 스마트폰으로 옮기기</h3>
+        <p class="gstep-goal"><span class="goal-tag">목표</span> PC에 넣은 앱을 인터넷 없이 QR로 스마트폰에 옮겨요</p>
+        <p class="gstep-text">PC와 스마트폰을 나란히 놓고, <b>번호 순서대로</b> 해요.</p>
+        <ol class="move">
+          <li class="mv mv-pc"><span class="mv-no">①</span><span class="mv-dev"><img class="os" src="assets/guide/os-windows.svg" alt="" width="24" height="24"> 🖥️ PC</span>
+            <p>바탕화면의 비빔 아이콘으로 비빔을 열어요.</p>
+            <div class="pic" role="img" aria-label="PC 바탕화면의 BeBeam 아이콘"><div class="mock-desk"><span class="desk-icon">📁<small>내 문서</small></span><span class="desk-icon hl blink"><img src="player/icons/icon-192.png" alt="" width="44" height="44"><small>BeBeam</small></span></div></div></li>
+          <li class="mv mv-phone"><span class="mv-no">②</span><span class="mv-dev"><img class="os" src="assets/guide/os-android.svg" alt="" width="24" height="24"><img class="os" src="assets/guide/os-apple.svg" alt="" width="24" height="24"> 📱 스마트폰</span>
+            <p>폰에서도 비빔을 열어요. 폰에 아직 없으면 4·5단계처럼 먼저 설치해요.</p>
+            <div class="pic" role="img" aria-label="스마트폰 홈 화면의 BeBeam 아이콘"><div class="mock-phone"><span class="ph-icon">📷<small>카메라</small></span><span class="ph-icon">💬<small>메시지</small></span><span class="ph-icon hl blink"><img src="player/icons/icon-192.png" alt="" width="40" height="40"><small>BeBeam</small></span><span class="ph-icon">🗓️<small>달력</small></span></div></div></li>
+          <li class="mv mv-pc"><span class="mv-no">③</span><span class="mv-dev"><img class="os" src="assets/guide/os-windows.svg" alt="" width="24" height="24"> 🖥️ PC</span>
+            <p>보낼 앱을 고르고 <span class="chip blink-chip">앱 보내기</span>를 눌러요. 폰이 준비되면 <span class="chip chip-primary">전송 시작</span>을 눌러요. QR 그림이 계속 바뀌어요.</p>
+            <figure class="shot shot-crop">
+              <img src="assets/guide/pc-send-ready.webp" alt="PC 화면 오른쪽. 보낼 준비 제목 아래 전송속도와 전송 시작 버튼" width="380" height="240" loading="lazy">
+              <span class="hl-box blink" style="left:4.5%;top:67.5%;width:92%;height:25%"><span class="hl-tag">폰이 준비되면</span></span>
+            </figure></li>
+          <li class="mv mv-phone"><span class="mv-no">④</span><span class="mv-dev"><img class="os" src="assets/guide/os-android.svg" alt="" width="24" height="24"><img class="os" src="assets/guide/os-apple.svg" alt="" width="24" height="24"> 📱 스마트폰</span>
+            <p><span class="chip chip-primary">＋ 나의 앱 추가</span> → <span class="chip blink-chip">QR로 받기</span>를 누르고, 카메라를 PC 화면의 QR에 비춰요.</p>
+            <div class="shot-pair">
+              <figure class="shot shot-phone">
+                <img src="assets/guide/phone-add-sheet.webp" alt="폰 화면. 나의 앱 추가 창에서 맨 위의 QR로 받기" width="780" height="728" loading="lazy">
+                <span class="hl-box blink" style="left:5.6%;top:25.5%;width:88.8%;height:17%"></span>
+              </figure>
+              <figure class="shot shot-phone">
+                <img src="assets/guide/phone-receiving.webp" alt="폰 화면. 카메라로 QR을 읽으며 받는 중이고 아래에 진행 막대가 있어요" width="780" height="1000" loading="lazy">
+                <span class="hl-box" style="left:3%;top:85%;width:94%;height:13%"><span class="hl-tag">받는 중</span></span>
+              </figure>
+            </div></li>
+          <li class="mv mv-pc"><span class="mv-no">⑤</span><span class="mv-dev"><img class="os" src="assets/guide/os-windows.svg" alt="" width="24" height="24"> 🖥️ PC</span>
+            <p>폰이 다 받으면 <span class="chip chip-primary">전송 끝</span>을 눌러요.</p>
+            <figure class="shot shot-pc">
+              <img src="assets/guide/pc-send-qr.webp" alt="PC 화면. 왼쪽에 움직이는 QR, 오른쪽에 전송 끝 버튼" width="1280" height="800" loading="lazy">
+              <span class="hl-box" style="left:67%;top:58.8%;width:27.2%;height:7.4%"></span>
+            </figure></li>
+          <li class="mv mv-phone"><span class="mv-no">⑥</span><span class="mv-dev"><img class="os" src="assets/guide/os-android.svg" alt="" width="24" height="24"><img class="os" src="assets/guide/os-apple.svg" alt="" width="24" height="24"> 📱 스마트폰</span>
+            <p><span class="chip chip-primary">설치 시작</span>을 누르면 폰 목록에 앱이 생겨요.</p>
+            <figure class="shot shot-phone">
+              <img src="assets/guide/phone-install.webp" alt="폰 화면. 다 받았어요, 설치를 시작할까요? 아래에 취소와 설치 시작 버튼" width="780" height="1000" loading="lazy">
+              <span class="hl-box" style="left:46.5%;top:47.5%;width:29.5%;height:11%"></span>
+            </figure></li>
+        </ol>
+        <p class="gstep-tip">💡 폰에서 폰으로도 똑같이 보낼 수 있어요. 여러 대가 한 QR을 같이 받아도 돼요.</p>
+      </section>
+    </section>
+
+    <!-- AI 코딩 (TASK T6.1): 복사할 프롬프트는 모두 규칙 주소(README.md)로 시작한다 -->
+    <section class="part ai-make" aria-labelledby="ai-make-label">
+      <p class="part-no">PART 2</p>
+      <h2 class="part-title" id="ai-make-label">AI와 함께 비빔용 앱 만들기</h2>
+      <p class="part-desc">쓰고 있는 AI에게 아래 프롬프트를 먼저 주면, 비빔에서 잘 돌아가는 앱을 만들어 줘요.</p>
+      <div class="ab branch">
+        <section class="ai ab-card" aria-labelledby="ai-label">
+          <h3 class="ab-q" id="ai-label"><span class="ab-key">A</span> 처음 앱을 만들고 싶나요?</h3>
+          <ol class="ab-steps" id="ai-desc">
+            <li>아래 프롬프트를 복사해서 AI에게 먼저 보내요.</li>
+            <li>AI가 묻는 말에 답하면서 앱을 만들어요.</li>
+            <li>완성한 .zip 파일을 비빔에 넣어요.</li>
+            <li>폰과 친구에게 보내고 같이 비벼요.</li>
+          </ol>
+          <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
+          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
             <!-- lucide-static 1.56.0 copy. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             프롬프트 복사
           </button>
           <p class="ai-status" aria-live="polite"></p>
         </section>
-        <section class="ai path" id="path-b" aria-labelledby="ai-label">
-          <h3 class="path-title" id="ai-label"><span class="choice-key" aria-hidden="true">B</span> AI와 새 앱 만들기</h3>
-          <p class="section-desc" id="ai-desc">AI에게 이 프롬프트를 붙여 넣고 앱을 만들어 보세요</p>
-          <textarea class="ai-prompt" id="ai-prompt" readonly aria-labelledby="ai-label" aria-describedby="ai-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, 그 규칙대로 BeBeam에서 실행할 웹앱을 만들어 줘.</textarea>
-          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-prompt">
+        <section class="ai ab-card" aria-labelledby="convert-label">
+          <h3 class="ab-q" id="convert-label"><span class="ab-key">B</span> 이미 만든 웹앱이 있나요?</h3>
+          <ol class="ab-steps" id="convert-desc">
+            <li>아래 프롬프트를 복사해서 앱 폴더와 함께 AI에게 보내요. AI가 비빔에 맞게 필요한 곳만 살짝 고쳐 줘요.</li>
+            <li>완성한 .zip 파일을 비빔에 넣어요.</li>
+            <li>폰과 친구에게 보내고 같이 비벼요.</li>
+          </ol>
+          <textarea class="ai-prompt" id="ai-convert-prompt" readonly aria-labelledby="convert-label" aria-describedby="convert-desc">https://www.bebeam.net/README.md 를 먼저 끝까지 읽고, §12 규칙대로 이미 만든 이 앱이 BeBeam에서 잘 실행되는지 확인하고, 필요한 곳만 다듬어 줘.</textarea>
+          <button class="ai-button ai-copy-prompt" type="button" data-copy="ai-convert-prompt">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             프롬프트 복사
           </button>
-          <p class="ai-url-label" id="ai-url-label">주소만 필요하면</p>
-          <div class="ai-copy">
-            <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
-            <button class="ai-button" type="button" data-copy="ai-url">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-              복사
-            </button>
-          </div>
           <p class="ai-status" aria-live="polite"></p>
         </section>
-        <!-- 비빔재료: 샘플 앱 zip 목록. assets/samples/samples.json을 landing.js가 그린다 (scripts/samples.mjs가 만든다) -->
-        <div class="path" id="path-c">
-          <section class="samples" id="samples" aria-labelledby="samples-label" hidden>
-            <h3 class="path-title" id="samples-label"><span class="choice-key" aria-hidden="true">C</span> 비빔 재료 내려받기</h3>
-            <p class="section-desc">하나를 내려받아 두었다가 Ⅲ에서 [＋ 나의 앱 추가]로 넣어요</p>
-            <ul class="sample-list" id="sample-list"></ul>
-            <template id="sample-item">
-              <li class="sample">
-                <img class="sample-icon" alt="" width="56" height="56">
-                <p class="sample-name"></p>
-                <p class="sample-desc"></p>
-                <a class="ai-button sample-download">
-                  <!-- lucide-static 1.56.0 download. ISC License, Copyright (c) 2026 Lucide Icons and Contributors. 전문은 player/js/ui/icons.js 머리말 -->
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
-                  <span class="sample-label"></span>
-                </a>
-              </li>
-            </template>
-          </section>
-          <p class="section-desc" id="samples-empty" hidden>지금은 재료를 불러오지 못했어요. 잠시 뒤에 다시 와 주세요.</p>
-        </div>
-      </section>
-      <div class="link" aria-hidden="true"></div>
-
-      <section class="step" aria-labelledby="step2-label">
-        <h2 class="step-head" id="step2-label"><span class="step-no" aria-hidden="true">Ⅱ</span> 그릇 준비</h2>
-        <p class="step-desc">비빔 그릇, <b>BeBeam</b>을 열어요. 설치해 두면 인터넷이 없어도 열려요.</p>
-        <a class="launch" id="launch" href="./player/"><span aria-hidden="true">▶</span> BeBeam 실행</a>
-        <p class="step-note">아이폰·아이패드는 <span class="chip">공유</span> → <span class="chip">홈 화면에 추가</span>로 설치해요</p>
-      </section>
-      <div class="link" aria-hidden="true"></div>
-
-      <section class="step" aria-labelledby="step3-label">
-        <h2 class="step-head" id="step3-label"><span class="step-no" aria-hidden="true">Ⅲ</span> 넣고 비비기</h2>
-        <p class="step-desc">BeBeam에서 <span class="chip chip-primary">＋ 나의 앱 추가</span>를 누르고, 만든 폴더나 내려받은 zip을 넣어요. 그다음 <span class="chip">▷ 실행하기</span>!</p>
-      </section>
-      <div class="link" aria-hidden="true"></div>
-
-      <section class="step" aria-labelledby="step4-label">
-        <h2 class="step-head" id="step4-label"><span class="step-no" aria-hidden="true">Ⅳ</span> 나눠 먹기</h2>
-        <p class="step-desc"><span class="chip">앱 보내기</span>를 누르면 QR이 나와요. 친구는 <span class="chip chip-primary">＋ 나의 앱 추가</span> → <span class="chip">QR로 받기</span>로 카메라를 비춰요. 와이파이가 없어도 돼요.</p>
-      </section>
-      <div class="link" aria-hidden="true"></div>
-
-      <div class="chef-say">
-        <img class="chef" src="assets/chef/bibi-cheer.svg" alt="요리사 비비" width="96" height="116">
-        <div class="bubble"><p>다 됐어요! 이제 친구랑 함께 비벼요.</p></div>
       </div>
-    </div>
-
-    <!-- 사용법 「비빔으로 비벼보기」: 플레이어의 기본 앱과 같은 파일. 플레이어처럼 origin 없는 sandbox로 연다 -->
-    <section class="content guide" aria-labelledby="guide-label">
-      <h2 class="section-title" id="guide-label">더 자세히 보고 싶다면</h2>
-      <p class="section-desc">비비는 법 레시피북을 눌러 보며 익혀요</p>
-      <iframe class="guide-frame" src="player/apps/try-bebeam/" title="비빔으로 비벼보기: 비빔 사용법" sandbox="allow-scripts" loading="lazy"></iframe>
+      <div class="ai ai-url-row">
+        <p class="ai-url-label" id="ai-url-label">규칙 주소만 필요하면</p>
+        <div class="ai-copy">
+          <input class="ai-url" id="ai-url" type="text" value="https://www.bebeam.net/README.md" readonly aria-labelledby="ai-url-label">
+          <button class="ai-button" type="button" data-copy="ai-url">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            복사
+          </button>
+        </div>
+        <p class="ai-status" aria-live="polite"></p>
+      </div>
     </section>
+
+    <!-- 자주 묻는 질문: <details>라서 JS 없이 펼친다 -->
+    <section class="part faq" aria-labelledby="faq-label">
+      <h2 class="part-title" id="faq-label">자주 묻는 질문</h2>
+      <details class="qa">
+        <summary><span class="q-key">Q</span> 비빔은 어떤 앱인가요?</summary>
+        <div class="qa-a"><span class="a-key">A</span><p>PC에서 만든 웹앱을 스마트폰에서 실행하는 플레이어예요. 인터넷이 없어도 QR 코드로 다른 기기에 앱을 보낼 수 있어요.</p></div>
+      </details>
+      <details class="qa">
+        <summary><span class="q-key">Q</span> QR 전송이 오래 걸려요.</summary>
+        <div class="qa-a"><span class="a-key">A</span><p>카메라가 오래된 태블릿은 QR을 잘 읽지 못해요. 보내는 쪽에서 전송속도를 <span class="chip">느리게</span>로 바꿔 보세요. 화면에 빛이 비쳐 하얗게 번지면 기기 각도를 조금 바꿔 보세요.</p></div>
+      </details>
+      <details class="qa">
+        <summary><span class="q-key">Q</span> 꼭 설치해서 써야 하나요?</summary>
+        <div class="qa-a"><span class="a-key">A</span><p>네. 비빔은 앱을 브라우저 안의 안전한 공간(샌드박스)에 저장해요. 브라우저가 바뀌면 저장 공간도 따로 생겨서 앱이 여기저기 흩어져요. 그래서 한 곳에서만 쓰도록 설치하게 했어요. 바탕화면 아이콘으로 열면 훨씬 편해요.</p></div>
+      </details>
+    </section>
+
     <!-- 사용후기 (예정): 자리만 둔다 -->
     <section class="content content-3" id="reviews" aria-labelledby="reviews-label" hidden>
       <h2 class="section-title" id="reviews-label">사용후기</h2>

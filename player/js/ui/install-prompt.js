@@ -1,25 +1,21 @@
-// 플레이어 설치 유도와 저장소 유지 요청 (SPEC F-01 3–4, W-02, W-03)
-//   Chrome/Edge/Android: beforeinstallprompt → 상단 배너 [나중에](7일 숨김) [설치]
-//   목록 아래 [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면 바로 띄우고, 없으면 설치 안내(W-03)를 연다.
-//   iOS·macOS Safari는 브라우저 탭과 설치한 웹앱(홈 화면·Dock)의 저장소가 따로라서, 설치해서 열지 않으면 셸 대신 막는 화면(W-03)만 보인다.
-//   이미 standalone이면 아무것도 띄우지 않는다.
+// 플레이어 설치 강제와 저장소 유지 요청 (SPEC F-01 3–4, W-03)
+//   브라우저마다 저장소가 따로라서 앱이 여기저기 흩어지지 않게, 설치한 앱 창(standalone)이 아니면 셸 대신 막는 화면만 보인다 (2026-11-12).
+//   iOS 홈 화면 · macOS Safari Dock · Chrome·Edge·Android [설치](beforeinstallprompt) · 그 밖의 Android 브라우저 메뉴 · 그 밖의 컴퓨터 브라우저는 Chrome·Edge 안내.
 //   navigator.storage.persist()는 처음 한 번 요청하고 결과를 meta.settings.persisted에 기록한다.
 
 import { getMeta, setMeta } from '../db.js';
-import { h, openDialog } from './dialogs.js';
+import { h } from './dialogs.js';
 import { icon as lineIcon } from './icons.js';
 import { renderQR } from '../transfer/qr.js';
 import { isAppRunning } from '../presence.js';
 
-export const DISMISSED_KEY = 'bebeam.ui.installPromptDismissedAt';
 /** 설치한 앱 창을 여는 주소. manifest protocol_handlers로 설치한 앱에 등록된다 (컴퓨터 Chrome·Edge) */
 export const OPEN_APP_URL = 'web+bebeam://open';
-/** 설치 이벤트(beforeinstallprompt)를 기다리는 시간. 이 안에 오지 않으면 설치한 것으로 본다 */
+/** 설치 이벤트(beforeinstallprompt)를 기다리는 시간. 이 안에 오지 않으면 이미 설치한 것으로 본다 (Chromium은 설치한 앱이면 보내지 않는다) */
 export const OFFER_WAIT_MS = 2000;
 /** [앱으로 열기] 뒤 앱 창이 뜨기를 기다리는 시간 (브라우저 확인 창을 누르는 시간 포함), 묻는 간격 */
 const APP_WAIT_MS = 8000;
 const APP_POLL_MS = 500;
-export const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 비빔 사이트: 처음 받는 사람 안내(보낼 준비)와 iOS 설치 안내의 작은 QR */
 export const SITE_URL = 'https://www.bebeam.net/';
@@ -38,13 +34,6 @@ export function isIos({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}
   return platform === 'MacIntel' && maxTouchPoints > 1;
 }
 
-/** 설치 배너를 띄울지: standalone이 아니고, [나중에]를 누른 지 7일이 지났거나 누른 적 없음 */
-export function shouldOfferInstall({ standalone, dismissedAt, now }) {
-  if (standalone) return false;
-  const t = Number(dismissedAt);
-  return !Number.isFinite(t) || t <= 0 || now - t >= SNOOZE_MS;
-}
-
 /**
  * macOS의 Safari (Dock에 추가로 웹앱을 만든다). Safari를 흉내 내는 Chrome·Edge·Firefox·Opera는 뺀다.
  * assets/landing.js에 같은 규칙이 있다
@@ -55,14 +44,15 @@ export function isMacSafari({ userAgent = '', platform = '', maxTouchPoints = 0 
 }
 
 /**
- * 설치해서 열지 않았으면 막는 화면의 종류: 'ios'(홈 화면) | 'mac'(Dock) | null.
- * 브라우저 탭에서 설치한 앱은 설치한 웹앱에 보이지 않으므로 탭에서는 시작하지 않는다
+ * 설치한 앱 창이 아니면 막는 화면의 종류: 'ios'(홈 화면) | 'mac'(Dock) | 'install'([설치] 버튼) | 'android'(브라우저 메뉴) | 'browser'(Chrome·Edge 안내) | null.
+ * promptSupported: beforeinstallprompt를 지원하는 브라우저 (Chrome·Edge·Android Chrome 등)
  */
-export function installGate({ ios, macSafari, standalone }) {
+export function installGate({ ios, macSafari, standalone, promptSupported = false, android = false }) {
   if (standalone) return null;
   if (ios) return 'ios';
   if (macSafari) return 'mac';
-  return null;
+  if (promptSupported) return 'install';
+  return android ? 'android' : 'browser';
 }
 
 /**
@@ -76,97 +66,27 @@ export function isStandalone() {
   return matchMedia(INSTALLED_DISPLAY_QUERY).matches || navigator.standalone === true;
 }
 
-/**
- * 목록 아래에 보일 것: 'install' [비빔 앱 설치하기] | 'open' [앱으로 열기] | 'link' 사이트 링크.
- * Chromium은 이미 설치한 앱이면 브라우저 탭에서도 beforeinstallprompt를 보내지 않으므로, 이벤트가 없으면 설치한 것으로 보고
- * [앱으로 열기]를 보인다(protocol_handlers는 컴퓨터만 되므로 Android는 링크). 이벤트가 없는 브라우저(Firefox 등)는 설치 안내를 연다
- */
-export function libraryAction({ installed, promptSupported, offered, android }) {
-  if (installed) return 'link';
-  if (!promptSupported || offered) return 'install';
-  return android ? 'link' : 'open';
-}
-
 /** 창 모드가 바뀌면(전체 화면 들어가기·나오기 등) 부른다 */
 export function onDisplayModeChange(fn) {
   matchMedia(INSTALLED_DISPLAY_QUERY).addEventListener('change', fn);
 }
 
-function storage() {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function read(key) {
-  try {
-    return storage()?.getItem(key) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function write(key, value) {
-  try {
-    storage()?.setItem(key, value);
-  } catch {}
-}
-
 /**
- * 설치 유도를 시작한다. beforeinstallprompt는 일찍 올 수 있으므로 DB를 열기 전에 부른다.
- * @param {{banner: HTMLElement}} o 배너를 넣을 자리 (셸 상단, 목록을 가리지 않는 grid 행)
- * @returns {{onInstalled: (fn: () => void) => void}}
+ * beforeinstallprompt를 받아 둔다. 일찍 올 수 있으므로 DB를 열기 전에 부른다. 막는 화면의 [설치]가 쓴다
  */
-export function setupInstallPrompt({ banner }) {
+export function setupInstallPrompt() {
   let deferred = null;
-  let offered = false; // 이 페이지에서 beforeinstallprompt를 받았다 = 아직 설치하지 않았다
   const installedHandlers = [];
   const offeredHandlers = [];
 
-  const hide = () => {
-    banner.hidden = true;
-    banner.replaceChildren();
-  };
-
-  const show = () => {
-    const later = h('button', { type: 'button', class: 'btn', text: '나중에' });
-    const install = h('button', { type: 'button', class: 'btn btn-primary', text: '설치' });
-    later.addEventListener('click', () => {
-      write(DISMISSED_KEY, String(Date.now()));
-      hide();
-    });
-    install.addEventListener('click', async () => {
-      const e = deferred;
-      deferred = null;
-      hide();
-      if (!e) return;
-      try {
-        await e.prompt();
-        await e.userChoice;
-      } catch (err) {
-        console.warn(err);
-      }
-    });
-    banner.replaceChildren(
-      h('p', { class: 'install-banner-text' }, [lineIcon('download'), 'BeBeam을 설치하면 오프라인에서도 바로 실행할 수 있어요.']),
-      h('div', { class: 'install-banner-actions' }, [later, install]),
-    );
-    banner.hidden = false;
-  };
-
   addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); // 브라우저 기본 미니 인포바 대신 W-02 배너
+    e.preventDefault(); // 브라우저 기본 미니 인포바 대신 막는 화면의 [설치]
     deferred = e;
-    offered = true;
     for (const fn of offeredHandlers) fn();
-    if (shouldOfferInstall({ standalone: isStandalone(), dismissedAt: read(DISMISSED_KEY), now: Date.now() })) show();
   });
 
   addEventListener('appinstalled', () => {
     deferred = null;
-    hide();
     for (const fn of installedHandlers) fn();
   });
 
@@ -175,16 +95,12 @@ export function setupInstallPrompt({ banner }) {
     /** beforeinstallprompt를 받으면 부른다 */
     onOffered: (fn) => offeredHandlers.push(fn),
     get offered() {
-      return offered;
+      return deferred !== null;
     },
-    /**
-     * [비빔 앱 설치하기]: 받아 둔 설치 창이 있으면(Android·PC) 바로 띄우고, 없으면 설치 안내를 연다
-     */
+    /** 받아 둔 설치 창을 띄운다 */
     install: () => {
       const e = deferred;
-      if (!e) return openInstallGuide();
-      deferred = null;
-      hide();
+      if (!e) return Promise.resolve();
       return e.prompt().then(() => e.userChoice).catch((err) => console.warn(err));
     },
   };
@@ -215,7 +131,9 @@ function icon(kind, label) {
 /** 한 단계: 아이콘과 글을 한 줄에 */
 const step = (...parts) => h('li', {}, parts);
 
-/** 막는 화면 문구 (W-03). place: 설치한 웹앱을 여는 곳 */
+/** 막는 화면 문구 (W-03). place: 설치한 웹앱을 여는 곳 (없으면 안내 줄을 뺀다) */
+const DESKTOP_PLACE = '바탕화면(홈 화면)의 BeBeam';
+const WHY = ['브라우저마다 저장소가 따로라서', '설치한 앱 하나로 비벼야 앱이 흩어지지 않아요.'];
 const GATE = {
   ios: {
     lead: '애플 iOS 를 사용하고 있군요',
@@ -238,41 +156,58 @@ const GATE = {
     ],
     why: ['MacOS Safari는 저장소 관리가 까다로워서', 'Dock 저장소 하나로 비벼야 해요.'],
   },
+  install: {
+    lead: '비빔은 설치해서 쓰는 앱이에요',
+    title: '설치해야 쓸 수 있어요',
+    place: DESKTOP_PLACE,
+    steps: () => [
+      step('아래 [설치] 누르기'),
+      step('설치 창에서 한 번 더 [설치] 누르기'),
+    ],
+    why: WHY,
+  },
+  android: {
+    lead: '비빔은 설치해서 쓰는 앱이에요',
+    title: '홈 화면에 추가해야 쓸 수 있어요',
+    place: '홈 화면의 BeBeam',
+    steps: () => [
+      step('브라우저 메뉴(⋮ 또는 ≡) 펼치기'),
+      step('[앱 설치] 또는 [홈 화면에 추가] 누르기'),
+    ],
+    why: WHY,
+  },
+  browser: {
+    lead: '이 브라우저에서는 비빔을 설치할 수 없어요',
+    title: 'Chrome이나 Edge에서 열어 주세요',
+    place: '',
+    steps: () => [
+      step('Chrome이나 Edge 열기'),
+      step(`주소창에 ${SITE_LABEL}/player/ 입력하기`),
+      step('[설치] 누르기'),
+    ],
+    why: WHY,
+  },
 };
 
 /**
- * 설치 안내 (W-03, 막는 화면이 없는 브라우저). 브라우저의 설치 메뉴를 안내한다.
+ * 설치한 앱 창이 아닐 때의 막는 화면 (W-03). 셸을 숨기고 설치 방법만 보인다. 닫을 수 없다.
+ * 'install'은 [설치] 버튼을 둔다. 설치 이벤트가 오지 않으면 이미 설치한 것이므로 아이콘으로 열라고 하고, 컴퓨터면 [앱으로 열기]를 둔다.
+ * @param {'ios' | 'mac' | 'install' | 'android' | 'browser'} kind installGate()의 결과
+ * @param {ReturnType<typeof setupInstallPrompt>} [prompt] 'install'에서 쓴다
  */
-export async function openInstallGuide() {
-  await openDialog({
-    title: '홈 화면에 추가하기',
-    className: 'ios-guide',
-    body: [
-      h('ol', { class: 'ios-guide-steps' }, [
-        step('주소표시줄 오른쪽의 설치 아이콘을 누르거나'),
-        step('브라우저 메뉴(⋮)에서 [앱 설치] 또는 [홈 화면에 추가]'),
-      ]),
-      h('p', { class: 'dialog-message', text: '설치하면 오프라인에서도 바로 실행할 수 있어요.' }),
-    ],
-    buttons: [{ label: '확인', value: 'ok', kind: 'primary', autofocus: true }],
-  });
-}
-
-/**
- * iOS·macOS Safari 브라우저 탭의 막는 화면 (W-03). 셸을 숨기고(시작도 하지 않는다) 설치 방법만 보인다. 닫을 수 없다.
- * @param {'ios' | 'mac'} kind installGate()의 결과
- */
-export function showInstallGate(kind) {
+export function showInstallGate(kind, prompt) {
   const g = GATE[kind];
   document.getElementById('shell').hidden = true;
   document.getElementById('notice').hidden = true;
+  const actions = h('div', { class: 'ios-gate-actions' });
   const gate = h('main', { class: 'ios-gate' }, [
     h('div', { class: 'ios-gate-card' }, [
       h('p', { class: 'brand' }, [h('img', { class: 'brand-icon', src: 'icons/icon-192.png', alt: '', width: '24', height: '24' }), ' BeBeam']),
       h('p', { class: 'ios-gate-lead', text: g.lead }),
       h('h1', { class: 'ios-gate-title', text: g.title }),
       h('ol', { class: 'ios-guide-steps' }, g.steps()),
-      h('p', { class: 'ios-gate-note' }, [h('span', { class: 'ios-gate-em', text: `“${g.place}”` }), '을 눌러 실행하세요.']),
+      kind === 'install' ? actions : '',
+      g.place ? h('p', { class: 'ios-gate-note' }, ['설치한 뒤에는 ', h('span', { class: 'ios-gate-em', text: `“${g.place}”` }), ' 아이콘으로 여세요.']) : '',
       h('div', { class: 'ios-gate-why' }, [
         lineIcon('circle-help'),
         h('div', {}, [...g.why, SITE_LABEL].map((text) => h('p', { text }))),
@@ -280,26 +215,26 @@ export function showInstallGate(kind) {
     ]),
   ]);
   document.body.append(gate);
-}
+  if (kind !== 'install' || !prompt) return;
 
-/**
- * 설치한 앱을 탭에서 열었을 때의 안내 (W-03). [앱으로 열기]는 OPEN_APP_URL로 앱 창을 연다(처음엔 브라우저가 묻는다).
- * [나중에]는 이번만 닫는다 (기억하지 않는다: 탭을 다시 열면 또 묻는다)
- */
-export async function offerOpenApp({ onRefresh } = {}) {
-  const { value } = await openDialog({
-    title: '설치한 BeBeam 앱이 있어요',
-    className: 'open-app-dialog',
-    body: [
-      h('img', { class: 'open-app-icon', src: 'icons/icon-192.png', alt: '', width: '72', height: '72' }),
-      h('p', { class: 'dialog-message', text: '앱으로 열면 별도 창에서 바로 실행돼요.' }),
-    ],
-    buttons: [
-      { label: '나중에', value: 'later' },
-      { label: '앱으로 열기', value: 'open', kind: 'primary', autofocus: true },
-    ],
-  });
-  if (value === 'open') openInstalledApp({ onRefresh });
+  const install = h('button', { type: 'button', class: 'btn btn-primary ios-gate-install', text: '설치', disabled: !prompt.offered });
+  install.addEventListener('click', () => prompt.install());
+  actions.append(install);
+  prompt.onOffered(() => { install.disabled = false; });
+  const installed = (text) => {
+    const children = [h('p', { class: 'ios-gate-done', text })];
+    // 컴퓨터 Chrome·Edge는 protocol_handlers로 설치한 앱 창을 열 수 있다 (Android는 없다)
+    if (!/Android/.test(navigator.userAgent)) {
+      const open = h('button', { type: 'button', class: 'btn btn-primary ios-gate-install' }, [h('img', { class: 'open-app-mark', src: 'icons/icon-192.png', alt: '', width: '20', height: '20' }), ' 앱으로 열기']);
+      open.addEventListener('click', () => openInstalledApp());
+      children.push(open);
+    }
+    actions.replaceChildren(...children);
+  };
+  prompt.onInstalled(() => installed('설치했어요! 이제 비빔 아이콘으로 열어요.'));
+  setTimeout(() => {
+    if (!prompt.offered) installed('이미 설치했네요. 비빔 아이콘으로 열어요.');
+  }, OFFER_WAIT_MS);
 }
 
 /**

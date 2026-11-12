@@ -15,12 +15,12 @@ const logo = (cls = '') => `<img class="logo ${cls}" src="icon.png" alt="">`;
 // QR은 청록으로 빛나는 문양. 둘레에 반짝이 셋
 const qr = (cls = '') => `<div class="sigil ${cls}"><div class="qr" data-qr></div><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i></div>`;
 
-/** 4편: 보내는 사람(위)·받는 사람(아래), 폰 위에 역할 꼬리표. 빈 쪽은 그리지 않는다. gap은 두 사람 사이(거리 표시 등) */
+/** Ⅲ편: 보내는 쪽(위)·받는 사람(아래), 폰 위에 역할 꼬리표. 빈 쪽은 그리지 않는다. gap은 두 사람 사이(거리 표시 등) */
 function duo(u, top, bottom, gap = '') {
   const side = (kind, label, body) => (body ? `<div class="role"><span class="role-tag ${kind}">${label}</span>${body}</div>` : '');
   return `<div class="col duo">${side('send', u.send, top)}${top && bottom ? gap : ''}${side('recv', u.receive, bottom)}</div>`;
 }
-/** 4편: QR을 띄운 보내는 폰 */
+/** Ⅲ편: QR을 띄운 보내는 폰 */
 const sending = (u) => phone(`<div class="titlebar">📤 ${u.sending}</div><div class="center">${qr()}</div>`, 'short');
 
 /** 플레이어 목록 화면: 타이틀바, 앱 줄들, 아래 [나의 앱 추가] */
@@ -56,26 +56,7 @@ function viewer(u, { hlPlay = false, hlSend = false } = {}) {
 }
 
 export const SCENES = [
-  // 1편 재료 손질: AI로 앱 만들기
-  [
-    (u) => `<div class="row stack"><div class="col"><span class="big pop" style="font-size:3em">💡</span><span class="small muted in" style="--d:.4s">${u.idea}</span></div><span class="arrow">→</span>${pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"><div class="bubble in" style="--d:.9s">🙂</div></div>`)}</div>`,
-    (u) => pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"></div><div class="input" data-type="${u.prompt}"></div>`),
-    (u) => pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat">
-      <div class="bubble in" style="--d:.2s">${u.ask1}</div>
-      <div class="bubble me in" style="--d:1s">${u.ans1}</div>
-      <div class="bubble in" style="--d:1.8s">${u.ask2}</div>
-      <div class="bubble me in" style="--d:2.6s">${u.ans2}</div></div>`),
-    (u) => `<div class="row stack">${pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"><div class="bubble">✅ index.html, style.css, main.js</div></div>`)}<span class="arrow">→</span>
-      <div class="folder"><div>📁 jump-bunny/</div>
-      <div class="file glow pop" style="--d:.4s">📄 index.html</div>
-      <div class="file pop" style="--d:.9s">📄 style.css</div>
-      <div class="file pop" style="--d:1.4s">📄 main.js</div></div></div>`,
-    (u) => `<div class="col"><div class="row"><div class="col"><span class="big">📁</span><span class="tiny">jump-bunny/</span></div><span class="arrow fly">→</span><div class="col pop" style="--d:.6s"><span class="big">🗜️</span><span class="tiny">jump-bunny.zip</span></div></div>
-      <span class="arrow">↓</span>${phone(player(u, { items: [{ name: u.appName, on: true, sub: 'zip' }] }), 'in', 1.4)}</div>`,
-    (u) => `<div class="col"><div class="url">https://www.bebeam.net/README.md</div>
-      <div class="tiny muted">${u.promptLabel}</div><div class="prompt-box">${u.prompt}</div></div>`,
-  ],
-  // 2편 그릇 준비: 플레이어 설치
+  // Ⅰ 비빔 설치하기 (2026-11-12 랜딩 따라 하기 순서: 설치 → 앱 넣고 실행 → 옮기기 → AI로 만들기)
   [
     // 컴퓨터는 [앱 목록 | 실행 화면], 폰은 [실행 화면 / 앱 목록] (플레이어의 실제 배치). 가운데 주고받기 화살표
     (u) => {
@@ -100,7 +81,7 @@ export const SCENES = [
       ${phone(player(u), 'in', 1.8)}
     </div>`,
   ],
-  // 3편 넣고 비비기: 앱 추가·실행
+  // Ⅱ 앱 넣고 실행하기
   [
     (u) => phone(player(u, { hlAdd: true })),
     (u) => phone(player(u, { bottom: false, extra: addSheet(u) })),
@@ -125,7 +106,7 @@ export const SCENES = [
       extra: `<div class="menu-pop pop" style="--d:.3s"><span>✏️ ${u.rename}</span><span>📤 ${u.transfer}</span><span>↺ ${u.reset}</span><span class="sep" style="color:var(--danger)">🗑 ${u.remove}</span></div>`,
     })),
   ],
-  // 4편 나눠 먹기: QR로 주고받기. 보내는 사람(위) / 받는 사람(아래), 폰 위에 역할 꼬리표
+  // Ⅲ 스마트폰·친구에게 옮기기: QR로 주고받기. 보내는 쪽(위) / 받는 쪽(아래), 폰 위에 역할 꼬리표
   [
     (u) => duo(u, phone(viewer(u, { hlSend: true }), 'short'), phone(player(u, {}), 'short')),
     (u) => duo(u, phone(`<div class="titlebar">📤 ${u.sending}</div><div class="center col">${qr()}<span class="tiny muted">${u.appName}</span></div>`, 'short'), ''),
@@ -150,6 +131,27 @@ export const SCENES = [
     // 9: 기울여 반사광을 피하고 카메라 틀에 QR을 맞춘다
     (u) => duo(u, sending(u),
       `<div class="tilt">${phone(`<div class="cam"><div class="cam-frame hl">${qr()}</div><div class="glare"></div></div>`, 'short')}</div>`),
+  ],
+  // Ⅳ AI와 함께 앱 만들기
+  [
+    (u) => `<div class="row stack"><div class="col"><span class="big pop" style="font-size:3em">💡</span><span class="small muted in" style="--d:.4s">${u.idea}</span></div><span class="arrow">→</span>${pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"><div class="bubble in" style="--d:.9s">🙂</div></div>`)}</div>`,
+    (u) => pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"></div><div class="input" data-type="${u.prompt}"></div>`),
+    (u) => pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat">
+      <div class="bubble in" style="--d:.2s">${u.ask1}</div>
+      <div class="bubble me in" style="--d:1s">${u.ans1}</div>
+      <div class="bubble in" style="--d:1.8s">${u.ask2}</div>
+      <div class="bubble me in" style="--d:2.6s">${u.ans2}</div></div>`),
+    (u) => `<div class="row stack">${pc(`<div class="titlebar">🤖 ${u.chat}</div><div class="chat"><div class="bubble">✅ index.html, style.css, main.js</div></div>`)}<span class="arrow">→</span>
+      <div class="folder"><div>📁 jump-bunny/</div>
+      <div class="file glow pop" style="--d:.4s">📄 index.html</div>
+      <div class="file pop" style="--d:.9s">📄 style.css</div>
+      <div class="file pop" style="--d:1.4s">📄 main.js</div></div></div>`,
+    (u) => `<div class="col"><div class="row"><div class="col"><span class="big">📁</span><span class="tiny">jump-bunny/</span></div><span class="arrow fly">→</span><div class="col pop" style="--d:.6s"><span class="big">🗜️</span><span class="tiny">jump-bunny.zip</span></div></div>
+      <span class="arrow">↓</span>${phone(player(u, { items: [{ name: u.appName, on: true, sub: 'zip' }] }), 'in', 1.4)}</div>`,
+    // 6: A 처음 만들 때 / B 이미 만든 앱이 있을 때 (랜딩 PART 2와 같은 프롬프트)
+    (u) => `<div class="col"><div class="url">https://www.bebeam.net/README.md</div>
+      <div class="tiny muted">A · ${u.promptA}</div><div class="prompt-box">${u.prompt}</div>
+      <div class="tiny muted">B · ${u.promptB}</div><div class="prompt-box">${u.prompt2}</div></div>`,
   ],
 ];
 
